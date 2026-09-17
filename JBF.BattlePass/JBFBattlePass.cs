@@ -127,21 +127,27 @@ public sealed class JBFBattlePass : BasePlugin
             case "jbf_bp_close":
                 _service.Close(player);
                 return;
-            case "jbf_bp_tab_track":
+            case "jbf_bp_track":
                 _service.SetTab(player, "track");
                 return;
-            case "jbf_bp_tab_missions":
+            case "jbf_bp_missions":
                 _service.SetTab(player, "missions");
                 return;
-            case "jbf_bp_tab_inventory":
+            case "jbf_bp_inventory":
                 _service.SetTab(player, "inventory");
                 return;
-            case "jbf_bp_page_prev":
-                _service.ChangePage(player, -1);
-                return;
-            case "jbf_bp_page_next":
-                _service.ChangePage(player, 1);
-                return;
+        }
+
+        if (buttonId.StartsWith("jbf_bp_page_prev_", StringComparison.Ordinal))
+        {
+            _service.ChangePage(player, -1);
+            return;
+        }
+
+        if (buttonId.StartsWith("jbf_bp_page_next_", StringComparison.Ordinal))
+        {
+            _service.ChangePage(player, 1);
+            return;
         }
 
         if (TryParseSlot(buttonId, "jbf_bp_claim_", out var claimSlot))
