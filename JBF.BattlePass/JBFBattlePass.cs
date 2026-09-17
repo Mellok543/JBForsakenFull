@@ -17,7 +17,7 @@ public sealed class JBFBattlePass : BasePlugin
     private ILrApi? _lr;
 
     public override string ModuleName => "JBF Battle Pass";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -25,6 +25,7 @@ public sealed class JBFBattlePass : BasePlugin
         var configPath = Path.Combine(ModuleDirectory, "battlepass.json");
         var config = BattlePassConfig.LoadOrCreate(configPath, message => Logger.LogError("{Message}", message));
         _renderer = new BattlePassRenderer(message => Logger.LogInformation("{Message}", message));
+        _renderer.Clicked += OnHudClicked;
         _renderer.Start(this, hotReload);
         _service = new BattlePassService(config, _renderer, message => Logger.LogError("{Message}", message));
 
@@ -42,8 +43,12 @@ public sealed class JBFBattlePass : BasePlugin
     {
         if (_lr is not null) _lr.MatchEnded -= OnLrEnded;
         _lr = null;
+        if (_renderer is not null)
+        {
+            _renderer.Clicked -= OnHudClicked;
+            _renderer.Stop(this);
+        }
         _service?.Shutdown();
-        _renderer?.Stop();
         _service = null;
         _renderer = null;
     }
@@ -111,6 +116,49 @@ public sealed class JBFBattlePass : BasePlugin
     {
         _service?.OnKill(@event.Userid, @event.Attacker);
         return HookResult.Continue;
+    }
+
+    private void OnHudClicked(CCSPlayerController player, string buttonId)
+    {
+        if (_service is null) return;
+
+        switch (buttonId)
+        {
+            case "jbf_bp_close":
+                _service.Close(player);
+                return;
+            case "jbf_bp_tab_track":
+                _service.SetTab(player, "track");
+                return;
+            case "jbf_bp_tab_missions":
+                _service.SetTab(player, "missions");
+                return;
+            case "jbf_bp_tab_inventory":
+                _service.SetTab(player, "inventory");
+                return;
+            case "jbf_bp_page_prev":
+                _service.ChangePage(player, -1);
+                return;
+            case "jbf_bp_page_next":
+                _service.ChangePage(player, 1);
+                return;
+        }
+
+        if (TryParseSlot(buttonId, "jbf_bp_claim_", out var claimSlot))
+        {
+            _service.ClaimSlot(player, claimSlot);
+            return;
+        }
+
+        if (TryParseSlot(buttonId, "jbf_bp_use_", out var useSlot))
+            _service.UseInventorySlot(player, useSlot);
+    }
+
+    private static bool TryParseSlot(string buttonId, string prefix, out int slot)
+    {
+        slot = -1;
+        return buttonId.StartsWith(prefix, StringComparison.Ordinal)
+               && int.TryParse(buttonId[prefix.Length..], out slot);
     }
 
     private void OnDisconnect(int slot) => _service?.Disconnect(slot);
