@@ -1,13 +1,15 @@
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using JBF.Api;
 
 namespace JBF.Menu.Services;
 
-internal sealed class MenuService : IMenuApi
+internal sealed class MenuService : IMenuApi, IUiApi
 {
     private const int VisibleOptionCount = 7;
 
     private readonly Dictionary<int, ActiveMenuState> _activeMenus = new();
+    private readonly Dictionary<(int Slot, string Panel), System.Threading.Timer> _hideTimers = new();
     private readonly PanoramaMenuRenderer _renderer;
 
     public MenuService(string layoutResource, Action<string>? log = null)
@@ -22,25 +24,24 @@ internal sealed class MenuService : IMenuApi
 
     public void Stop(BasePlugin plugin)
     {
+        foreach (var timer in _hideTimers.Values)
+            timer.Dispose();
+
+        _hideTimers.Clear();
+
         foreach (var state in _activeMenus.Values.ToArray())
         {
             if (state.Player.IsValid)
-                _renderer.Hide(state.Player);
+                _renderer.ClearAll(state.Player);
         }
 
         _activeMenus.Clear();
         _renderer.Stop(plugin);
     }
 
-    public bool IsOpen(CCSPlayerController player)
-    {
-        return _activeMenus.ContainsKey(player.Slot);
-    }
+    public bool IsOpen(CCSPlayerController player) => _activeMenus.ContainsKey(player.Slot);
 
-    public void Open(
-        CCSPlayerController player,
-        string title,
-        IReadOnlyList<JailbreakMenuOption> options)
+    public void Open(CCSPlayerController player, string title, IReadOnlyList<JailbreakMenuOption> options)
     {
         if (!player.IsValid)
             return;
@@ -74,10 +75,77 @@ internal sealed class MenuService : IMenuApi
         _renderer.Hide(player);
     }
 
-    public void HandleButtonsChanged(
-        CCSPlayerController player,
-        PlayerButtons pressed,
-        PlayerButtons released)
+    public void Notify(CCSPlayerController player, string text, UiNotificationType type = UiNotificationType.Info, float durationSeconds = 4.0f)
+    {
+        if (!Prepare(player))
+            return;
+
+        _renderer.SetText(player, "jbf_notify_text", text);
+        ApplyType(player, "jbf_notify_root", type);
+        _renderer.ShowPanel(player, "jbf_notify_root");
+        ScheduleHide(player, "jbf_notify_root", durationSeconds);
+    }
+
+    public void Announce(CCSPlayerController player, string title, string subtitle = "", UiNotificationType type = UiNotificationType.Important, float durationSeconds = 5.0f)
+    {
+        if (!Prepare(player))
+            return;
+
+        _renderer.SetText(player, "jbf_announce_title", title);
+        _renderer.SetText(player, "jbf_announce_subtitle", subtitle);
+        ApplyType(player, "jbf_announce_root", type);
+        _renderer.ShowPanel(player, "jbf_announce_root");
+        ScheduleHide(player, "jbf_announce_root", durationSeconds);
+    }
+
+    public void SetRoundStatus(CCSPlayerController player, string title, string value = "")
+    {
+        if (!Prepare(player))
+            return;
+
+        _renderer.SetText(player, "jbf_round_title", title);
+        _renderer.SetText(player, "jbf_round_value", value);
+        _renderer.ShowPanel(player, "jbf_round_root");
+    }
+
+    public void ClearRoundStatus(CCSPlayerController player)
+    {
+        if (_renderer.IsReady && player.IsValid)
+            _renderer.HidePanel(player, "jbf_round_root");
+    }
+
+    public void SetPlayerStatus(CCSPlayerController player, string primary, string secondary = "")
+    {
+        if (!Prepare(player))
+            return;
+
+        _renderer.SetText(player, "jbf_player_primary", primary);
+        _renderer.SetText(player, "jbf_player_secondary", secondary);
+        _renderer.ShowPanel(player, "jbf_player_root");
+    }
+
+    public void ClearPlayerStatus(CCSPlayerController player)
+    {
+        if (_renderer.IsReady && player.IsValid)
+            _renderer.HidePanel(player, "jbf_player_root");
+    }
+
+    public void Clear(CCSPlayerController player)
+    {
+        if (!player.IsValid)
+            return;
+
+        foreach (var key in _hideTimers.Keys.Where(key => key.Slot == player.Slot).ToArray())
+        {
+            _hideTimers[key].Dispose();
+            _hideTimers.Remove(key);
+        }
+
+        _activeMenus.Remove(player.Slot);
+        _renderer.ClearAll(player);
+    }
+
+    public void HandleButtonsChanged(CCSPlayerController player, PlayerButtons pressed, PlayerButtons released)
     {
         if (!_activeMenus.TryGetValue(player.Slot, out var state))
             return;
@@ -110,7 +178,52 @@ internal sealed class MenuService : IMenuApi
     public void HandleClientDisconnect(int playerSlot)
     {
         _activeMenus.Remove(playerSlot);
+
+        foreach (var key in _hideTimers.Keys.Where(key => key.Slot == playerSlot).ToArray())
+        {
+            _hideTimers[key].Dispose();
+            _hideTimers.Remove(key);
+        }
+
         _renderer.ForgetPlayer(playerSlot);
+    }
+
+    private bool Prepare(CCSPlayerController player)
+    {
+        return player.IsValid && !player.IsBot && _renderer.EnsureReady();
+    }
+
+    private void ApplyType(CCSPlayerController player, string panelId, UiNotificationType type)
+    {
+        foreach (var className in new[] { "info", "success", "warning", "error", "important" })
+            _renderer.SetClass(player, panelId, className, false);
+
+        _renderer.SetClass(player, panelId, type.ToString().ToLowerInvariant(), true);
+    }
+
+    private void ScheduleHide(CCSPlayerController player, string panelId, float durationSeconds)
+    {
+        var key = (player.Slot, panelId);
+        if (_hideTimers.Remove(key, out var existing))
+            existing.Dispose();
+
+        var milliseconds = Math.Max(250, (int)(durationSeconds * 1000));
+        System.Threading.Timer? timer = null;
+        timer = new System.Threading.Timer(_ =>
+        {
+            Server.NextFrame(() =>
+            {
+                timer?.Dispose();
+                _hideTimers.Remove(key);
+
+                if (!player.IsValid || !_renderer.IsReady)
+                    return;
+
+                _renderer.HidePanel(player, panelId);
+            });
+        }, null, milliseconds, System.Threading.Timeout.Infinite);
+
+        _hideTimers[key] = timer;
     }
 
     private void SelectCurrent(ActiveMenuState state)
@@ -128,8 +241,6 @@ internal sealed class MenuService : IMenuApi
         var player = state.Player;
         option.OnSelect(player);
 
-        // A callback may open a submenu. In that case it replaces the active state,
-        // so we must not hide the newly opened menu.
         if (_activeMenus.TryGetValue(player.Slot, out var current) && ReferenceEquals(current, state))
             Close(player);
     }
@@ -174,10 +285,7 @@ internal sealed class MenuService : IMenuApi
         _renderer.SetText(state.Player, "jbf_menu_title", state.Title);
 
         var selectedForWindow = Math.Max(0, state.SelectedIndex);
-        var firstIndex = Math.Clamp(
-            selectedForWindow - VisibleOptionCount / 2,
-            0,
-            Math.Max(0, state.Options.Count - VisibleOptionCount));
+        var firstIndex = Math.Clamp(selectedForWindow - VisibleOptionCount / 2, 0, Math.Max(0, state.Options.Count - VisibleOptionCount));
 
         for (var row = 0; row < VisibleOptionCount; row++)
         {
