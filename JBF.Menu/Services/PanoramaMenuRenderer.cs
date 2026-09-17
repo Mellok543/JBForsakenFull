@@ -5,7 +5,7 @@ namespace JBF.Menu.Services;
 
 internal sealed class PanoramaMenuRenderer
 {
-    private const string RootPanelId = "jbf_menu_root";
+    private const string MenuRootPanelId = "jbf_menu_root";
 
     private readonly string _layoutResource;
     private readonly Action<string>? _log;
@@ -37,7 +37,7 @@ internal sealed class PanoramaMenuRenderer
             {
                 var player = Utilities.GetPlayerFromSlot(slot);
                 if (player is { IsValid: true })
-                    Hide(player);
+                    ClearAll(player);
             }
 
             if (_entity is { IsValid: true })
@@ -61,22 +61,46 @@ internal sealed class PanoramaMenuRenderer
         return IsReady;
     }
 
-    public void Show(CCSPlayerController player)
+    public void Show(CCSPlayerController player) => ShowPanel(player, MenuRootPanelId);
+
+    public void Hide(CCSPlayerController player) => HidePanel(player, MenuRootPanelId);
+
+    public void ShowPanel(CCSPlayerController player, string panelId)
     {
         if (!IsReady || !player.IsValid || player.IsBot)
             return;
 
         _visiblePlayers.Add(player.Slot);
-        SetClass(player, RootPanelId, "shown", true);
+        SetClass(player, panelId, "shown", true);
     }
 
-    public void Hide(CCSPlayerController player)
+    public void HidePanel(CCSPlayerController player, string panelId)
     {
         if (!IsReady || !player.IsValid)
             return;
 
+        SetClass(player, panelId, "shown", false);
+    }
+
+    public void ClearAll(CCSPlayerController player)
+    {
+        if (!IsReady || !player.IsValid)
+            return;
+
+        foreach (var panelId in new[]
+                 {
+                     "jbf_menu_root",
+                     "jbf_notify_root",
+                     "jbf_announce_root",
+                     "jbf_round_root",
+                     "jbf_player_root",
+                     "jbf_event_root"
+                 })
+        {
+            SetClass(player, panelId, "shown", false);
+        }
+
         _visiblePlayers.Remove(player.Slot);
-        SetClass(player, RootPanelId, "shown", false);
     }
 
     public void ForgetPlayer(int playerSlot)
