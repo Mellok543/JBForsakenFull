@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace JBF.BattlePass.Models;
@@ -18,13 +19,17 @@ internal sealed class BattlePassConfig
         if (!File.Exists(path))
         {
             var created = new BattlePassConfig();
-            File.WriteAllText(path, JsonSerializer.Serialize(created, JsonOptions()));
+            Save(path, created);
             return created;
         }
 
         try
         {
-            return JsonSerializer.Deserialize<BattlePassConfig>(File.ReadAllText(path), JsonOptions()) ?? new BattlePassConfig();
+            var loaded = JsonSerializer.Deserialize<BattlePassConfig>(File.ReadAllText(path), JsonOptions()) ?? new BattlePassConfig();
+
+            // Rewrite an existing config once with readable UTF-8 characters instead of \uXXXX escapes.
+            Save(path, loaded);
+            return loaded;
         }
         catch (Exception ex)
         {
@@ -33,7 +38,17 @@ internal sealed class BattlePassConfig
         }
     }
 
-    private static JsonSerializerOptions JsonOptions() => new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
+    private static void Save(string path, BattlePassConfig config)
+    {
+        File.WriteAllText(path, JsonSerializer.Serialize(config, JsonOptions()));
+    }
+
+    private static JsonSerializerOptions JsonOptions() => new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     private static List<MissionDefinition> DefaultMissions() =>
     [
