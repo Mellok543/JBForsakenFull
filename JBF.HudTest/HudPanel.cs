@@ -10,9 +10,8 @@ internal sealed class HudPanel
     private CCSCustomHudLayout? _entity;
     private readonly HashSet<int> _visible = [];
 
-    public event Action<CCSPlayerController, string>? Clicked;
-
     public bool IsReady => _entity is { IsValid: true };
+    public bool IsVisible(int slot) => _visible.Contains(slot);
 
     public HudPanel(string layoutResource, Action<string>? log = null)
     {
@@ -22,7 +21,6 @@ internal sealed class HudPanel
 
     public void Start(BasePlugin plugin, bool hotReload)
     {
-        plugin.RegisterListener<Listeners.OnCustomHudClicked>(OnClicked);
         plugin.RegisterListener<Listeners.OnMapStart>(_ => Server.NextWorldUpdate(Spawn));
 
         // Never touch EntitySystem immediately during a normal server startup.
@@ -31,10 +29,6 @@ internal sealed class HudPanel
             Server.NextWorldUpdate(Spawn);
     }
 
-    /// <summary>
-    /// Explicitly create the HUD entity. This is safe when called from a player command,
-    /// because a valid player can only exist after the entity system has initialized.
-    /// </summary>
     public bool EnsureReady()
     {
         if (IsReady)
@@ -46,11 +40,9 @@ internal sealed class HudPanel
 
     public void Stop(BasePlugin plugin)
     {
-        plugin.RemoveListener<Listeners.OnCustomHudClicked>(OnClicked);
-
         try
         {
-            HideAll();
+            _visible.Clear();
 
             if (_entity is not null && _entity.IsValid)
                 _entity.Remove();
@@ -61,7 +53,6 @@ internal sealed class HudPanel
         }
 
         _entity = null;
-        _visible.Clear();
     }
 
     public void SetText(CCSPlayerController player, string panelId, string value, string variable = "text")
@@ -87,7 +78,9 @@ internal sealed class HudPanel
 
         _visible.Add(player.Slot);
         SetClass(player, rootPanelId, visibleClass, true);
-        _entity!.SetInputCaptureEnabled(player, true);
+
+        // Intentionally DO NOT enable Panorama input capture here.
+        // The player keeps normal mouse look and the HUD is controlled through game buttons.
         return true;
     }
 
@@ -98,21 +91,6 @@ internal sealed class HudPanel
 
         _visible.Remove(player.Slot);
         SetClass(player, rootPanelId, visibleClass, false);
-        _entity!.SetInputCaptureEnabled(player, false);
-    }
-
-    public void HideAll()
-    {
-        foreach (var slot in _visible.ToList())
-        {
-            _visible.Remove(slot);
-
-            var player = Utilities.GetPlayerFromSlot(slot);
-            if (player is null || !player.IsValid || !IsReady)
-                continue;
-
-            _entity!.SetInputCaptureEnabled(player, false);
-        }
     }
 
     private void Spawn()
@@ -122,7 +100,6 @@ internal sealed class HudPanel
 
         try
         {
-            // Do not delete every custom_hud_layout on the server: other plugins may own one.
             var entity = Utilities.CreateEntityByName<CCSCustomHudLayout>("custom_hud_layout");
             if (entity is null || !entity.IsValid)
             {
@@ -139,17 +116,5 @@ internal sealed class HudPanel
         {
             _log?.Invoke($"HudTest: spawn failed: {ex.Message}");
         }
-    }
-
-    private void OnClicked(CCSPlayerController player, CCSCustomHudLayout layout, string buttonId)
-    {
-        if (!player.IsValid || !_visible.Contains(player.Slot))
-            return;
-
-        // Ignore clicks from custom_hud_layout entities owned by other plugins.
-        if (_entity is null || !_entity.IsValid || layout.Handle != _entity.Handle)
-            return;
-
-        Clicked?.Invoke(player, buttonId);
     }
 }
