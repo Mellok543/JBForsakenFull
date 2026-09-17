@@ -9,6 +9,7 @@ namespace JBF.SpecialDays.Services;
 internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
 {
     private readonly Dictionary<string, RegisteredSpecialDay> _days = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SpecialDayVipSuppressionService _vipSuppression = new();
     private ISpecialDay? _activeDay;
     private ISpecialDay? _pendingDay;
     private bool _finishRequested;
@@ -100,6 +101,8 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
             conVar.SetValue(true);
         }
 
+        foreach (var player in HumanPlayers()) _vipSuppression.Suppress(player);
+
         var name = _activeDay.Name;
         Server.PrintToChatAll(JailbreakChat.Format($"Начался игровой день: {name}."));
         AnnounceAll("ИГРОВОЙ ДЕНЬ", name, UiNotificationType.Important, 6.0f);
@@ -109,12 +112,17 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
 
     public void StopActiveDay()
     {
-        if (_activeDay is null) return;
+        if (_activeDay is null)
+        {
+            _vipSuppression.RestoreAll(HumanPlayers());
+            return;
+        }
 
         var name = _activeDay.Name;
         _activeDay.Stop();
         _activeDay = null;
         _finishRequested = false;
+        _vipSuppression.RestoreAll(HumanPlayers());
         RestoreWinConditionConVar();
         Server.PrintToChatAll(JailbreakChat.Format($"Игровой день завершён: {name}."));
         AnnounceAll("ИГРОВОЙ ДЕНЬ ЗАВЕРШЁН", name, UiNotificationType.Info, 4.0f);
@@ -127,13 +135,18 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
 
         _activeDay?.OnPlayerSpawn(player);
         if (_activeDay is not null && player.IsValid && !player.IsBot)
+        {
+            _vipSuppression.Suppress(player);
             UiCapability.Api.Get()?.SetRoundStatus(player, "ИГРОВОЙ ДЕНЬ", _activeDay.Name);
+        }
     }
 
     public void HandlePlayerDeath(CCSPlayerController? victim, CCSPlayerController? attacker)
     {
         _activeDay?.OnPlayerDeath(victim, attacker);
     }
+
+    public void HandleDisconnect(int slot) => _vipSuppression.Forget(slot);
 
     public HookResult HandleTakeDamage(CBaseEntity entity, CTakeDamageInfo damageInfo)
     {
@@ -144,6 +157,7 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
     {
         _pendingDay = null;
         StopActiveDay();
+        _vipSuppression.RestoreAll(HumanPlayers());
         _days.Clear();
         RestoreWinConditionConVar();
         ClearRoundStatusAll();
@@ -181,6 +195,7 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         registration.Day.Stop();
         _activeDay = null;
         _finishRequested = false;
+        _vipSuppression.RestoreAll(HumanPlayers());
         RestoreWinConditionConVar();
         Server.PrintToChatAll(JailbreakChat.Format($"Игровой день выгружен: {registration.Day.Name}."));
         ClearRoundStatusAll();
