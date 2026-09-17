@@ -11,10 +11,11 @@ namespace JBF.LR;
 public sealed class JBFLR : BasePlugin
 {
     private readonly LrService _lr = new();
+    private readonly LrParticipantNormalizer _normalizer = new();
     private readonly List<IDisposable> _registrations = [];
 
     public override string ModuleName => "JBF LR";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -23,6 +24,7 @@ public sealed class JBFLR : BasePlugin
         RegisterListener<Listeners.OnEntityTakeDamagePre>(_lr.HandleTakeDamage);
         RegisterListener<Listeners.OnClientDisconnect>(_lr.HandleDisconnect);
         RegisterListener<Listeners.OnTick>(_lr.Tick);
+        RegisterListener<Listeners.OnTick>(_normalizer.Tick);
 
         _registrations.Add(_lr.RegisterGame(new KnifeDuelGame()));
         _registrations.Add(_lr.RegisterGame(new NoScopeGame()));
