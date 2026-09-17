@@ -14,7 +14,7 @@ public sealed class JBFLR : BasePlugin
     private readonly List<IDisposable> _registrations = [];
 
     public override string ModuleName => "JBF LR";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -22,6 +22,7 @@ public sealed class JBFLR : BasePlugin
         Capabilities.RegisterPluginCapability(LrCapability.Api, () => _lr);
         RegisterListener<Listeners.OnEntityTakeDamagePre>(_lr.HandleTakeDamage);
         RegisterListener<Listeners.OnClientDisconnect>(_lr.HandleDisconnect);
+        RegisterListener<Listeners.OnTick>(_lr.Tick);
 
         _registrations.Add(_lr.RegisterGame(new KnifeDuelGame()));
         _registrations.Add(_lr.RegisterGame(new NoScopeGame()));
@@ -31,9 +32,7 @@ public sealed class JBFLR : BasePlugin
     public override void Unload(bool hotReload)
     {
         foreach (var registration in _registrations)
-        {
             registration.Dispose();
-        }
 
         _registrations.Clear();
         _lr.ResetRound();
@@ -86,14 +85,8 @@ public sealed class JBFLR : BasePlugin
     }
 
     [GameEventHandler]
-    public HookResult OnBulletImpact(EventBulletImpact @event, GameEventInfo info)
-    {
-        return _lr.HandleBulletImpact(@event, info);
-    }
+    public HookResult OnBulletImpact(EventBulletImpact @event, GameEventInfo info) => _lr.HandleBulletImpact(@event, info);
 
     [GameEventHandler]
-    public HookResult OnWeaponZoom(EventWeaponZoom @event, GameEventInfo info)
-    {
-        return _lr.HandleWeaponZoom(@event, info);
-    }
+    public HookResult OnWeaponZoom(EventWeaponZoom @event, GameEventInfo info) => _lr.HandleWeaponZoom(@event, info);
 }
