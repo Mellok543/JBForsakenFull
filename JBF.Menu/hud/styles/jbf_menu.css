@@ -24,7 +24,7 @@
 .jbf-menu-window.shown
 {
     visibility: visible;
-    opacity: 1;
+    opacity: 0.94;
     position: 0px 0px 0px;
 }
 
@@ -94,7 +94,14 @@
 
 .jbf-menu-row.disabled
 {
-    opacity: 0.38;
+    opacity: 0.34;
+}
+
+.jbf-menu-row.disabled.selected
+{
+    background-color: #343a36a0;
+    border-left: 2px solid #7f8a83;
+    opacity: 0.58;
 }
 
 .jbf-menu-row.hidden
@@ -114,14 +121,10 @@
     color: #939993;
 }
 
-.jbf-menu-footer
+.jbf-menu-status
 {
     width: 100%;
-    margin-top: 6px;
-}
-
-.jbf-menu-hint
-{
+    margin-top: 7px;
     color: #9aa19d;
     font-size: 11px;
 }
