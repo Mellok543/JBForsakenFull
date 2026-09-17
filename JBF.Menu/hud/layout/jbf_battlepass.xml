@@ -3,7 +3,7 @@
         <include src="s2r://panorama/styles/custom_game/jbf_battlepass.vcss_c" />
     </styles>
 
-    <Panel hittest="false">
+    <Panel class="bp-host" hittest="false">
         <Panel id="jbf_bp_root" class="bp-screen" hittest="true">
             <Panel class="bp-backdrop" hittest="true" />
             <Panel class="bp-window" hittest="true">
