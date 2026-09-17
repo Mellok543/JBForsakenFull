@@ -12,6 +12,7 @@ internal sealed class BattlePassService : IBattlePassApi
     private const int RewardSlots = 8;
     private const int MissionSlots = 6;
     private const int InventorySlots = 8;
+    private const int ProgressSteps = 10;
 
     private readonly BattlePassConfig _config;
     private readonly BattlePassStorage _storage;
@@ -39,7 +40,7 @@ internal sealed class BattlePassService : IBattlePassApi
     {
         if (!IsUsable(player)) return;
         _tabs[player.Slot] = _tabs.GetValueOrDefault(player.Slot, "track");
-        _pages[player.Slot] = Math.Max(0, _pages.GetValueOrDefault(player.Slot));
+        _pages[player.Slot] = Math.Clamp(_pages.GetValueOrDefault(player.Slot), 0, MaxPage(player));
         Render(player);
         _renderer.Show(player);
     }
@@ -59,7 +60,8 @@ internal sealed class BattlePassService : IBattlePassApi
     public void ChangePage(CCSPlayerController player, int delta)
     {
         if (!IsUsable(player)) return;
-        var page = Math.Max(0, _pages.GetValueOrDefault(player.Slot) + Math.Clamp(delta, -1, 1));
+        var current = _pages.GetValueOrDefault(player.Slot);
+        var page = Math.Clamp(current + Math.Clamp(delta, -1, 1), 0, MaxPage(player));
         _pages[player.Slot] = page;
         Render(player);
     }
@@ -126,6 +128,8 @@ internal sealed class BattlePassService : IBattlePassApi
     public void OnRoundStart()
     {
         _usedInventoryThisRound.Clear();
+        foreach (var player in Utilities.GetPlayers().Where(IsUsable))
+            if (_tabs.ContainsKey(player.Slot)) Render(player);
     }
 
     public void OnRoundEnd()
@@ -249,6 +253,7 @@ internal sealed class BattlePassService : IBattlePassApi
         state.Inventory[itemId]--;
         if (state.Inventory[itemId] <= 0) state.Inventory.Remove(itemId);
         _usedInventoryThisRound.Add(player.Slot);
+        _pages[player.Slot] = Math.Min(_pages.GetValueOrDefault(player.Slot), MaxPage(player));
         Save(state);
         UiCapability.Api.Get()?.Notify(player, $"Использовано: {ItemDisplayName(itemId)}", UiNotificationType.Success, 3.0f);
         Render(player);
@@ -257,16 +262,19 @@ internal sealed class BattlePassService : IBattlePassApi
     private void Render(CCSPlayerController player)
     {
         var state = GetState(player);
+        _pages[player.Slot] = Math.Clamp(_pages.GetValueOrDefault(player.Slot), 0, MaxPage(player));
+
         var level = LevelForXp(state.Xp);
         var currentFloorXp = level >= _config.MaxLevel ? _config.MaxLevel * _config.XpPerLevel : level * _config.XpPerLevel;
-        var nextXp = Math.Min(_config.MaxLevel * _config.XpPerLevel, currentFloorXp + _config.XpPerLevel);
         var progress = level >= _config.MaxLevel ? _config.XpPerLevel : Math.Max(0, state.Xp - currentFloorXp);
+        var percent = level >= _config.MaxLevel ? 100 : Math.Clamp(progress * 100 / Math.Max(1, _config.XpPerLevel), 0, 100);
 
         _renderer.Text(player, "jbf_bp_season", _config.SeasonName);
         _renderer.Text(player, "jbf_bp_level", $"LVL {level}");
         _renderer.Text(player, "jbf_bp_xp", level >= _config.MaxLevel ? "MAX LEVEL" : $"{progress} / {_config.XpPerLevel} XP");
         _renderer.Text(player, "jbf_bp_totalxp", $"Сезонный XP: {state.Xp:N0}");
-        _renderer.Text(player, "jbf_bp_progress", level >= _config.MaxLevel ? "100" : $"{Math.Clamp(progress * 100 / Math.Max(1, _config.XpPerLevel), 0, 100)}");
+        _renderer.Text(player, "jbf_bp_progress", percent.ToString(CultureInfo.InvariantCulture));
+        SetProgressClass(player, "jbf_bp_root", "xp", percent);
 
         var tab = _tabs.GetValueOrDefault(player.Slot, "track");
         _renderer.SetClass(player, "jbf_bp_track", "active", tab == "track");
@@ -294,12 +302,16 @@ internal sealed class BattlePassService : IBattlePassApi
             var visible = reward is not null && rewardLevel <= _config.MaxLevel;
             _renderer.SetClass(player, panel, "visible", visible);
             if (!visible) continue;
+
             _renderer.Text(player, $"{panel}_level", $"LVL {rewardLevel}");
             _renderer.Text(player, $"{panel}_name", reward!.Name);
             var claimed = state.ClaimedLevels.Contains(rewardLevel);
-            _renderer.Text(player, $"{panel}_state", claimed ? "ПОЛУЧЕНО" : level >= rewardLevel ? "ЗАБРАТЬ" : "ЗАКРЫТО");
+            var available = !claimed && level >= rewardLevel;
+            _renderer.Text(player, $"{panel}_state", claimed ? "ПОЛУЧЕНО" : available ? "ЗАБРАТЬ" : "ЗАКРЫТО");
             _renderer.SetClass(player, panel, "claimed", claimed);
+            _renderer.SetClass(player, panel, "available", available);
             _renderer.SetClass(player, panel, "locked", level < rewardLevel);
+            SetRewardTypeClasses(player, panel, reward.Type);
         }
     }
 
@@ -314,16 +326,19 @@ internal sealed class BattlePassService : IBattlePassApi
             var visible = index < missions.Length;
             _renderer.SetClass(player, panel, "visible", visible);
             if (!visible) continue;
+
             var mission = missions[index];
             var period = PeriodKey(mission.Period);
             var key = $"{mission.Id}:{period}";
             var progress = Math.Min(mission.Target, state.MissionProgress.GetValueOrDefault(key));
             var complete = state.CompletedMissionPeriods.Contains(key);
+            var percent = Math.Clamp(progress * 100 / Math.Max(1, mission.Target), 0, 100);
             _renderer.Text(player, $"{panel}_name", mission.Name);
             _renderer.Text(player, $"{panel}_type", PeriodName(mission.Period));
             _renderer.Text(player, $"{panel}_progress", $"{progress} / {mission.Target}");
             _renderer.Text(player, $"{panel}_xp", $"+{mission.XpReward} XP");
             _renderer.SetClass(player, panel, "complete", complete);
+            SetProgressClass(player, panel, "mission", percent);
         }
     }
 
@@ -331,17 +346,84 @@ internal sealed class BattlePassService : IBattlePassApi
     {
         var items = state.Inventory.Where(x => x.Value > 0).OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase).ToArray();
         var page = _pages.GetValueOrDefault(player.Slot);
+        var canUse = CanUseInventory(player, out var status);
+        _renderer.Text(player, "jbf_bp_inventory_status", status);
+        _renderer.SetClass(player, "jbf_bp_inventory_view", "inventory-disabled", !canUse);
+
         for (var slot = 0; slot < InventorySlots; slot++)
         {
             var index = page * InventorySlots + slot;
             var panel = $"jbf_bp_item_{slot}";
             var visible = index < items.Length;
             _renderer.SetClass(player, panel, "visible", visible);
+            _renderer.SetClass(player, panel, "disabled", visible && !canUse);
             if (!visible) continue;
+
             var item = items[index];
             _renderer.Text(player, $"{panel}_name", ItemDisplayName(item.Key));
             _renderer.Text(player, $"{panel}_count", $"×{item.Value}");
         }
+    }
+
+    private bool CanUseInventory(CCSPlayerController player, out string status)
+    {
+        if (!player.PawnIsAlive || JailbreakCapability.Api.Get()?.IsRoundActive != true)
+        {
+            status = "Предметы доступны только живым игрокам во время обычного раунда.";
+            return false;
+        }
+        if (LrCapability.Api.Get()?.IsActive == true)
+        {
+            status = "Инвентарь временно отключён во время LR.";
+            return false;
+        }
+        if (SpecialDaysCapability.Api.Get()?.IsActive == true)
+        {
+            status = "Инвентарь временно отключён во время игрового дня.";
+            return false;
+        }
+        if (_usedInventoryThisRound.Contains(player.Slot))
+        {
+            status = "Лимит этого раунда использован: один предмет за раунд.";
+            return false;
+        }
+
+        status = "Предмет доступен. За один обычный раунд можно использовать одну награду.";
+        return true;
+    }
+
+    private int MaxPage(CCSPlayerController player)
+    {
+        var tab = _tabs.GetValueOrDefault(player.Slot, "track");
+        var count = tab switch
+        {
+            "track" => Math.Max(0, _config.MaxLevel),
+            "missions" => _config.Missions.Count,
+            "inventory" => GetState(player).Inventory.Count(x => x.Value > 0),
+            _ => 0
+        };
+        var pageSize = tab switch
+        {
+            "track" => RewardSlots,
+            "missions" => MissionSlots,
+            "inventory" => InventorySlots,
+            _ => RewardSlots
+        };
+        return count <= 0 ? 0 : (count - 1) / pageSize;
+    }
+
+    private void SetRewardTypeClasses(CCSPlayerController player, string panel, RewardType type)
+    {
+        foreach (var name in Enum.GetNames<RewardType>())
+            _renderer.SetClass(player, panel, $"type-{name.ToLowerInvariant()}", false);
+        _renderer.SetClass(player, panel, $"type-{type.ToString().ToLowerInvariant()}", true);
+    }
+
+    private void SetProgressClass(CCSPlayerController player, string panel, string prefix, int percent)
+    {
+        var step = Math.Clamp((int)Math.Ceiling(percent / 10.0), 0, ProgressSteps);
+        for (var i = 0; i <= ProgressSteps; i++)
+            _renderer.SetClass(player, panel, $"{prefix}-p{i}", i == step);
     }
 
     private BattlePassPlayerState GetState(CCSPlayerController player)
