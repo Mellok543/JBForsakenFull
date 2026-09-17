@@ -13,12 +13,13 @@ public sealed class JBFGolf : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Golf";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
         RegisterListener<Listeners.OnPlayerButtonsChanged>(_game.OnButtonsChanged);
+        RegisterListener<Listeners.OnTick>(_game.Tick);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
@@ -40,10 +41,13 @@ public sealed class JBFGolf : BasePlugin
 internal sealed class GolfGame : ILrGame, ILrInventoryRules
 {
     private const float MarkerRadius = 72.0f;
+    private const float MovementTolerance = 10.0f;
     private readonly List<CBeam> _markers = [];
     private ILrMatchContext? _context;
     private Vector? _start;
     private Vector? _hole;
+    private Vector? _inmateAnchor;
+    private Vector? _guardianAnchor;
     private float? _inmateDistance;
     private float? _guardianDistance;
     private SetupState _state;
@@ -68,6 +72,8 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         _context = null;
         _start = null;
         _hole = null;
+        _inmateAnchor = null;
+        _guardianAnchor = null;
         _inmateDistance = null;
         _guardianDistance = null;
         _state = SetupState.None;
@@ -98,6 +104,13 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         _hole = new Vector(origin.X, origin.Y, origin.Z);
         DrawCourse();
         BeginGolf();
+    }
+
+    public void Tick()
+    {
+        if (_context is null || _state != SetupState.Throwing) return;
+        KeepAtAnchor(_context.Inmate, _inmateAnchor);
+        KeepAtAnchor(_context.Guardian, _guardianAnchor);
     }
 
     public HookResult OnDecoyStarted(EventDecoyStarted @event)
@@ -143,16 +156,35 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
 
     private void BeginGolf()
     {
-        if (_context is null || _start is null) return;
-        var left = new Vector(_start.X - 48.0f, _start.Y, _start.Z);
-        var right = new Vector(_start.X + 48.0f, _start.Y, _start.Z);
-        _context.Inmate.PlayerPawn.Value?.Teleport(left, new QAngle(), new Vector());
-        _context.Guardian.PlayerPawn.Value?.Teleport(right, new QAngle(), new Vector());
+        if (_context is null || _start is null || _hole is null) return;
+
+        var dx = _hole.X - _start.X;
+        var dy = _hole.Y - _start.Y;
+        var length = MathF.Sqrt(dx * dx + dy * dy);
+        var px = length > 1.0f ? -dy / length : 1.0f;
+        var py = length > 1.0f ? dx / length : 0.0f;
+        _inmateAnchor = new Vector(_start.X + px * 48.0f, _start.Y + py * 48.0f, _start.Z);
+        _guardianAnchor = new Vector(_start.X - px * 48.0f, _start.Y - py * 48.0f, _start.Z);
+        var yaw = MathF.Atan2(dy, dx) * 180.0f / MathF.PI;
+        var angle = new QAngle(0, yaw, 0);
+
+        _context.Inmate.PlayerPawn.Value?.Teleport(_inmateAnchor, angle, new Vector());
+        _context.Guardian.PlayerPawn.Value?.Teleport(_guardianAnchor, angle, new Vector());
         GiveDecoy(_context.Inmate);
         GiveDecoy(_context.Guardian);
         _state = SetupState.Throwing;
-        UiCapability.Api.Get()?.Notify(_context.Inmate, "Бросайте decoy как можно ближе к центру лунки", UiNotificationType.Success, 6.0f);
-        UiCapability.Api.Get()?.Notify(_context.Guardian, "Бросайте decoy как можно ближе к центру лунки", UiNotificationType.Success, 6.0f);
+        UiCapability.Api.Get()?.Notify(_context.Inmate, "Бросайте decoy как можно ближе к центру лунки. Движение ограничено.", UiNotificationType.Success, 6.0f);
+        UiCapability.Api.Get()?.Notify(_context.Guardian, "Бросайте decoy как можно ближе к центру лунки. Движение ограничено.", UiNotificationType.Success, 6.0f);
+    }
+
+    private static void KeepAtAnchor(CCSPlayerController player, Vector? anchor)
+    {
+        if (anchor is null || !LrPlayerRules.IsUsable(player)) return;
+        var pawn = player.PlayerPawn.Value;
+        var pos = pawn?.AbsOrigin;
+        if (pawn is null || pos is null) return;
+        if (Distance2D(pos, anchor) > MovementTolerance)
+            pawn.Teleport(anchor, null, new Vector());
     }
 
     private static void GiveDecoy(CCSPlayerController player)
@@ -201,6 +233,13 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
     {
         foreach (var beam in _markers.Where(x => x.IsValid)) beam.Remove();
         _markers.Clear();
+    }
+
+    private static float Distance2D(Vector a, Vector b)
+    {
+        var dx = a.X - b.X;
+        var dy = a.Y - b.Y;
+        return MathF.Sqrt(dx * dx + dy * dy);
     }
 
     private static float Distance3D(Vector a, Vector b)
