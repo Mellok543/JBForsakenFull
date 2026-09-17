@@ -43,6 +43,8 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         var name = _pendingDay.Name;
         _pendingDay = null;
         Server.PrintToChatAll(JailbreakChat.Format($"Игровой день отменён: {name}."));
+        NotifyAll($"Игровой день отменён: {name}", UiNotificationType.Warning);
+        ClearRoundStatusAll();
         return true;
     }
 
@@ -98,7 +100,10 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
             conVar.SetValue(true);
         }
 
-        Server.PrintToChatAll(JailbreakChat.Format($"Начался игровой день: {_activeDay.Name}."));
+        var name = _activeDay.Name;
+        Server.PrintToChatAll(JailbreakChat.Format($"Начался игровой день: {name}."));
+        AnnounceAll("ИГРОВОЙ ДЕНЬ", name, UiNotificationType.Important, 6.0f);
+        SetRoundStatusAll("ИГРОВОЙ ДЕНЬ", name);
         _activeDay.Start(this);
     }
 
@@ -112,11 +117,17 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         _finishRequested = false;
         RestoreWinConditionConVar();
         Server.PrintToChatAll(JailbreakChat.Format($"Игровой день завершён: {name}."));
+        AnnounceAll("ИГРОВОЙ ДЕНЬ ЗАВЕРШЁН", name, UiNotificationType.Info, 4.0f);
+        ClearRoundStatusAll();
     }
 
     public void HandlePlayerSpawn(CCSPlayerController? player)
     {
-        if (player is not null) _activeDay?.OnPlayerSpawn(player);
+        if (player is null) return;
+
+        _activeDay?.OnPlayerSpawn(player);
+        if (_activeDay is not null && player.IsValid && !player.IsBot)
+            UiCapability.Api.Get()?.SetRoundStatus(player, "ИГРОВОЙ ДЕНЬ", _activeDay.Name);
     }
 
     public void HandlePlayerDeath(CCSPlayerController? victim, CCSPlayerController? attacker)
@@ -135,6 +146,7 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         StopActiveDay();
         _days.Clear();
         RestoreWinConditionConVar();
+        ClearRoundStatusAll();
     }
 
     public void Finish(RoundEndReason reason) => FinishActiveDay(reason);
@@ -149,6 +161,8 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
 
         _pendingDay = day;
         Server.PrintToChatAll(JailbreakChat.Format($"В следующем раунде будет игровой день: {day.Name}."));
+        NotifyAll($"Следующий раунд: {day.Name}", UiNotificationType.Important, 5.0f);
+        SetRoundStatusAll("СЛЕДУЮЩИЙ РАУНД", day.Name);
     }
 
     private void UnregisterDay(string id, Guid token)
@@ -156,7 +170,12 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         if (!_days.TryGetValue(id, out var registration) || registration.Token != token) return;
 
         _days.Remove(id);
-        if (ReferenceEquals(_pendingDay, registration.Day)) _pendingDay = null;
+        if (ReferenceEquals(_pendingDay, registration.Day))
+        {
+            _pendingDay = null;
+            ClearRoundStatusAll();
+        }
+
         if (!ReferenceEquals(_activeDay, registration.Day)) return;
 
         registration.Day.Stop();
@@ -164,6 +183,7 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         _finishRequested = false;
         RestoreWinConditionConVar();
         Server.PrintToChatAll(JailbreakChat.Format($"Игровой день выгружен: {registration.Day.Name}."));
+        ClearRoundStatusAll();
     }
 
     private void RestoreWinConditionConVar()
@@ -182,5 +202,36 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules")
             .FirstOrDefault()?.GameRules;
         gameRules?.TerminateRound(5.0f, reason);
+    }
+
+    private static IEnumerable<CCSPlayerController> HumanPlayers() =>
+        Utilities.GetPlayers().Where(player => player is { IsValid: true, IsBot: false });
+
+    private static void NotifyAll(string text, UiNotificationType type, float durationSeconds = 4.0f)
+    {
+        var ui = UiCapability.Api.Get();
+        if (ui is null) return;
+        foreach (var player in HumanPlayers()) ui.Notify(player, text, type, durationSeconds);
+    }
+
+    private static void AnnounceAll(string title, string subtitle, UiNotificationType type, float durationSeconds)
+    {
+        var ui = UiCapability.Api.Get();
+        if (ui is null) return;
+        foreach (var player in HumanPlayers()) ui.Announce(player, title, subtitle, type, durationSeconds);
+    }
+
+    private static void SetRoundStatusAll(string title, string value)
+    {
+        var ui = UiCapability.Api.Get();
+        if (ui is null) return;
+        foreach (var player in HumanPlayers()) ui.SetRoundStatus(player, title, value);
+    }
+
+    private static void ClearRoundStatusAll()
+    {
+        var ui = UiCapability.Api.Get();
+        if (ui is null) return;
+        foreach (var player in HumanPlayers()) ui.ClearRoundStatus(player);
     }
 }
