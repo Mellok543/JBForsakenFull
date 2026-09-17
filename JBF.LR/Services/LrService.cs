@@ -1,7 +1,6 @@
 using System.Drawing;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Entities.Constants;
 using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
 using JBF.LR.Extensions;
@@ -13,6 +12,7 @@ internal sealed class LrService : ILrApi
     private static readonly TimeSpan MaintenanceInterval = TimeSpan.FromMilliseconds(250);
     private readonly Dictionary<string, RegisteredLrGame> _games = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _preLrProtectedSlots = [];
+    private readonly LrVipSuppressionService _vipSuppression = new();
     private ActiveLrMatch? _activeMatch;
     private CBeam? _opponentLink;
     private DateTime _preLrProtectionUntil;
@@ -58,7 +58,7 @@ internal sealed class LrService : ILrApi
             .Select(registration => registration.Game)
             .OrderBy(game => game.Order)
             .ThenBy(game => game.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(game => new JailbreakMenuOption(game.Name, inmate => OpenOpponentMenu(inmate, game)))
+            .Select(game => new JailbreakMenuOption(game.Name, inmate => OpenGame(inmate, game)))
             .ToArray();
 
         menuApi.Open(player, "Last Request", options);
@@ -94,7 +94,6 @@ internal sealed class LrService : ILrApi
         var attacker = attackerEntity.As<CCSPlayerPawn>().Controller.Value?.As<CCSPlayerController>();
         if (!attacker.IsUsable()) return HookResult.Continue;
 
-        // During LR nobody outside the duel can damage a participant and duelists cannot damage spectators.
         if (IsParticipant(victim) != IsParticipant(attacker))
             return HookResult.Handled;
 
@@ -132,6 +131,7 @@ internal sealed class LrService : ILrApi
     public void HandleDisconnect(int playerSlot)
     {
         _preLrProtectedSlots.Remove(playerSlot);
+        _vipSuppression.Forget(playerSlot);
 
         if (_activeMatch is null) return;
         if (_activeMatch.Inmate.Slot == playerSlot) EndActive(_activeMatch.Guardian, announce: true);
@@ -245,6 +245,31 @@ internal sealed class LrService : ILrApi
         return true;
     }
 
+    private void OpenGame(CCSPlayerController inmate, ILrGame game)
+    {
+        if (game is ILrGameVariants { Variants.Count: > 0 } variants)
+        {
+            OpenVariantMenu(inmate, game.Name, variants.Variants);
+            return;
+        }
+
+        OpenOpponentMenu(inmate, game);
+    }
+
+    private void OpenVariantMenu(CCSPlayerController inmate, string title, IReadOnlyList<ILrGame> variants)
+    {
+        if (!CanOpenLr(inmate)) return;
+        var menuApi = MenuCapability.Api.Get();
+        if (menuApi is null) return;
+
+        var options = variants
+            .OrderBy(game => game.Order)
+            .Select(game => new JailbreakMenuOption(game.Name, player => OpenOpponentMenu(player, game)))
+            .ToArray();
+
+        menuApi.Open(inmate, title, options);
+    }
+
     private void OpenOpponentMenu(CCSPlayerController inmate, ILrGame game)
     {
         if (!CanOpenLr(inmate)) return;
@@ -283,6 +308,8 @@ internal sealed class LrService : ILrApi
 
         PlayerEffectsCapability.Api.Get()?.Clear(inmate);
         PlayerEffectsCapability.Api.Get()?.Clear(guardian);
+        _vipSuppression.Suppress(inmate);
+        _vipSuppression.Suppress(guardian);
         inmate.ResetForLr();
         guardian.ResetForLr();
         CreateOpponentLink();
@@ -320,6 +347,8 @@ internal sealed class LrService : ILrApi
     private void EnforceLrInventory(CCSPlayerController player)
     {
         if (_activeMatch is null || !player.IsUsable() || !player.PawnIsAlive) return;
+        if (_activeMatch.Game is not ILrInventoryRules rules) return;
+
         var weapons = player.PlayerPawn.Value?.WeaponServices?.MyWeapons;
         if (weapons is null) return;
 
@@ -327,23 +356,9 @@ internal sealed class LrService : ILrApi
         {
             var weapon = handle.Value;
             if (weapon is null || !weapon.IsValid) continue;
-            if (IsWeaponAllowed(_activeMatch.Game.Id, weapon)) continue;
+            if (rules.IsWeaponAllowed(weapon)) continue;
             weapon.Remove();
         }
-    }
-
-    private static bool IsWeaponAllowed(string gameId, CBasePlayerWeapon weapon)
-    {
-        var name = weapon.DesignerName ?? string.Empty;
-        if (name.Contains("knife", StringComparison.OrdinalIgnoreCase)) return true;
-
-        return gameId switch
-        {
-            "no-scope-awp" => name.Equals("weapon_awp", StringComparison.OrdinalIgnoreCase),
-            "roulette" => name.Equals("weapon_deagle", StringComparison.OrdinalIgnoreCase),
-            "knife-duel" => false,
-            _ => true
-        };
     }
 
     private void CreateOpponentLink()
@@ -387,6 +402,8 @@ internal sealed class LrService : ILrApi
         _activeMatch = null;
         RemoveOpponentLink();
         match.Game.Stop();
+        _vipSuppression.Restore(match.Inmate);
+        _vipSuppression.Restore(match.Guardian);
 
         if (!announce) return;
         MatchEnded?.Invoke(new LrMatchEndedEvent(match.Game.Name, match.Inmate, match.Guardian, winner));
