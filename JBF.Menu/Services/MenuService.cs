@@ -45,18 +45,22 @@ internal sealed class MenuService : IMenuApi
         if (!player.IsValid)
             return;
 
+        var items = options.ToArray();
         var state = new ActiveMenuState
         {
             Player = player,
             Title = title,
-            Options = options.ToArray(),
-            SelectedIndex = 0
+            Options = items,
+            SelectedIndex = FindFirstSelectable(items)
         };
 
         _activeMenus[player.Slot] = state;
 
         if (!_renderer.EnsureReady())
+        {
+            _activeMenus.Remove(player.Slot);
             return;
+        }
 
         _renderer.Show(player);
         Render(state);
@@ -78,9 +82,6 @@ internal sealed class MenuService : IMenuApi
         if (!_activeMenus.TryGetValue(player.Slot, out var state))
             return;
 
-        // Keep the same controls that worked in JBF.HudTest:
-        // W/S = navigate, E = select, R = close.
-        // We never capture Panorama input, so the mouse remains free for normal camera movement.
         if (pressed.HasFlag(PlayerButtons.Reload))
         {
             Close(player);
@@ -114,17 +115,55 @@ internal sealed class MenuService : IMenuApi
 
     private void SelectCurrent(ActiveMenuState state)
     {
-        var option = state.Options[state.SelectedIndex];
-        if (option.IsDisabled)
+        if (state.SelectedIndex < 0 || state.SelectedIndex >= state.Options.Count)
             return;
 
-        Close(state.Player);
-        option.OnSelect(state.Player);
+        var option = state.Options[state.SelectedIndex];
+        if (option.IsDisabled)
+        {
+            Render(state);
+            return;
+        }
+
+        var player = state.Player;
+        option.OnSelect(player);
+
+        // A callback may open a submenu. In that case it replaces the active state,
+        // so we must not hide the newly opened menu.
+        if (_activeMenus.TryGetValue(player.Slot, out var current) && ReferenceEquals(current, state))
+            Close(player);
+    }
+
+    private static int FindFirstSelectable(IReadOnlyList<JailbreakMenuOption> options)
+    {
+        for (var i = 0; i < options.Count; i++)
+        {
+            if (!options[i].IsDisabled)
+                return i;
+        }
+
+        return options.Count > 0 ? 0 : -1;
     }
 
     private static void MoveSelection(ActiveMenuState state, int delta)
     {
-        state.SelectedIndex = (state.SelectedIndex + delta + state.Options.Count) % state.Options.Count;
+        if (state.Options.Count == 0)
+            return;
+
+        var start = state.SelectedIndex < 0 ? 0 : state.SelectedIndex;
+        var index = start;
+
+        for (var i = 0; i < state.Options.Count; i++)
+        {
+            index = (index + delta + state.Options.Count) % state.Options.Count;
+            if (!state.Options[index].IsDisabled)
+            {
+                state.SelectedIndex = index;
+                return;
+            }
+        }
+
+        state.SelectedIndex = start;
     }
 
     private void Render(ActiveMenuState state)
@@ -134,8 +173,9 @@ internal sealed class MenuService : IMenuApi
 
         _renderer.SetText(state.Player, "jbf_menu_title", state.Title);
 
+        var selectedForWindow = Math.Max(0, state.SelectedIndex);
         var firstIndex = Math.Clamp(
-            state.SelectedIndex - VisibleOptionCount / 2,
+            selectedForWindow - VisibleOptionCount / 2,
             0,
             Math.Max(0, state.Options.Count - VisibleOptionCount));
 
@@ -161,10 +201,21 @@ internal sealed class MenuService : IMenuApi
             _renderer.SetClass(state.Player, panelId, "disabled", option.IsDisabled);
         }
 
-        var pageInfo = state.Options.Count > VisibleOptionCount
+        var pageInfo = state.Options.Count > VisibleOptionCount && state.SelectedIndex >= 0
             ? $"{state.SelectedIndex + 1}/{state.Options.Count}"
             : string.Empty;
-
         _renderer.SetText(state.Player, "jbf_menu_page", pageInfo);
+
+        var status = "W/S — выбор   E — открыть   R — закрыть";
+        if (state.SelectedIndex >= 0 && state.SelectedIndex < state.Options.Count)
+        {
+            var selected = state.Options[state.SelectedIndex];
+            if (selected.IsDisabled)
+                status = string.IsNullOrWhiteSpace(selected.DisabledReason)
+                    ? "Этот пункт сейчас недоступен"
+                    : selected.DisabledReason!;
+        }
+
+        _renderer.SetText(state.Player, "jbf_menu_status", status);
     }
 }
