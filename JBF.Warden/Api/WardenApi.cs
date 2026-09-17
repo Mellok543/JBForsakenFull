@@ -15,6 +15,12 @@ internal sealed class WardenApi : IWardenApi
 
     public CCSPlayerController? Warden => _wardenService.Warden;
 
+    public event Action<CCSPlayerController>? WardenClaimed
+    {
+        add => _wardenService.WardenClaimed += value;
+        remove => _wardenService.WardenClaimed -= value;
+    }
+
     public bool IsWarden(CCSPlayerController player)
     {
         return _wardenService.IsWarden(player);
