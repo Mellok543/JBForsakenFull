@@ -24,11 +24,13 @@ internal sealed class FreeDayTool : ICommanderTool
     public void Execute(CCSPlayerController commander)
     {
         _state.FreeDayEnabled = !_state.FreeDayEnabled;
+        var playerState = PlayerStateCapability.Api.Get();
 
         foreach (var inmate in Utilities.GetPlayers().Where(player =>
                      player.IsUsable() && player.PawnIsAlive && player.Team == CsTeam.Terrorist))
         {
             inmate.SetRenderColor(_state.FreeDayEnabled ? Color.Green : Color.White);
+            playerState?.SetFreeDay(inmate, _state.FreeDayEnabled);
         }
 
         commander.PrintToChat(JailbreakChat.Format($"FreeDay: {(_state.FreeDayEnabled ? "включён" : "выключен")}."));
