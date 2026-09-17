@@ -1,13 +1,14 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Utils;
 
 namespace JBF.Loadout;
 
 public sealed class JBFLoadout : BasePlugin
 {
     public override string ModuleName => "JBF Loadout";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Mell";
 
     [GameEventHandler]
