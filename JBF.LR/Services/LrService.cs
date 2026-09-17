@@ -131,11 +131,14 @@ internal sealed class LrService : ILrApi
     public void HandleDisconnect(int playerSlot)
     {
         _preLrProtectedSlots.Remove(playerSlot);
-        _vipSuppression.Forget(playerSlot);
 
-        if (_activeMatch is null) return;
-        if (_activeMatch.Inmate.Slot == playerSlot) EndActive(_activeMatch.Guardian, announce: true);
-        else if (_activeMatch.Guardian.Slot == playerSlot) EndActive(_activeMatch.Inmate, announce: true);
+        if (_activeMatch is not null)
+        {
+            if (_activeMatch.Inmate.Slot == playerSlot) EndActive(_activeMatch.Guardian, announce: true);
+            else if (_activeMatch.Guardian.Slot == playerSlot) EndActive(_activeMatch.Inmate, announce: true);
+        }
+
+        _vipSuppression.Forget(playerSlot);
     }
 
     public void Tick()
@@ -349,16 +352,25 @@ internal sealed class LrService : ILrApi
         if (_activeMatch is null || !player.IsUsable() || !player.PawnIsAlive) return;
         if (_activeMatch.Game is not ILrInventoryRules rules) return;
 
-        var weapons = player.PlayerPawn.Value?.WeaponServices?.MyWeapons;
-        if (weapons is null) return;
+        var pawn = player.PlayerPawn.Value;
+        var weaponServices = pawn?.WeaponServices;
+        var itemServices = pawn?.ItemServices;
+        var weapon = weaponServices?.ActiveWeapon.Value;
+        if (itemServices is null || weapon is null || !weapon.IsValid || rules.IsWeaponAllowed(weapon)) return;
 
-        foreach (var handle in weapons.ToArray())
+        try
         {
-            var weapon = handle.Value;
-            if (weapon is null || !weapon.IsValid) continue;
-            if (rules.IsWeaponAllowed(weapon)) continue;
-            weapon.Remove();
+            itemServices.DropActivePlayerWeapon(weapon);
+            Server.NextFrame(() =>
+            {
+                try
+                {
+                    if (weapon.IsValid) weapon.Remove();
+                }
+                catch { }
+            });
         }
+        catch { }
     }
 
     private void CreateOpponentLink()
