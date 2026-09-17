@@ -14,13 +14,14 @@ public sealed class JBFSpecialDays : BasePlugin
     private ICommanderMenuApi? _commanderMenu;
 
     public override string ModuleName => "JBF Special Days";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.1.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
         Capabilities.RegisterPluginCapability(SpecialDaysCapability.Api, () => _specialDays);
         RegisterListener<Listeners.OnEntityTakeDamagePre>(_specialDays.HandleTakeDamage);
+        RegisterListener<Listeners.OnClientDisconnect>(_specialDays.HandleDisconnect);
         AddTimer(2.0f, EnsureCommanderMenuRegistration, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
     }
 
