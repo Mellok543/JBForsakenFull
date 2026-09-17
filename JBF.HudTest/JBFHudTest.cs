@@ -11,7 +11,7 @@ public sealed class JBFHudTest : BasePlugin
     private HudPanel? _panel;
 
     public override string ModuleName => "JBF HUD Test";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -21,7 +21,7 @@ public sealed class JBFHudTest : BasePlugin
             message => Logger.LogInformation("{Message}", message));
 
         _panel.Clicked += OnClicked;
-        _panel.Start(this);
+        _panel.Start(this, hotReload);
     }
 
     public override void Unload(bool hotReload)
