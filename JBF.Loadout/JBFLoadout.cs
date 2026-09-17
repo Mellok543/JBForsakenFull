@@ -2,13 +2,14 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Utils;
+using JBF.Api;
 
 namespace JBF.Loadout;
 
 public sealed class JBFLoadout : BasePlugin
 {
     public override string ModuleName => "JBF Loadout";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "Mell";
 
     [GameEventHandler]
@@ -24,6 +25,9 @@ public sealed class JBFLoadout : BasePlugin
 
     private static void ApplyLoadout(CCSPlayerController player)
     {
+        if (SpecialDaysCapability.Api.Get()?.IsActive == true)
+            return;
+
         if (!player.IsValid || !player.PawnIsAlive || player.PlayerPawn.Value is not { IsValid: true } pawn)
             return;
 
