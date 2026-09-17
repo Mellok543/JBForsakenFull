@@ -10,7 +10,7 @@ internal sealed class ShopConfig
 
     public ShopItemsConfig Items { get; set; } = new();
 
-    public static ShopConfig LoadOrCreate(string path)
+    public static ShopConfig LoadOrCreate(string path, Action<string>? logError = null)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
@@ -25,8 +25,9 @@ internal sealed class ShopConfig
         {
             return JsonSerializer.Deserialize<ShopConfig>(File.ReadAllText(path), JsonOptions()) ?? new ShopConfig();
         }
-        catch
+        catch (Exception exception)
         {
+            logError?.Invoke($"Failed to load shop config '{path}': {exception.Message}");
             return new ShopConfig();
         }
     }
