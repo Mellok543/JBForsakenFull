@@ -354,7 +354,7 @@ internal sealed class LrService : ILrApi
 
         var pawn = player.PlayerPawn.Value;
         var weaponServices = pawn?.WeaponServices;
-        var itemServices = pawn?.ItemServices;
+        var itemServices = pawn?.ItemServices?.As<CCSPlayer_ItemServices>();
         var weapon = weaponServices?.ActiveWeapon.Value;
         if (itemServices is null || weapon is null || !weapon.IsValid || rules.IsWeaponAllowed(weapon)) return;
 
