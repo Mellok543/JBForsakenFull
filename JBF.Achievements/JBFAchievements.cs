@@ -7,6 +7,7 @@ using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Achievements.Config;
 using JBF.Achievements.Services;
 using JBF.Api;
+using Microsoft.Extensions.Logging;
 
 namespace JBF.Achievements;
 
