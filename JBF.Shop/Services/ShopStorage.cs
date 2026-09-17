@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using CounterStrikeSharp.API;
 using JBF.Shop.Models;
 using MySqlConnector;
 
@@ -11,7 +10,7 @@ internal sealed class ShopStorage : IDisposable
     private readonly string _connectionString;
     private readonly string _balancesTable;
     private readonly ConcurrentDictionary<ulong, PendingSave> _pending = new();
-    private readonly SemaphoreSlim _signal = new(0);
+    private readonly SemaphoreSlim _signal = new(0, 1);
     private readonly SemaphoreSlim _initializeLock = new(1, 1);
     private readonly CancellationTokenSource _shutdown = new();
     private readonly Task _worker;
@@ -85,14 +84,6 @@ internal sealed class ShopStorage : IDisposable
 
         _pending[state.SteamId] = snapshot;
         TrySignal();
-    }
-
-    public void QueueSave(IEnumerable<ShopPlayerState> states)
-    {
-        foreach (var state in states)
-        {
-            QueueSave(state);
-        }
     }
 
     public void Dispose()
@@ -316,7 +307,7 @@ internal sealed class ShopStorage : IDisposable
 
         if (!wasReady)
         {
-            Server.PrintToConsole($"[JBF] Shop connected to MySQL table `{_balancesTable}`.");
+            Console.WriteLine($"[JBF] Shop connected to MySQL table `{_balancesTable}`.");
         }
     }
 
@@ -324,7 +315,7 @@ internal sealed class ShopStorage : IDisposable
     {
         _isReady = false;
         _nextReconnectAttempt = DateTimeOffset.UtcNow.AddSeconds(2);
-        Server.PrintToConsole($"[JBF] Shop MySQL {message}");
+        Console.WriteLine($"[JBF] Shop MySQL {message}");
     }
 
     private void TrySignal()
