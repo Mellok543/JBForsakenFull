@@ -9,7 +9,6 @@ namespace JBF.LR;
 public sealed class JBFLR : BasePlugin
 {
     private readonly LrService _lr = new();
-    private readonly LrParticipantNormalizer _normalizer = new();
 
     public override string ModuleName => "JBF LR Core";
     public override string ModuleVersion => "2.0.0";
@@ -21,7 +20,6 @@ public sealed class JBFLR : BasePlugin
         RegisterListener<Listeners.OnEntityTakeDamagePre>(_lr.HandleTakeDamage);
         RegisterListener<Listeners.OnClientDisconnect>(_lr.HandleDisconnect);
         RegisterListener<Listeners.OnTick>(_lr.Tick);
-        RegisterListener<Listeners.OnTick>(_normalizer.Tick);
     }
 
     public override void Unload(bool hotReload)
