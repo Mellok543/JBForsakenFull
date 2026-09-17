@@ -12,7 +12,7 @@ public sealed class JBFRace : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Race";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -37,6 +37,7 @@ public sealed class JBFRace : BasePlugin
 internal sealed class RaceGame : ILrGame, ILrInventoryRules
 {
     private const float FinishRadius = 72.0f;
+    private const float StartLaneOffset = 42.0f;
     private readonly List<CBeam> _markers = [];
     private ILrMatchContext? _context;
     private Vector? _start;
@@ -98,9 +99,21 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
 
     private void BeginRace()
     {
-        if (_context is null || _start is null) return;
-        _context.Inmate.PlayerPawn.Value?.Teleport(_start, new QAngle(), new Vector());
-        _context.Guardian.PlayerPawn.Value?.Teleport(_start, new QAngle(), new Vector());
+        if (_context is null || _start is null || _finish is null) return;
+
+        var dx = _finish.X - _start.X;
+        var dy = _finish.Y - _start.Y;
+        var length = MathF.Sqrt(dx * dx + dy * dy);
+        var px = length > 1.0f ? -dy / length : 1.0f;
+        var py = length > 1.0f ? dx / length : 0.0f;
+
+        var inmateStart = new Vector(_start.X + px * StartLaneOffset, _start.Y + py * StartLaneOffset, _start.Z);
+        var guardianStart = new Vector(_start.X - px * StartLaneOffset, _start.Y - py * StartLaneOffset, _start.Z);
+        var yaw = MathF.Atan2(dy, dx) * 180.0f / MathF.PI;
+        var angle = new QAngle(0, yaw, 0);
+
+        _context.Inmate.PlayerPawn.Value?.Teleport(inmateStart, angle, new Vector());
+        _context.Guardian.PlayerPawn.Value?.Teleport(guardianStart, angle, new Vector());
         _state = SetupState.Running;
         UiCapability.Api.Get()?.Notify(_context.Inmate, "СТАРТ!", UiNotificationType.Success, 3.0f);
         UiCapability.Api.Get()?.Notify(_context.Guardian, "СТАРТ!", UiNotificationType.Success, 3.0f);
