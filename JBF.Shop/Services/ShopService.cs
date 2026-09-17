@@ -11,19 +11,27 @@ namespace JBF.Shop.Services;
 
 internal sealed class ShopService : IShopApi
 {
+    private const float SpeedMultiplier = 1.25f;
+    private const float GravityMultiplier = 0.65f;
+    private const float FloatTolerance = 0.001f;
+
     private readonly BasePlugin _plugin;
     private readonly string _configPath;
     private readonly ShopStorage _storage;
     private readonly Dictionary<ulong, ShopPlayerState> _players;
-    private readonly Dictionary<int, Dictionary<string, int>> _roundPurchases = [];
+    private readonly Dictionary<ulong, Dictionary<string, int>> _roundPurchases = [];
+    private readonly Dictionary<ulong, TimedEffectState> _speedEffects = [];
+    private readonly Dictionary<ulong, TimedEffectState> _gravityEffects = [];
+
     private ShopConfig _config;
     private IReadOnlyList<ShopItem> _items;
+    private long _effectVersion;
 
     public ShopService(BasePlugin plugin)
     {
         _plugin = plugin;
         _configPath = ShopConfigPath.Get(plugin.ModuleDirectory);
-        _config = ShopConfig.LoadOrCreate(_configPath);
+        _config = LoadConfig();
         _storage = new ShopStorage(_config.Database);
         _players = _storage.Load();
         _items = BuildItems(_config.Items);
@@ -31,7 +39,7 @@ internal sealed class ShopService : IShopApi
 
     public void ReloadConfig()
     {
-        _config = ShopConfig.LoadOrCreate(_configPath);
+        _config = LoadConfig();
         _items = BuildItems(_config.Items);
     }
 
@@ -58,7 +66,7 @@ internal sealed class ShopService : IShopApi
 
         state.Credits = credits;
         newBalance = state.Credits;
-        Save();
+        _storage.QueueSave(state);
         return true;
     }
 
@@ -71,10 +79,102 @@ internal sealed class ShopService : IShopApi
             return false;
         }
 
-        state.Credits = (int)Math.Clamp((long)state.Credits + amount, 0, int.MaxValue);
+        state.Credits = ClampCredits((long)state.Credits + amount);
         newBalance = state.Credits;
-        Save();
+        _storage.QueueSave(state);
         return true;
+    }
+
+    public void OpenShop(CCSPlayerController player)
+    {
+        if (!CanUseShop(player))
+        {
+            return;
+        }
+
+        var menuApi = MenuCapability.Api.Get();
+        if (menuApi is null)
+        {
+            player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
+            return;
+        }
+
+        var credits = GetCredits(player);
+        var options = _items
+            .Where(item => item.Team is null || item.Team == player.Team)
+            .Select(item =>
+            {
+                var used = GetRoundUses(player, item.Id);
+                var disabled = credits < item.Cost || used >= item.RoundLimit;
+                var suffix = $" [{used}/{item.RoundLimit}]";
+                return new JailbreakMenuOption(
+                    $"{item.Text} - {item.Cost} кредитов{suffix}",
+                    buyer => Buy(buyer, item),
+                    disabled);
+            })
+            .ToArray();
+
+        menuApi.Open(player, $"Shop | {credits} кредитов", options);
+    }
+
+    public void RewardRoundPlayers()
+    {
+        foreach (var player in Utilities.GetPlayers().Where(player =>
+                     player.IsUsable() && !player.IsBot &&
+                     player.Team is CsTeam.Terrorist or CsTeam.CounterTerrorist))
+        {
+            RewardPlayer(player, _config.Rewards.RoundParticipation, "за участие в раунде", announce: false);
+            if (player.PawnIsAlive)
+            {
+                RewardPlayer(player, _config.Rewards.RoundSurvival, "за выживание", announce: false);
+            }
+        }
+    }
+
+    public void RewardKill(CCSPlayerController? victim, CCSPlayerController? attacker)
+    {
+        if (!victim.IsUsable() || !attacker.IsUsable() || victim.Slot == attacker.Slot)
+        {
+            return;
+        }
+
+        if (LrCapability.Api.Get()?.IsActive == true || SpecialDaysCapability.Api.Get()?.IsActive == true)
+        {
+            return;
+        }
+
+        if (attacker.Team == CsTeam.Terrorist && victim.Team == CsTeam.CounterTerrorist)
+        {
+            RewardPlayer(attacker, _config.Rewards.InmateKillGuard, "за убийство охранника");
+        }
+    }
+
+    public void RewardLrMatch(LrMatchEndedEvent match)
+    {
+        RewardPlayer(match.Inmate, _config.Rewards.LrParticipation, "за участие в LR", announce: false);
+        RewardPlayer(match.Guardian, _config.Rewards.LrParticipation, "за участие в LR", announce: false);
+
+        if (match.Winner.IsUsable())
+        {
+            RewardPlayer(match.Winner, _config.Rewards.LrWin, $"за победу в LR ({match.GameName})", announce: true);
+        }
+    }
+
+    public void ResetRound()
+    {
+        _roundPurchases.Clear();
+
+        // Old timers are invalidated because every new effect receives a globally
+        // unique version. Clearing here prevents effects from leaking into a new round.
+        _speedEffects.Clear();
+        _gravityEffects.Clear();
+    }
+
+    public void Shutdown()
+    {
+        _speedEffects.Clear();
+        _gravityEffects.Clear();
+        _storage.Dispose();
     }
 
     private IReadOnlyList<ShopItem> BuildItems(ShopItemsConfig config)
@@ -131,95 +231,6 @@ internal sealed class ShopService : IShopApi
             apply);
     }
 
-    public void OpenShop(CCSPlayerController player)
-    {
-        if (!CanUseShop(player))
-        {
-            return;
-        }
-
-        var menuApi = MenuCapability.Api.Get();
-        if (menuApi is null)
-        {
-            player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
-            return;
-        }
-
-        var credits = GetCredits(player);
-        var options = _items
-            .Where(item => item.Team is null || item.Team == player.Team)
-            .Select(item =>
-            {
-                var used = GetRoundUses(player, item.Id);
-                var disabled = credits < item.Cost || used >= item.RoundLimit;
-                var suffix = item.RoundLimit > 0 ? $" [{used}/{item.RoundLimit}]" : string.Empty;
-                return new JailbreakMenuOption(
-                    $"{item.Text} - {item.Cost} кредитов{suffix}",
-                    buyer => Buy(buyer, item),
-                    disabled);
-            })
-            .ToArray();
-
-        menuApi.Open(player, $"Shop | {credits} кредитов", options);
-    }
-
-    public void RewardRoundPlayers()
-    {
-        foreach (var player in Utilities.GetPlayers().Where(player =>
-                     player.IsUsable() && !player.IsBot &&
-                     player.Team is CsTeam.Terrorist or CsTeam.CounterTerrorist))
-        {
-            RewardPlayer(player, _config.Rewards.RoundParticipation, "за участие в раунде", announce: false, save: false);
-            if (player.PawnIsAlive)
-            {
-                RewardPlayer(player, _config.Rewards.RoundSurvival, "за выживание", announce: false, save: false);
-            }
-        }
-
-        Save();
-    }
-
-    public void RewardKill(CCSPlayerController? victim, CCSPlayerController? attacker)
-    {
-        if (!victim.IsUsable() || !attacker.IsUsable() || victim.Slot == attacker.Slot)
-        {
-            return;
-        }
-
-        if (LrCapability.Api.Get()?.IsActive == true || SpecialDaysCapability.Api.Get()?.IsActive == true)
-        {
-            return;
-        }
-
-        if (attacker.Team == CsTeam.Terrorist && victim.Team == CsTeam.CounterTerrorist)
-        {
-            RewardPlayer(attacker, _config.Rewards.InmateKillGuard, "за убийство охранника");
-        }
-    }
-
-    public void RewardLrMatch(LrMatchEndedEvent match)
-    {
-        RewardPlayer(match.Inmate, _config.Rewards.LrParticipation, "за участие в LR", announce: false, save: false);
-        RewardPlayer(match.Guardian, _config.Rewards.LrParticipation, "за участие в LR", announce: false, save: false);
-
-        if (match.Winner.IsUsable())
-        {
-            RewardPlayer(match.Winner, _config.Rewards.LrWin, $"за победу в LR ({match.GameName})", announce: true, save: false);
-        }
-
-        Save();
-    }
-
-    public void ResetRound()
-    {
-        _roundPurchases.Clear();
-    }
-
-    public void Save()
-    {
-        _storage.Save(_players);
-    }
-
     private void Buy(CCSPlayerController player, ShopItem item)
     {
         if (!CanUseShop(player))
@@ -233,16 +244,16 @@ internal sealed class ShopService : IShopApi
             return;
         }
 
-        if (GetRoundUses(player, item.Id) >= item.RoundLimit)
-        {
-            player.PrintToChat(JailbreakChat.Format("Лимит покупки на этот раунд исчерпан."));
-            return;
-        }
-
         var state = GetState(player);
         if (state is null)
         {
             player.PrintToChat(JailbreakChat.Format("Не удалось определить SteamID."));
+            return;
+        }
+
+        if (GetRoundUses(state.SteamId, item.Id) >= item.RoundLimit)
+        {
+            player.PrintToChat(JailbreakChat.Format("Лимит покупки на этот раунд исчерпан."));
             return;
         }
 
@@ -253,9 +264,23 @@ internal sealed class ShopService : IShopApi
         }
 
         state.Credits -= item.Cost;
-        AddRoundUse(player, item.Id);
-        item.Apply(player);
-        Save();
+        AddRoundUse(state.SteamId, item.Id);
+
+        try
+        {
+            item.Apply(player);
+        }
+        catch (Exception exception)
+        {
+            // Roll back payment and round limit if the effect could not be applied.
+            state.Credits = ClampCredits((long)state.Credits + item.Cost);
+            RemoveRoundUse(state.SteamId, item.Id);
+            Server.PrintToConsole($"[JBF] Shop item '{item.Id}' failed for {player.PlayerName}: {exception.Message}");
+            player.PrintToChat(JailbreakChat.Format("Не удалось применить покупку. Кредиты возвращены."));
+            return;
+        }
+
+        _storage.QueueSave(state);
 
         player.PrintToChat(JailbreakChat.Format($"Куплено: {item.Text}. Баланс: {state.Credits}."));
         OpenShop(player);
@@ -321,8 +346,7 @@ internal sealed class ShopService : IShopApi
         CCSPlayerController player,
         int amount,
         string reason,
-        bool announce = true,
-        bool save = true)
+        bool announce = true)
     {
         var state = GetState(player);
         if (state is null || amount <= 0)
@@ -330,80 +354,165 @@ internal sealed class ShopService : IShopApi
             return;
         }
 
-        state.Credits = Math.Max(0, state.Credits + amount);
+        state.Credits = ClampCredits((long)state.Credits + amount);
+        _storage.QueueSave(state);
+
         if (announce)
         {
             player.PrintToChat(JailbreakChat.Format($"+{amount} кредитов {reason}. Баланс: {state.Credits}."));
-        }
-
-        if (save)
-        {
-            Save();
         }
     }
 
     private int GetRoundUses(CCSPlayerController player, string itemId)
     {
-        return _roundPurchases.TryGetValue(player.Slot, out var purchases) &&
+        var steamId = player.GetSteamId64();
+        return steamId is null ? 0 : GetRoundUses(steamId.Value, itemId);
+    }
+
+    private int GetRoundUses(ulong steamId, string itemId)
+    {
+        return _roundPurchases.TryGetValue(steamId, out var purchases) &&
                purchases.TryGetValue(itemId, out var uses)
             ? uses
             : 0;
     }
 
-    private void AddRoundUse(CCSPlayerController player, string itemId)
+    private void AddRoundUse(ulong steamId, string itemId)
     {
-        if (!_roundPurchases.TryGetValue(player.Slot, out var purchases))
+        if (!_roundPurchases.TryGetValue(steamId, out var purchases))
         {
             purchases = [];
-            _roundPurchases[player.Slot] = purchases;
+            _roundPurchases[steamId] = purchases;
         }
 
         purchases[itemId] = purchases.GetValueOrDefault(itemId) + 1;
+    }
+
+    private void RemoveRoundUse(ulong steamId, string itemId)
+    {
+        if (!_roundPurchases.TryGetValue(steamId, out var purchases) ||
+            !purchases.TryGetValue(itemId, out var uses))
+        {
+            return;
+        }
+
+        if (uses <= 1)
+        {
+            purchases.Remove(itemId);
+            if (purchases.Count == 0)
+            {
+                _roundPurchases.Remove(steamId);
+            }
+
+            return;
+        }
+
+        purchases[itemId] = uses - 1;
     }
 
     private void ApplySpeed(CCSPlayerController player)
     {
         if (!player.IsUsable() || !player.PawnIsAlive)
         {
+            throw new InvalidOperationException("Player is not alive.");
+        }
+
+        var steamId = player.GetSteamId64() ?? throw new InvalidOperationException("SteamID is unavailable.");
+        var pawn = player.PlayerPawn.Value!;
+        var version = Interlocked.Increment(ref _effectVersion);
+        var original = _speedEffects.TryGetValue(steamId, out var previous)
+            ? previous.OriginalValue
+            : pawn.VelocityModifier;
+
+        _speedEffects[steamId] = new TimedEffectState(version, original, SpeedMultiplier);
+        pawn.VelocityModifier = SpeedMultiplier;
+        Utilities.SetStateChanged(pawn, "CCSPlayerPawnBase", "m_flVelocityModifier");
+
+        _plugin.AddTimer(10.0f, () => FinishSpeedEffect(player, steamId, version), TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void FinishSpeedEffect(CCSPlayerController player, ulong steamId, long version)
+    {
+        if (!_speedEffects.TryGetValue(steamId, out var effect) || effect.Version != version)
+        {
+            return;
+        }
+
+        _speedEffects.Remove(steamId);
+
+        if (!player.IsUsable() || !player.PawnIsAlive || player.GetSteamId64() != steamId)
+        {
             return;
         }
 
         var pawn = player.PlayerPawn.Value!;
-        pawn.VelocityModifier = 1.25f;
-        Utilities.SetStateChanged(pawn, "CCSPlayerPawnBase", "m_flVelocityModifier");
-
-        _plugin.AddTimer(10.0f, () =>
+        if (Math.Abs(pawn.VelocityModifier - effect.AppliedValue) > FloatTolerance)
         {
-            if (!player.IsUsable() || !player.PawnIsAlive)
-            {
-                return;
-            }
+            // Another module changed the value while our effect was active.
+            // Do not overwrite the newer external state.
+            return;
+        }
 
-            player.PlayerPawn.Value!.VelocityModifier = 1.0f;
-            Utilities.SetStateChanged(player.PlayerPawn.Value, "CCSPlayerPawnBase", "m_flVelocityModifier");
-        }, TimerFlags.STOP_ON_MAPCHANGE);
+        pawn.VelocityModifier = effect.OriginalValue;
+        Utilities.SetStateChanged(pawn, "CCSPlayerPawnBase", "m_flVelocityModifier");
     }
 
     private void ApplyGravity(CCSPlayerController player)
     {
         if (!player.IsUsable() || !player.PawnIsAlive)
         {
+            throw new InvalidOperationException("Player is not alive.");
+        }
+
+        var steamId = player.GetSteamId64() ?? throw new InvalidOperationException("SteamID is unavailable.");
+        var pawn = player.PlayerPawn.Value!;
+        var version = Interlocked.Increment(ref _effectVersion);
+        var original = _gravityEffects.TryGetValue(steamId, out var previous)
+            ? previous.OriginalValue
+            : pawn.GravityScale;
+
+        _gravityEffects[steamId] = new TimedEffectState(version, original, GravityMultiplier);
+        pawn.GravityScale = GravityMultiplier;
+        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_flGravityScale");
+
+        _plugin.AddTimer(10.0f, () => FinishGravityEffect(player, steamId, version), TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void FinishGravityEffect(CCSPlayerController player, ulong steamId, long version)
+    {
+        if (!_gravityEffects.TryGetValue(steamId, out var effect) || effect.Version != version)
+        {
+            return;
+        }
+
+        _gravityEffects.Remove(steamId);
+
+        if (!player.IsUsable() || !player.PawnIsAlive || player.GetSteamId64() != steamId)
+        {
             return;
         }
 
         var pawn = player.PlayerPawn.Value!;
-        pawn.GravityScale = 0.65f;
-        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_flGravityScale");
-
-        _plugin.AddTimer(10.0f, () =>
+        if (Math.Abs(pawn.GravityScale - effect.AppliedValue) > FloatTolerance)
         {
-            if (!player.IsUsable() || !player.PawnIsAlive)
-            {
-                return;
-            }
+            return;
+        }
 
-            player.PlayerPawn.Value!.GravityScale = 1.0f;
-            Utilities.SetStateChanged(player.PlayerPawn.Value, "CBaseEntity", "m_flGravityScale");
-        }, TimerFlags.STOP_ON_MAPCHANGE);
+        pawn.GravityScale = effect.OriginalValue;
+        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_flGravityScale");
     }
+
+    private ShopConfig LoadConfig()
+    {
+        return ShopConfig.LoadOrCreate(
+            _configPath,
+            message => Server.PrintToConsole($"[JBF] Shop config error: {message}"));
+    }
+
+    private static int ClampCredits(long value)
+    {
+        return (int)Math.Clamp(value, 0L, int.MaxValue);
+    }
+
+    private sealed record TimedEffectState(long Version, float OriginalValue, float AppliedValue);
 }
