@@ -1,0 +1,81 @@
+<root>
+    <styles>
+        <include src="s2r://panorama/styles/custom_game/jbf_battlepass.vcss_c" />
+    </styles>
+    <scripts>
+        <include src="s2r://panorama/scripts/custom_game/jbf_battlepass.vjs_c" />
+    </scripts>
+
+    <Panel id="jbf_bp_root" class="bp-screen" hittest="true">
+        <Panel class="bp-backdrop" hittest="true" />
+        <Panel class="bp-window" hittest="true">
+            <Panel class="bp-header" hittest="true">
+                <Panel class="bp-title-block">
+                    <Label class="bp-kicker" text="JBFORSAKEN" />
+                    <Label id="jbf_bp_season" class="bp-season" text="{s:text}" />
+                </Panel>
+                <Panel class="bp-profile">
+                    <Label id="jbf_bp_level" class="bp-level" text="{s:text}" />
+                    <Label id="jbf_bp_xp" class="bp-xp" text="{s:text}" />
+                    <Label id="jbf_bp_totalxp" class="bp-totalxp" text="{s:text}" />
+                </Panel>
+                <Button class="bp-close" onactivate="JBF_BattlePass.Close()"><Label text="×" /></Button>
+            </Panel>
+
+            <Panel class="bp-tabs" hittest="true">
+                <Button id="jbf_bp_track" class="bp-tab" onactivate="JBF_BattlePass.Tab('track')"><Label text="БОЕВОЙ ПРОПУСК" /></Button>
+                <Button id="jbf_bp_missions" class="bp-tab" onactivate="JBF_BattlePass.Tab('missions')"><Label text="ЗАДАНИЯ" /></Button>
+                <Button id="jbf_bp_inventory" class="bp-tab" onactivate="JBF_BattlePass.Tab('inventory')"><Label text="ИНВЕНТАРЬ" /></Button>
+            </Panel>
+
+            <Panel class="bp-body" hittest="true">
+                <Panel id="jbf_bp_track_view" class="bp-view bp-track-view" hittest="true">
+                    <Panel class="bp-section-head">
+                        <Label id="jbf_bp_page" class="bp-section-title" text="{s:text}" />
+                        <Panel class="bp-pager">
+                            <Button class="bp-small-button" onactivate="JBF_BattlePass.Page(-1)"><Label text="‹" /></Button>
+                            <Button class="bp-small-button" onactivate="JBF_BattlePass.Page(1)"><Label text="›" /></Button>
+                        </Panel>
+                    </Panel>
+                    <Panel class="bp-reward-row" hittest="true">
+                        <Panel id="jbf_bp_reward_0" class="bp-reward"><Label id="jbf_bp_reward_0_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_0_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(0)"><Label id="jbf_bp_reward_0_state" text="{s:text}"/></Button></Panel>
+                        <Panel id="jbf_bp_reward_1" class="bp-reward"><Label id="jbf_bp_reward_1_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_1_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(1)"><Label id="jbf_bp_reward_1_state" text="{s:text}"/></Button></Panel>
+                        <Panel id="jbf_bp_reward_2" class="bp-reward"><Label id="jbf_bp_reward_2_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_2_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(2)"><Label id="jbf_bp_reward_2_state" text="{s:text}"/></Button></Panel>
+                        <Panel id="jbf_bp_reward_3" class="bp-reward"><Label id="jbf_bp_reward_3_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_3_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(3)"><Label id="jbf_bp_reward_3_state" text="{s:text}"/></Button></Panel>
+                        <Panel id="jbf_bp_reward_4" class="bp-reward"><Label id="jbf_bp_reward_4_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_4_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(4)"><Label id="jbf_bp_reward_4_state" text="{s:text}"/></Button></Panel>
+                        <Panel id="jbf_bp_reward_5" class="bp-reward"><Label id="jbf_bp_reward_5_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_5_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(5)"><Label id="jbf_bp_reward_5_state" text="{s:text}"/></Button></Panel>
+                        <Panel id="jbf_bp_reward_6" class="bp-reward"><Label id="jbf_bp_reward_6_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_6_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(6)"><Label id="jbf_bp_reward_6_state" text="{s:text}"/></Button></Panel>
+                        <Panel id="jbf_bp_reward_7" class="bp-reward"><Label id="jbf_bp_reward_7_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_7_name" class="bp-reward-name" text="{s:text}"/><Button onactivate="JBF_BattlePass.Claim(7)"><Label id="jbf_bp_reward_7_state" text="{s:text}"/></Button></Panel>
+                    </Panel>
+                </Panel>
+
+                <Panel id="jbf_bp_missions_view" class="bp-view" hittest="true">
+                    <Panel class="bp-section-head"><Label class="bp-section-title" text="ЗАДАНИЯ СЕЗОНА"/><Panel class="bp-pager"><Button class="bp-small-button" onactivate="JBF_BattlePass.Page(-1)"><Label text="‹"/></Button><Button class="bp-small-button" onactivate="JBF_BattlePass.Page(1)"><Label text="›"/></Button></Panel></Panel>
+                    <Panel class="bp-mission-grid">
+                        <Panel id="jbf_bp_mission_0" class="bp-mission"><Label id="jbf_bp_mission_0_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_0_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_0_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_0_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                        <Panel id="jbf_bp_mission_1" class="bp-mission"><Label id="jbf_bp_mission_1_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_1_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_1_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_1_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                        <Panel id="jbf_bp_mission_2" class="bp-mission"><Label id="jbf_bp_mission_2_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_2_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_2_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_2_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                        <Panel id="jbf_bp_mission_3" class="bp-mission"><Label id="jbf_bp_mission_3_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_3_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_3_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_3_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                        <Panel id="jbf_bp_mission_4" class="bp-mission"><Label id="jbf_bp_mission_4_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_4_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_4_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_4_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                        <Panel id="jbf_bp_mission_5" class="bp-mission"><Label id="jbf_bp_mission_5_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_5_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_5_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_5_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                    </Panel>
+                </Panel>
+
+                <Panel id="jbf_bp_inventory_view" class="bp-view" hittest="true">
+                    <Panel class="bp-section-head"><Label class="bp-section-title" text="ИНВЕНТАРЬ НАГРАД"/><Panel class="bp-pager"><Button class="bp-small-button" onactivate="JBF_BattlePass.Page(-1)"><Label text="‹"/></Button><Button class="bp-small-button" onactivate="JBF_BattlePass.Page(1)"><Label text="›"/></Button></Panel></Panel>
+                    <Label class="bp-hint" text="Один предмет за обычный раунд. Недоступно во время LR и игровых дней."/>
+                    <Panel class="bp-inventory-grid">
+                        <Panel id="jbf_bp_item_0" class="bp-item"><Label id="jbf_bp_item_0_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_0_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(0)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                        <Panel id="jbf_bp_item_1" class="bp-item"><Label id="jbf_bp_item_1_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_1_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(1)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                        <Panel id="jbf_bp_item_2" class="bp-item"><Label id="jbf_bp_item_2_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_2_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(2)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                        <Panel id="jbf_bp_item_3" class="bp-item"><Label id="jbf_bp_item_3_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_3_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(3)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                        <Panel id="jbf_bp_item_4" class="bp-item"><Label id="jbf_bp_item_4_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_4_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(4)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                        <Panel id="jbf_bp_item_5" class="bp-item"><Label id="jbf_bp_item_5_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_5_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(5)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                        <Panel id="jbf_bp_item_6" class="bp-item"><Label id="jbf_bp_item_6_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_6_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(6)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                        <Panel id="jbf_bp_item_7" class="bp-item"><Label id="jbf_bp_item_7_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_7_count" class="bp-item-count" text="{s:text}"/><Button onactivate="JBF_BattlePass.Use(7)"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                    </Panel>
+                </Panel>
+            </Panel>
+        </Panel>
+    </Panel>
+</root>
