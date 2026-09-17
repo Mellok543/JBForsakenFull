@@ -6,73 +6,124 @@
     <Panel class="bp-host" hittest="false">
         <Panel id="jbf_bp_root" class="bp-screen" hittest="true">
             <Panel class="bp-backdrop" hittest="true" />
+            <Panel class="bp-glow bp-glow-left" hittest="false" />
+            <Panel class="bp-glow bp-glow-right" hittest="false" />
+
             <Panel class="bp-window" hittest="true">
+                <Panel class="bp-top-accent" hittest="false" />
+
                 <Panel class="bp-header" hittest="true">
                     <Panel class="bp-title-block">
-                        <Label class="bp-kicker" text="JBFORSAKEN" />
+                        <Label class="bp-kicker" text="JBFORSAKEN • BATTLE PASS" />
                         <Label id="jbf_bp_season" class="bp-season" text="{s:text}" />
+                        <Label class="bp-subtitle" text="ИГРАЙ • ВЫПОЛНЯЙ ЗАДАНИЯ • ПОЛУЧАЙ НАГРАДЫ" />
                     </Panel>
-                    <Panel class="bp-profile">
-                        <Label id="jbf_bp_level" class="bp-level" text="{s:text}" />
-                        <Label id="jbf_bp_xp" class="bp-xp" text="{s:text}" />
-                        <Label id="jbf_bp_totalxp" class="bp-totalxp" text="{s:text}" />
+
+                    <Panel class="bp-profile-card">
+                        <Panel class="bp-level-badge">
+                            <Label id="jbf_bp_level" class="bp-level" text="{s:text}" />
+                        </Panel>
+                        <Panel class="bp-progress-column">
+                            <Panel class="bp-xp-row">
+                                <Label id="jbf_bp_xp" class="bp-xp" text="{s:text}" />
+                                <Panel class="bp-progress-value-wrap">
+                                    <Label id="jbf_bp_progress" class="bp-progress-value" text="{s:text}" />
+                                    <Label class="bp-progress-percent" text="%" />
+                                </Panel>
+                            </Panel>
+                            <Panel class="bp-progress-track">
+                                <Panel class="bp-progress-fill" />
+                                <Panel class="bp-progress-shine" />
+                            </Panel>
+                            <Label id="jbf_bp_totalxp" class="bp-totalxp" text="{s:text}" />
+                        </Panel>
                     </Panel>
+
                     <Button id="jbf_bp_close" class="bp-close"><Label text="×" /></Button>
                 </Panel>
 
                 <Panel class="bp-tabs" hittest="true">
-                    <Button id="jbf_bp_track" class="bp-tab"><Label text="БОЕВОЙ ПРОПУСК" /></Button>
-                    <Button id="jbf_bp_missions" class="bp-tab"><Label text="ЗАДАНИЯ" /></Button>
-                    <Button id="jbf_bp_inventory" class="bp-tab"><Label text="ИНВЕНТАРЬ" /></Button>
+                    <Button id="jbf_bp_track" class="bp-tab">
+                        <Label class="bp-tab-icon" text="◆" />
+                        <Label text="БОЕВОЙ ПРОПУСК" />
+                    </Button>
+                    <Button id="jbf_bp_missions" class="bp-tab">
+                        <Label class="bp-tab-icon" text="✓" />
+                        <Label text="ЗАДАНИЯ" />
+                    </Button>
+                    <Button id="jbf_bp_inventory" class="bp-tab">
+                        <Label class="bp-tab-icon" text="▣" />
+                        <Label text="ИНВЕНТАРЬ" />
+                    </Button>
+                    <Label class="bp-tabs-hint" text="ESC / × — закрыть" />
                 </Panel>
 
                 <Panel class="bp-body" hittest="true">
                     <Panel id="jbf_bp_track_view" class="bp-view bp-track-view" hittest="true">
                         <Panel class="bp-section-head">
-                            <Label id="jbf_bp_page" class="bp-section-title" text="{s:text}" />
+                            <Panel class="bp-section-title-wrap">
+                                <Label class="bp-eyebrow" text="СЕЗОННАЯ ЛИНИЯ НАГРАД" />
+                                <Label id="jbf_bp_page" class="bp-section-title" text="{s:text}" />
+                            </Panel>
                             <Panel class="bp-pager">
                                 <Button id="jbf_bp_page_prev_track" class="bp-small-button"><Label text="‹" /></Button>
                                 <Button id="jbf_bp_page_next_track" class="bp-small-button"><Label text="›" /></Button>
                             </Panel>
                         </Panel>
+
+                        <Panel class="bp-track-line" hittest="false">
+                            <Panel class="bp-track-line-fill" />
+                        </Panel>
+
                         <Panel class="bp-reward-row" hittest="true">
-                            <Panel id="jbf_bp_reward_0" class="bp-reward"><Label id="jbf_bp_reward_0_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_0_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_0"><Label id="jbf_bp_reward_0_state" text="{s:text}"/></Button></Panel>
-                            <Panel id="jbf_bp_reward_1" class="bp-reward"><Label id="jbf_bp_reward_1_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_1_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_1"><Label id="jbf_bp_reward_1_state" text="{s:text}"/></Button></Panel>
-                            <Panel id="jbf_bp_reward_2" class="bp-reward"><Label id="jbf_bp_reward_2_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_2_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_2"><Label id="jbf_bp_reward_2_state" text="{s:text}"/></Button></Panel>
-                            <Panel id="jbf_bp_reward_3" class="bp-reward"><Label id="jbf_bp_reward_3_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_3_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_3"><Label id="jbf_bp_reward_3_state" text="{s:text}"/></Button></Panel>
-                            <Panel id="jbf_bp_reward_4" class="bp-reward"><Label id="jbf_bp_reward_4_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_4_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_4"><Label id="jbf_bp_reward_4_state" text="{s:text}"/></Button></Panel>
-                            <Panel id="jbf_bp_reward_5" class="bp-reward"><Label id="jbf_bp_reward_5_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_5_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_5"><Label id="jbf_bp_reward_5_state" text="{s:text}"/></Button></Panel>
-                            <Panel id="jbf_bp_reward_6" class="bp-reward"><Label id="jbf_bp_reward_6_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_6_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_6"><Label id="jbf_bp_reward_6_state" text="{s:text}"/></Button></Panel>
-                            <Panel id="jbf_bp_reward_7" class="bp-reward"><Label id="jbf_bp_reward_7_level" class="bp-reward-level" text="{s:text}"/><Label id="jbf_bp_reward_7_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_7"><Label id="jbf_bp_reward_7_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_0" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_0_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_0_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_0"><Label id="jbf_bp_reward_0_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_1" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_1_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_1_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_1"><Label id="jbf_bp_reward_1_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_2" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_2_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_2_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_2"><Label id="jbf_bp_reward_2_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_3" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_3_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_3_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_3"><Label id="jbf_bp_reward_3_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_4" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_4_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_4_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_4"><Label id="jbf_bp_reward_4_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_5" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_5_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_5_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_5"><Label id="jbf_bp_reward_5_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_6" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_6_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_6_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_6"><Label id="jbf_bp_reward_6_state" text="{s:text}"/></Button></Panel>
+                            <Panel id="jbf_bp_reward_7" class="bp-reward"><Panel class="bp-reward-top"><Label class="bp-reward-symbol" text="✦"/><Label id="jbf_bp_reward_7_level" class="bp-reward-level" text="{s:text}"/></Panel><Label id="jbf_bp_reward_7_name" class="bp-reward-name" text="{s:text}"/><Button id="jbf_bp_claim_7"><Label id="jbf_bp_reward_7_state" text="{s:text}"/></Button></Panel>
                         </Panel>
                     </Panel>
 
                     <Panel id="jbf_bp_missions_view" class="bp-view" hittest="true">
-                        <Panel class="bp-section-head"><Label class="bp-section-title" text="ЗАДАНИЯ СЕЗОНА"/><Panel class="bp-pager"><Button id="jbf_bp_page_prev_missions" class="bp-small-button"><Label text="‹"/></Button><Button id="jbf_bp_page_next_missions" class="bp-small-button"><Label text="›"/></Button></Panel></Panel>
+                        <Panel class="bp-section-head">
+                            <Panel class="bp-section-title-wrap"><Label class="bp-eyebrow" text="АКТИВНЫЕ ЦЕЛИ"/><Label class="bp-section-title" text="ЗАДАНИЯ СЕЗОНА"/></Panel>
+                            <Panel class="bp-pager"><Button id="jbf_bp_page_prev_missions" class="bp-small-button"><Label text="‹"/></Button><Button id="jbf_bp_page_next_missions" class="bp-small-button"><Label text="›"/></Button></Panel>
+                        </Panel>
                         <Panel class="bp-mission-grid">
-                            <Panel id="jbf_bp_mission_0" class="bp-mission"><Label id="jbf_bp_mission_0_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_0_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_0_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_0_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
-                            <Panel id="jbf_bp_mission_1" class="bp-mission"><Label id="jbf_bp_mission_1_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_1_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_1_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_1_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
-                            <Panel id="jbf_bp_mission_2" class="bp-mission"><Label id="jbf_bp_mission_2_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_2_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_2_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_2_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
-                            <Panel id="jbf_bp_mission_3" class="bp-mission"><Label id="jbf_bp_mission_3_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_3_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_3_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_3_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
-                            <Panel id="jbf_bp_mission_4" class="bp-mission"><Label id="jbf_bp_mission_4_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_4_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_4_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_4_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
-                            <Panel id="jbf_bp_mission_5" class="bp-mission"><Label id="jbf_bp_mission_5_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_5_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_5_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_5_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                            <Panel id="jbf_bp_mission_0" class="bp-mission"><Panel class="bp-mission-marker"/><Label id="jbf_bp_mission_0_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_0_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_0_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_0_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                            <Panel id="jbf_bp_mission_1" class="bp-mission"><Panel class="bp-mission-marker"/><Label id="jbf_bp_mission_1_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_1_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_1_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_1_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                            <Panel id="jbf_bp_mission_2" class="bp-mission"><Panel class="bp-mission-marker"/><Label id="jbf_bp_mission_2_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_2_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_2_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_2_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                            <Panel id="jbf_bp_mission_3" class="bp-mission"><Panel class="bp-mission-marker"/><Label id="jbf_bp_mission_3_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_3_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_3_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_3_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                            <Panel id="jbf_bp_mission_4" class="bp-mission"><Panel class="bp-mission-marker"/><Label id="jbf_bp_mission_4_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_4_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_4_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_4_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
+                            <Panel id="jbf_bp_mission_5" class="bp-mission"><Panel class="bp-mission-marker"/><Label id="jbf_bp_mission_5_type" class="bp-mission-type" text="{s:text}"/><Label id="jbf_bp_mission_5_name" class="bp-mission-name" text="{s:text}"/><Label id="jbf_bp_mission_5_progress" class="bp-mission-progress" text="{s:text}"/><Label id="jbf_bp_mission_5_xp" class="bp-mission-xp" text="{s:text}"/></Panel>
                         </Panel>
                     </Panel>
 
                     <Panel id="jbf_bp_inventory_view" class="bp-view" hittest="true">
-                        <Panel class="bp-section-head"><Label class="bp-section-title" text="ИНВЕНТАРЬ НАГРАД"/><Panel class="bp-pager"><Button id="jbf_bp_page_prev_inventory" class="bp-small-button"><Label text="‹"/></Button><Button id="jbf_bp_page_next_inventory" class="bp-small-button"><Label text="›"/></Button></Panel></Panel>
-                        <Label class="bp-hint" text="Один предмет за обычный раунд. Недоступно во время LR и игровых дней."/>
+                        <Panel class="bp-section-head">
+                            <Panel class="bp-section-title-wrap"><Label class="bp-eyebrow" text="ПОЛУЧЕННЫЕ ПРЕДМЕТЫ"/><Label class="bp-section-title" text="ИНВЕНТАРЬ НАГРАД"/></Panel>
+                            <Panel class="bp-pager"><Button id="jbf_bp_page_prev_inventory" class="bp-small-button"><Label text="‹"/></Button><Button id="jbf_bp_page_next_inventory" class="bp-small-button"><Label text="›"/></Button></Panel>
+                        </Panel>
+                        <Panel class="bp-info-strip"><Label class="bp-info-icon" text="!"/><Label class="bp-hint" text="Один предмет за обычный раунд. Недоступно во время LR и игровых дней."/></Panel>
                         <Panel class="bp-inventory-grid">
-                            <Panel id="jbf_bp_item_0" class="bp-item"><Label id="jbf_bp_item_0_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_0_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_0"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
-                            <Panel id="jbf_bp_item_1" class="bp-item"><Label id="jbf_bp_item_1_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_1_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_1"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
-                            <Panel id="jbf_bp_item_2" class="bp-item"><Label id="jbf_bp_item_2_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_2_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_2"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
-                            <Panel id="jbf_bp_item_3" class="bp-item"><Label id="jbf_bp_item_3_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_3_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_3"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
-                            <Panel id="jbf_bp_item_4" class="bp-item"><Label id="jbf_bp_item_4_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_4_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_4"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
-                            <Panel id="jbf_bp_item_5" class="bp-item"><Label id="jbf_bp_item_5_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_5_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_5"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
-                            <Panel id="jbf_bp_item_6" class="bp-item"><Label id="jbf_bp_item_6_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_6_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_6"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
-                            <Panel id="jbf_bp_item_7" class="bp-item"><Label id="jbf_bp_item_7_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_7_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_7"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_0" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_0_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_0_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_0"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_1" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_1_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_1_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_1"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_2" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_2_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_2_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_2"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_3" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_3_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_3_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_3"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_4" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_4_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_4_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_4"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_5" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_5_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_5_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_5"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_6" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_6_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_6_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_6"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
+                            <Panel id="jbf_bp_item_7" class="bp-item"><Label class="bp-item-icon" text="✦"/><Label id="jbf_bp_item_7_name" class="bp-item-name" text="{s:text}"/><Label id="jbf_bp_item_7_count" class="bp-item-count" text="{s:text}"/><Button id="jbf_bp_use_7"><Label text="ИСПОЛЬЗОВАТЬ"/></Button></Panel>
                         </Panel>
                     </Panel>
+                </Panel>
+
+                <Panel class="bp-footer" hittest="false">
+                    <Label class="bp-footer-left" text="JBFORSAKEN • SEASON PASS" />
+                    <Label class="bp-footer-right" text="Прогресс сохраняется автоматически" />
                 </Panel>
             </Panel>
         </Panel>
