@@ -13,7 +13,7 @@ public sealed class JBFGolf : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Golf";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -34,7 +34,7 @@ public sealed class JBFGolf : BasePlugin
     }
 
     [GameEventHandler]
-    public HookResult OnDecoyDetonate(EventDecoyDetonate @event, GameEventInfo info) => _game.OnDecoyDetonate(@event);
+    public HookResult OnDecoyStarted(EventDecoyStarted @event, GameEventInfo info) => _game.OnDecoyStarted(@event);
 }
 
 internal sealed class GolfGame : ILrGame, ILrInventoryRules
@@ -100,7 +100,7 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         BeginGolf();
     }
 
-    public HookResult OnDecoyDetonate(EventDecoyDetonate @event)
+    public HookResult OnDecoyStarted(EventDecoyStarted @event)
     {
         if (_context is null || _state != SetupState.Throwing || _hole is null || @event.Userid is null)
             return HookResult.Continue;
@@ -110,7 +110,7 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
             return HookResult.Continue;
 
         var point = new Vector(@event.X, @event.Y, @event.Z);
-        var distance = Distance2D(point, _hole);
+        var distance = Distance3D(point, _hole);
 
         if (player.Slot == _context.Inmate.Slot)
             _inmateDistance = distance;
@@ -132,7 +132,7 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
             return HookResult.Continue;
         }
 
-        var winner = _inmateDistance < _guardianDistance ? _context.Inmate : _context.Guardian;
+        var winner = _inmateDistance.Value < _guardianDistance.Value ? _context.Inmate : _context.Guardian;
         var loser = winner.Slot == _context.Inmate.Slot ? _context.Guardian : _context.Inmate;
         var context = _context;
         _state = SetupState.None;
@@ -203,11 +203,12 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         _markers.Clear();
     }
 
-    private static float Distance2D(Vector a, Vector b)
+    private static float Distance3D(Vector a, Vector b)
     {
         var dx = a.X - b.X;
         var dy = a.Y - b.Y;
-        return MathF.Sqrt(dx * dx + dy * dy);
+        var dz = a.Z - b.Z;
+        return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     private enum SetupState { None, WaitingStart, WaitingHole, Throwing }
