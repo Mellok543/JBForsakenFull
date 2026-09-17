@@ -1,5 +1,7 @@
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities.Constants;
+using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
 
 namespace JBF.LR.RussianRoulette;
@@ -31,6 +33,8 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         _context = context;
         Prepare(context.Inmate);
         Prepare(context.Guardian);
+        PositionFaceToFace(context);
+
         var inmateStarts = Random.Shared.Next(0, 2) == 0;
         LrPlayerRules.SetAmmo(context.Inmate, inmateStarts ? 1 : 0, 0);
         LrPlayerRules.SetAmmo(context.Guardian, inmateStarts ? 0 : 1, 0);
@@ -44,7 +48,6 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         var victim = entity.As<CCSPlayerPawn>().Controller.Value?.As<CCSPlayerController>();
         if (victim is null) return HookResult.Handled;
 
-        // Every valid hit is a new chamber pull. Roughly one of six shots is lethal.
         if (Random.Shared.Next(0, 6) != 0)
         {
             UiCapability.Api.Get()?.Notify(victim, "Щелчок... повезло", UiNotificationType.Info, 2.0f);
@@ -83,5 +86,18 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
     {
         LrPlayerRules.Normalize(player);
         player.GiveNamedItem(CsItem.DesertEagle);
+    }
+
+    private static void PositionFaceToFace(ILrMatchContext context)
+    {
+        var a = context.Inmate.PlayerPawn.Value?.AbsOrigin;
+        var b = context.Guardian.PlayerPawn.Value?.AbsOrigin;
+        if (a is null || b is null) return;
+
+        var center = new Vector((a.X + b.X) * 0.5f, (a.Y + b.Y) * 0.5f, MathF.Max(a.Z, b.Z));
+        var left = new Vector(center.X - 80.0f, center.Y, center.Z);
+        var right = new Vector(center.X + 80.0f, center.Y, center.Z);
+        context.Inmate.PlayerPawn.Value?.Teleport(left, new QAngle(0, 0, 0), new Vector());
+        context.Guardian.PlayerPawn.Value?.Teleport(right, new QAngle(0, 180, 0), new Vector());
     }
 }
