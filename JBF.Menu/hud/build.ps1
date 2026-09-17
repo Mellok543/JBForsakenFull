@@ -10,8 +10,7 @@ $resources = @(
     @{ Name = "jbf_menu"; Type = "layout"; Ext = "xml"; Compiled = "vxml_c" },
     @{ Name = "jbf_menu"; Type = "styles"; Ext = "css"; Compiled = "vcss_c" },
     @{ Name = "jbf_battlepass"; Type = "layout"; Ext = "xml"; Compiled = "vxml_c" },
-    @{ Name = "jbf_battlepass"; Type = "styles"; Ext = "css"; Compiled = "vcss_c" },
-    @{ Name = "jbf_battlepass"; Type = "scripts"; Ext = "js"; Compiled = "vjs_c" }
+    @{ Name = "jbf_battlepass"; Type = "styles"; Ext = "css"; Compiled = "vcss_c" }
 )
 
 if (-not $Cs2) {
