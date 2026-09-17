@@ -1,4 +1,5 @@
 using CounterStrikeSharp.API.Core;
+using JBF.Api;
 
 namespace JBF.Warden.Services;
 
@@ -7,6 +8,7 @@ internal sealed class WardenService
     public CCSPlayerController? Warden { get; private set; }
 
     public event Action<CCSPlayerController>? WardenClaimed;
+    public event Action<WardenKilledEvent>? WardenKilled;
 
     public bool IsWarden(CCSPlayerController player)
     {
@@ -34,6 +36,11 @@ internal sealed class WardenService
 
         Warden = null;
         return true;
+    }
+
+    public void NotifyKilled(CCSPlayerController warden, CCSPlayerController? attacker, string weapon)
+    {
+        WardenKilled?.Invoke(new WardenKilledEvent(warden, attacker, weapon));
     }
 
     public void Reset()
