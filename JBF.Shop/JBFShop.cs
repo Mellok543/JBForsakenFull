@@ -2,6 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Timers;
 using JBF.Api;
 using JBF.Shop.Extensions;
 using JBF.Shop.Services;
@@ -14,32 +15,24 @@ public sealed class JBFShop : BasePlugin
     private ILrApi? _lrApi;
 
     public override string ModuleName => "JBF Shop";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
         _shop = new ShopService(this);
         Capabilities.RegisterPluginCapability(ShopCapability.Api, () => _shop!);
+        AddTimer(2.0f, EnsureLrSubscription, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        _lrApi = LrCapability.Api.Get();
-        if (_lrApi is not null)
-        {
-            _lrApi.MatchEnded += OnLrMatchEnded;
-        }
+        EnsureLrSubscription();
     }
 
     public override void Unload(bool hotReload)
     {
-        if (_lrApi is not null)
-        {
-            _lrApi.MatchEnded -= OnLrMatchEnded;
-            _lrApi = null;
-        }
-
+        UnsubscribeFromLr();
         _shop?.Shutdown();
         _shop = null;
     }
@@ -94,6 +87,26 @@ public sealed class JBFShop : BasePlugin
     {
         _shop?.RewardKill(@event.Userid, @event.Attacker);
         return HookResult.Continue;
+    }
+
+    private void EnsureLrSubscription()
+    {
+        var current = LrCapability.Api.Get();
+        if (ReferenceEquals(current, _lrApi))
+            return;
+
+        UnsubscribeFromLr();
+        _lrApi = current;
+        if (_lrApi is not null)
+            _lrApi.MatchEnded += OnLrMatchEnded;
+    }
+
+    private void UnsubscribeFromLr()
+    {
+        if (_lrApi is not null)
+            _lrApi.MatchEnded -= OnLrMatchEnded;
+
+        _lrApi = null;
     }
 
     private void OnLrMatchEnded(LrMatchEndedEvent match)
