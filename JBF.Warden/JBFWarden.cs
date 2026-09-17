@@ -20,7 +20,7 @@ public sealed class JBFWarden : BasePlugin
     }
 
     public override string ModuleName => "JBF Warden";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -88,6 +88,7 @@ public sealed class JBFWarden : BasePlugin
         var player = @event.Userid;
         if (player is not null && _wardenService.IsWarden(player))
         {
+            _wardenService.NotifyKilled(player, @event.Attacker, @event.Weapon);
             _wardenService.Reset();
             MenuCapability.Api.Get()?.Close(player);
         }
