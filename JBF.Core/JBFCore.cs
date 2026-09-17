@@ -22,7 +22,7 @@ public sealed class JBFCore : BasePlugin
     }
 
     public override string ModuleName => "JBF Core";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.2.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -31,7 +31,6 @@ public sealed class JBFCore : BasePlugin
         Capabilities.RegisterPluginCapability(PlayerEffectsCapability.Api, () => _effects);
         Capabilities.RegisterPluginCapability(PlayerStateCapability.Api, () => _playerState);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
-        RegisterListener<Listeners.OnEntityTakeDamagePre>(OnTakeDamage);
     }
 
     [GameEventHandler]
@@ -53,6 +52,25 @@ public sealed class JBFCore : BasePlugin
     }
 
     [GameEventHandler]
+    public HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
+    {
+        var victim = @event.Userid;
+        var attacker = @event.Attacker;
+
+        if (victim is null || attacker is null ||
+            !victim.IsValid || !attacker.IsValid ||
+            attacker.Slot == victim.Slot)
+            return HookResult.Continue;
+
+        // Rebel is intentionally silent and exists only for state/statistics/achievements.
+        // Count actual health damage after armor; the threshold is cumulative for the round.
+        if (attacker.Team == CsTeam.Terrorist && victim.Team == CsTeam.CounterTerrorist)
+            _playerState.AddDamageToCt(attacker, @event.DmgHealth);
+
+        return HookResult.Continue;
+    }
+
+    [GameEventHandler]
     public HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
     {
         if (@event.Userid is { IsValid: true } victim)
@@ -65,27 +83,6 @@ public sealed class JBFCore : BasePlugin
     {
         _effects.ClearAll();
         _playerState.ResetRound();
-    }
-
-    private HookResult OnTakeDamage(CBaseEntity entity, CTakeDamageInfo damageInfo)
-    {
-        if (entity.DesignerName != "player")
-            return HookResult.Continue;
-
-        var victim = entity.As<CCSPlayerPawn>().Controller.Value?.As<CCSPlayerController>();
-        var attackerEntity = damageInfo.Attacker.Value;
-        if (victim is null || !victim.IsValid || attackerEntity?.DesignerName != "player")
-            return HookResult.Continue;
-
-        var attacker = attackerEntity.As<CCSPlayerPawn>().Controller.Value?.As<CCSPlayerController>();
-        if (attacker is null || !attacker.IsValid || attacker.Slot == victim.Slot)
-            return HookResult.Continue;
-
-        // Rebel is intentionally silent: it is only internal state for statistics/achievements.
-        if (attacker.Team == CsTeam.Terrorist && victim.Team == CsTeam.CounterTerrorist)
-            _playerState.MarkRebel(attacker);
-
-        return HookResult.Continue;
     }
 
     private void OnClientDisconnect(int playerSlot)
