@@ -1,0 +1,32 @@
+<root>
+    <styles>
+        <include src="s2r://panorama/styles/custom_game/jbf_menu.vcss_c" />
+    </styles>
+
+    <Panel class="jbf-menu-screen" hittest="false">
+        <Panel id="jbf_menu_root" class="jbf-menu-window" hittest="false">
+            <Panel class="jbf-menu-accent" hittest="false" />
+
+            <Panel class="jbf-menu-content" hittest="false">
+                <Panel class="jbf-menu-header" hittest="false">
+                    <Label id="jbf_menu_title" class="jbf-menu-title" text="{s:text}" />
+                    <Label id="jbf_menu_page" class="jbf-menu-page" text="{s:text}" />
+                </Panel>
+
+                <Panel class="jbf-menu-rows" hittest="false">
+                    <Panel id="jbf_menu_row_0" class="jbf-menu-row"><Label id="jbf_menu_row_0_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
+                    <Panel id="jbf_menu_row_1" class="jbf-menu-row"><Label id="jbf_menu_row_1_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
+                    <Panel id="jbf_menu_row_2" class="jbf-menu-row"><Label id="jbf_menu_row_2_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
+                    <Panel id="jbf_menu_row_3" class="jbf-menu-row"><Label id="jbf_menu_row_3_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
+                    <Panel id="jbf_menu_row_4" class="jbf-menu-row"><Label id="jbf_menu_row_4_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
+                    <Panel id="jbf_menu_row_5" class="jbf-menu-row"><Label id="jbf_menu_row_5_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
+                    <Panel id="jbf_menu_row_6" class="jbf-menu-row"><Label id="jbf_menu_row_6_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
+                </Panel>
+
+                <Panel class="jbf-menu-footer" hittest="false">
+                    <Label class="jbf-menu-hint" text="W/S — выбор   E — открыть   TAB — закрыть" />
+                </Panel>
+            </Panel>
+        </Panel>
+    </Panel>
+</root>
