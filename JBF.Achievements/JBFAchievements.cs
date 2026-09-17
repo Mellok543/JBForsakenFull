@@ -16,9 +16,10 @@ public sealed class JBFAchievements : BasePlugin
     private AchievementService? _achievements;
     private IWardenApi? _wardenApi;
     private ILrApi? _lrApi;
+    private IPlayerStateApi? _playerStateApi;
 
     public override string ModuleName => "JBF Achievements";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -36,6 +37,7 @@ public sealed class JBFAchievements : BasePlugin
     {
         DetachWarden();
         DetachLr();
+        DetachPlayerState();
         _achievements?.Dispose();
         _achievements = null;
     }
@@ -105,6 +107,19 @@ public sealed class JBFAchievements : BasePlugin
             _lrApi = currentLr;
             if (_lrApi is not null) _lrApi.MatchEnded += OnLrMatchEnded;
         }
+
+        var currentPlayerState = PlayerStateCapability.Api.Get();
+        if (!ReferenceEquals(currentPlayerState, _playerStateApi))
+        {
+            DetachPlayerState();
+            _playerStateApi = currentPlayerState;
+            if (_playerStateApi is not null)
+            {
+                _playerStateApi.RebelStarted += OnRebelStarted;
+                _playerStateApi.RebelKilled += OnRebelKilled;
+                _playerStateApi.FreeDayGranted += OnFreeDayGranted;
+            }
+        }
     }
 
     private void OnWardenClaimed(CCSPlayerController player) => _achievements?.Increment(player, "warden_claims");
@@ -117,6 +132,20 @@ public sealed class JBFAchievements : BasePlugin
     }
 
     private void OnLrMatchEnded(LrMatchEndedEvent match) => _achievements?.HandleLrEnded(match);
+
+    private void OnRebelStarted(CCSPlayerController player)
+    {
+        // Rebel is deliberately silent. Only statistics and achievements are updated.
+        _achievements?.Increment(player, "times_became_rebel");
+    }
+
+    private void OnRebelKilled(RebelKilledEvent data)
+    {
+        if (data.Killer is { IsValid: true } killer && killer.Team == CsTeam.CounterTerrorist)
+            _achievements?.Increment(killer, "rebels_killed");
+    }
+
+    private void OnFreeDayGranted(CCSPlayerController player) => _achievements?.Increment(player, "freedays_received");
 
     private void DetachWarden()
     {
@@ -131,5 +160,14 @@ public sealed class JBFAchievements : BasePlugin
         if (_lrApi is null) return;
         _lrApi.MatchEnded -= OnLrMatchEnded;
         _lrApi = null;
+    }
+
+    private void DetachPlayerState()
+    {
+        if (_playerStateApi is null) return;
+        _playerStateApi.RebelStarted -= OnRebelStarted;
+        _playerStateApi.RebelKilled -= OnRebelKilled;
+        _playerStateApi.FreeDayGranted -= OnFreeDayGranted;
+        _playerStateApi = null;
     }
 }
