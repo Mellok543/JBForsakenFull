@@ -17,7 +17,7 @@ public sealed class JBFBattlePass : BasePlugin
     private ILrApi? _lr;
 
     public override string ModuleName => "JBF Battle Pass";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -31,7 +31,7 @@ public sealed class JBFBattlePass : BasePlugin
 
         Capabilities.RegisterPluginCapability(BattlePassCapability.Api, () => _service!);
         RegisterListener<Listeners.OnClientDisconnect>(OnDisconnect);
-        AddTimer(10.0f, () => _service?.TickPlayTime(), TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
+        AddTimer(10.0f, () => _service?.TickPlayTime(), TimerFlags.REPEAT);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
