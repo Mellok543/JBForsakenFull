@@ -18,26 +18,19 @@ public sealed class JBFAchievements : BasePlugin
     private ILrApi? _lrApi;
 
     public override string ModuleName => "JBF Achievements";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
         var configPath = Path.Combine(ModuleDirectory, "config", "achievements.json");
-        var config = AchievementsConfig.LoadOrCreate(
-            configPath,
-            message => Logger.LogError("Achievements config error: {Message}", message));
-
+        var config = AchievementsConfig.LoadOrCreate(configPath, message => Logger.LogError("Achievements config error: {Message}", message));
         _achievements = new AchievementService(this, config);
         Capabilities.RegisterPluginCapability(AchievementsCapability.Api, () => _achievements!);
-
         AddTimer(1.0f, RefreshDependencies, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
     }
 
-    public override void OnAllPluginsLoaded(bool hotReload)
-    {
-        RefreshDependencies();
-    }
+    public override void OnAllPluginsLoaded(bool hotReload) => RefreshDependencies();
 
     public override void Unload(bool hotReload)
     {
@@ -56,23 +49,31 @@ public sealed class JBFAchievements : BasePlugin
             command.ReplyToCommand(JailbreakChat.Format("Команда доступна только игрокам."));
             return;
         }
-
         _achievements?.OpenMenu(player);
+    }
+
+    [ConsoleCommand("css_stats", "Open player statistics")]
+    public void OnStatsCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player is null || !player.IsValid)
+        {
+            command.ReplyToCommand(JailbreakChat.Format("Команда доступна только игрокам."));
+            return;
+        }
+        _achievements?.OpenStats(player);
     }
 
     [GameEventHandler]
     public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
     {
-        if (@event.Userid is { } player)
-            _achievements?.ApplySpawnBonuses(player);
-
+        if (@event.Userid is { } player) _achievements?.ApplySpawnBonuses(player);
         return HookResult.Continue;
     }
 
     [GameEventHandler]
     public HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
     {
-        _achievements?.HandleKill(@event.Userid, @event.Attacker, @event.Weapon);
+        _achievements?.HandleKill(@event.Userid, @event.Attacker, @event.Weapon, @event.Headshot);
         return HookResult.Continue;
     }
 
@@ -102,30 +103,20 @@ public sealed class JBFAchievements : BasePlugin
         {
             DetachLr();
             _lrApi = currentLr;
-            if (_lrApi is not null)
-                _lrApi.MatchEnded += OnLrMatchEnded;
+            if (_lrApi is not null) _lrApi.MatchEnded += OnLrMatchEnded;
         }
     }
 
-    private void OnWardenClaimed(CCSPlayerController player)
-    {
-        _achievements?.Increment(player, "warden_claims");
-    }
+    private void OnWardenClaimed(CCSPlayerController player) => _achievements?.Increment(player, "warden_claims");
 
     private void OnWardenKilled(WardenKilledEvent data)
     {
-        if (data.Attacker is null)
-            return;
-
-        if (data.Weapon.Contains("knife", StringComparison.OrdinalIgnoreCase) ||
-            data.Weapon.Equals("bayonet", StringComparison.OrdinalIgnoreCase))
+        if (data.Attacker is null) return;
+        if (data.Weapon.Contains("knife", StringComparison.OrdinalIgnoreCase) || data.Weapon.Equals("bayonet", StringComparison.OrdinalIgnoreCase))
             _achievements?.Increment(data.Attacker, "warden_knife_kills");
     }
 
-    private void OnLrMatchEnded(LrMatchEndedEvent match)
-    {
-        _achievements?.HandleLrEnded(match);
-    }
+    private void OnLrMatchEnded(LrMatchEndedEvent match) => _achievements?.HandleLrEnded(match);
 
     private void DetachWarden()
     {
