@@ -18,22 +18,39 @@ internal sealed class HudPanel
         _log = log;
     }
 
-    public void Start(BasePlugin plugin)
+    public void Start(BasePlugin plugin, bool hotReload)
     {
         plugin.RegisterListener<Listeners.OnCustomHudClicked>(OnClicked);
         plugin.RegisterListener<Listeners.OnMapStart>(_ => Server.NextWorldUpdate(Spawn));
-        Spawn();
+
+        // Important: do not touch the entity system during a normal plugin startup.
+        // At that point CounterStrikeSharp may not have initialized it yet. Accessing
+        // Utilities/EntitySystem too early can poison the lazy EntitySystem initialization
+        // and make unrelated plugins start throwing "Entity system yet is not initialized".
+        //
+        // On a hot reload the map is already running, so the next world update is safe.
+        if (hotReload)
+            Server.NextWorldUpdate(Spawn);
     }
 
     public void Stop(BasePlugin plugin)
     {
         plugin.RemoveListener<Listeners.OnCustomHudClicked>(OnClicked);
-        HideAll();
 
-        if (_entity is not null && _entity.IsValid)
-            _entity.Remove();
+        try
+        {
+            HideAll();
+
+            if (_entity is not null && _entity.IsValid)
+                _entity.Remove();
+        }
+        catch (Exception ex)
+        {
+            _log?.Invoke($"HudTest: cleanup skipped because entity system is unavailable: {ex.Message}");
+        }
 
         _entity = null;
+        _visible.Clear();
     }
 
     public void SetText(CCSPlayerController player, string panelId, string value, string variable = "text")
@@ -55,9 +72,12 @@ internal sealed class HudPanel
     public void Show(CCSPlayerController player, string rootPanelId, string visibleClass = "shown")
     {
         if (_entity is null || !_entity.IsValid)
-            Spawn();
+        {
+            _log?.Invoke("HudTest: HUD entity is not ready yet. Wait for map start or hot-reload the plugin after the map has loaded.");
+            return;
+        }
 
-        if (_entity is null || !_entity.IsValid || !player.IsValid || player.IsBot)
+        if (!player.IsValid || player.IsBot)
             return;
 
         _visible.Add(player.Slot);
@@ -79,9 +99,9 @@ internal sealed class HudPanel
     {
         foreach (var slot in _visible.ToList())
         {
-            var player = Utilities.GetPlayerFromSlot(slot);
             _visible.Remove(slot);
 
+            var player = Utilities.GetPlayerFromSlot(slot);
             if (player is null || !player.IsValid || _entity is null || !_entity.IsValid)
                 continue;
 
