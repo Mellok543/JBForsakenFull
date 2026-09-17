@@ -14,7 +14,7 @@ public sealed class JBFShop : BasePlugin
     private ILrApi? _lrApi;
 
     public override string ModuleName => "JBF Shop";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -40,7 +40,8 @@ public sealed class JBFShop : BasePlugin
             _lrApi = null;
         }
 
-        _shop?.Save();
+        _shop?.Shutdown();
+        _shop = null;
     }
 
     [ConsoleCommand("css_shop", "Open JBF shop")]
