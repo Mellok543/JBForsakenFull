@@ -24,7 +24,7 @@
                 </Panel>
 
                 <Panel class="jbf-menu-footer" hittest="false">
-                    <Label class="jbf-menu-hint" text="W/S — выбор   E — открыть   TAB — закрыть" />
+                    <Label class="jbf-menu-hint" text="W/S — выбор   E — открыть   R — закрыть" />
                 </Panel>
             </Panel>
         </Panel>
