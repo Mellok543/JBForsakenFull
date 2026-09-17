@@ -4,33 +4,27 @@
     </styles>
 
     <Panel class="jbf-screen" hittest="false">
-        <Panel id="jbf_test_root" class="jbf-window" hittest="true">
+        <Panel id="jbf_test_root" class="jbf-window" hittest="false">
             <Panel class="jbf-accent" hittest="false" />
 
-            <Panel class="jbf-content" hittest="true">
+            <Panel class="jbf-content" hittest="false">
                 <Label id="jbf_test_title" class="jbf-title" text="{s:text}" />
                 <Label id="jbf_test_subtitle" class="jbf-subtitle" text="{s:text}" />
 
-                <Panel class="jbf-rows" hittest="true">
-                    <Button id="jbf_btn_1" class="jbf-row">
+                <Panel class="jbf-rows" hittest="false">
+                    <Panel id="jbf_btn_1" class="jbf-row" hittest="false">
                         <Label id="jbf_btn_1_text" class="jbf-row-text" text="{s:text}" />
-                    </Button>
-                    <Button id="jbf_btn_2" class="jbf-row">
+                    </Panel>
+                    <Panel id="jbf_btn_2" class="jbf-row" hittest="false">
                         <Label id="jbf_btn_2_text" class="jbf-row-text" text="{s:text}" />
-                    </Button>
-                    <Button id="jbf_btn_3" class="jbf-row">
+                    </Panel>
+                    <Panel id="jbf_btn_3" class="jbf-row" hittest="false">
                         <Label id="jbf_btn_3_text" class="jbf-row-text" text="{s:text}" />
-                    </Button>
+                    </Panel>
                 </Panel>
 
                 <Label id="jbf_test_status" class="jbf-status" text="{s:text}" />
-
-                <Panel class="jbf-footer" hittest="true">
-                    <Label class="jbf-hint" text="Клик мышкой • ESC не закрывает тест" />
-                    <Button id="jbf_test_close" class="jbf-close">
-                        <Label class="jbf-close-text" text="ЗАКРЫТЬ" />
-                    </Button>
-                </Panel>
+                <Label class="jbf-hint" text="W/S выбор   •   E действие   •   R закрыть" />
             </Panel>
         </Panel>
     </Panel>
