@@ -6,7 +6,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 $src = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Name = "jbf_menu"
+$resources = @(
+    @{ Name = "jbf_menu"; Type = "layout"; Ext = "xml"; Compiled = "vxml_c" },
+    @{ Name = "jbf_menu"; Type = "styles"; Ext = "css"; Compiled = "vcss_c" },
+    @{ Name = "jbf_battlepass"; Type = "layout"; Ext = "xml"; Compiled = "vxml_c" },
+    @{ Name = "jbf_battlepass"; Type = "styles"; Ext = "css"; Compiled = "vcss_c" },
+    @{ Name = "jbf_battlepass"; Type = "scripts"; Ext = "js"; Compiled = "vjs_c" }
+)
 
 if (-not $Cs2) {
     $roots = @("C:\Program Files (x86)\Steam")
@@ -43,41 +49,35 @@ if (-not (Test-Path $compiler)) {
 
 $contentAddon = Join-Path $Cs2 "content\csgo_addons\$Addon"
 $gameAddon = Join-Path $Cs2 "game\csgo_addons\$Addon"
-$layoutDir = Join-Path $contentAddon "panorama\layout\custom_game"
-$styleDir = Join-Path $contentAddon "panorama\styles\custom_game"
-New-Item -ItemType Directory -Force -Path $layoutDir, $styleDir | Out-Null
 
-Copy-Item (Join-Path $src "layout\$Name.xml") $layoutDir -Force
-Copy-Item (Join-Path $src "styles\$Name.css") $styleDir -Force
+foreach ($resource in $resources) {
+    $dir = Join-Path $contentAddon "panorama\$($resource.Type)\custom_game"
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $source = Join-Path $src "$($resource.Type)\$($resource.Name).$($resource.Ext)"
+    $target = Join-Path $dir "$($resource.Name).$($resource.Ext)"
+    Copy-Item $source $target -Force
+    & $compiler -i $target -r
+    if ($LASTEXITCODE -ne 0) { throw "Compilation failed: $target" }
+}
 
-& $compiler -i (Join-Path $layoutDir "$Name.xml") -r
-if ($LASTEXITCODE -ne 0) { throw "Layout compilation failed." }
-
-& $compiler -i (Join-Path $styleDir "$Name.css") -r
-if ($LASTEXITCODE -ne 0) { throw "Stylesheet compilation failed." }
-
-$outLayout = Join-Path $gameAddon "panorama\layout\custom_game\$Name.vxml_c"
-$outStyle = Join-Path $gameAddon "panorama\styles\custom_game\$Name.vcss_c"
-
-if (-not (Test-Path $outLayout) -or -not (Test-Path $outStyle)) {
-    throw "Compilation finished without the expected .vxml_c/.vcss_c files."
+foreach ($resource in $resources) {
+    $output = Join-Path $gameAddon "panorama\$($resource.Type)\custom_game\$($resource.Name).$($resource.Compiled)"
+    if (-not (Test-Path $output)) { throw "Compilation finished without expected file: $output" }
 }
 
 Write-Output ""
 Write-Output "JBForsaken UI addon compiled successfully."
 Write-Output "Addon source:   $contentAddon"
 Write-Output "Addon compiled: $gameAddon"
-Write-Output "Layout:         $outLayout"
-Write-Output "Style:          $outStyle"
 
 if (-not $NoLocalInstall) {
-    $clientLayoutDir = Join-Path $Cs2 "game\csgo\panorama\layout\custom_game"
-    $clientStyleDir = Join-Path $Cs2 "game\csgo\panorama\styles\custom_game"
-    New-Item -ItemType Directory -Force -Path $clientLayoutDir, $clientStyleDir | Out-Null
-    Copy-Item $outLayout (Join-Path $clientLayoutDir "$Name.vxml_c") -Force
-    Copy-Item $outStyle (Join-Path $clientStyleDir "$Name.vcss_c") -Force
-
-    Write-Output "Local client copy updated. Restart CS2 before testing."
+    foreach ($resource in $resources) {
+        $clientDir = Join-Path $Cs2 "game\csgo\panorama\$($resource.Type)\custom_game"
+        New-Item -ItemType Directory -Force -Path $clientDir | Out-Null
+        $output = Join-Path $gameAddon "panorama\$($resource.Type)\custom_game\$($resource.Name).$($resource.Compiled)"
+        Copy-Item $output (Join-Path $clientDir "$($resource.Name).$($resource.Compiled)") -Force
+    }
+    Write-Output "Local client UI copies updated. Restart CS2 before testing."
 }
 
 Write-Output ""
