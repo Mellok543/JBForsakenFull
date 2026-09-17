@@ -10,22 +10,22 @@
     opacity: 0;
     position: -4000px 0px 0px;
 
-    width: 430px;
-    min-height: 250px;
+    width: 360px;
+    min-height: 215px;
     horizontal-align: left;
     vertical-align: center;
-    margin-left: 28px;
+    margin-left: 22px;
 
     flow-children: right;
-    background-color: #1c1c18ee;
-    border: 1px solid #ffffff12;
-    box-shadow: #00000088 0px 0px 18px 0px;
+    background-color: #151512a8;
+    border: 1px solid #ffffff10;
+    box-shadow: #00000055 0px 0px 12px 0px;
 }
 
 .jbf-window.shown
 {
     visibility: visible;
-    opacity: 1;
+    opacity: 0.88;
     position: 0px 0px 0px;
 }
 
@@ -40,23 +40,23 @@
 {
     width: fill-parent-flow(1.0);
     flow-children: down;
-    padding: 16px 18px 14px 18px;
+    padding: 13px 15px 12px 15px;
 }
 
 .jbf-title
 {
     color: #3fd087;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: bold;
     letter-spacing: 1px;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
 }
 
 .jbf-subtitle
 {
-    color: #b8b8b8;
-    font-size: 15px;
-    margin-bottom: 14px;
+    color: #c5c5c5dd;
+    font-size: 13px;
+    margin-bottom: 10px;
 }
 
 .jbf-rows
@@ -68,74 +68,38 @@
 .jbf-row
 {
     width: 100%;
-    height: 38px;
-    margin-bottom: 6px;
-    padding: 0px 12px;
-    background-color: #292923;
-    border: 1px solid #ffffff0f;
+    height: 32px;
+    margin-bottom: 4px;
+    padding: 0px 10px;
+    background-color: #24241f88;
+    border: 1px solid #ffffff0c;
     transition-property: background-color, border-color;
     transition-duration: 0.08s;
 }
 
-.jbf-row:hover
-{
-    background-color: #34342d;
-    border-color: #3fd08766;
-}
-
 .jbf-row.selected
 {
-    background-color: #254232;
-    border-color: #3fd087;
+    background-color: #24402fbb;
+    border-color: #3fd087cc;
 }
 
 .jbf-row-text
 {
-    color: #eeeeee;
-    font-size: 16px;
+    color: #f0f0f0ee;
+    font-size: 14px;
     vertical-align: center;
 }
 
 .jbf-status
 {
-    color: #8edfb4;
-    font-size: 14px;
-    margin-top: 5px;
-    margin-bottom: 12px;
-}
-
-.jbf-footer
-{
-    width: 100%;
-    flow-children: right;
+    color: #8edfb4dd;
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 8px;
 }
 
 .jbf-hint
 {
-    width: fill-parent-flow(1.0);
-    color: #888888;
-    font-size: 12px;
-    vertical-align: center;
-}
-
-.jbf-close
-{
-    width: 95px;
-    height: 30px;
-    background-color: #3a2424;
-    border: 1px solid #a64b4b55;
-}
-
-.jbf-close:hover
-{
-    background-color: #5a2d2d;
-    border-color: #e26a6a;
-}
-
-.jbf-close-text
-{
-    color: #eeeeee;
-    font-size: 13px;
-    horizontal-align: center;
-    vertical-align: center;
+    color: #a5a5a5cc;
+    font-size: 11px;
 }
