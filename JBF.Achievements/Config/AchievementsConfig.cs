@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using JBF.Achievements.Models;
 
@@ -5,6 +6,13 @@ namespace JBF.Achievements.Config;
 
 internal sealed class AchievementsConfig
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
     public AchievementDatabaseConfig Database { get; set; } = new();
     public AchievementCaps Caps { get; set; } = new();
     public List<AchievementDefinition> Achievements { get; set; } = CreateDefaults();
@@ -12,24 +20,34 @@ internal sealed class AchievementsConfig
     public static AchievementsConfig LoadOrCreate(string path, Action<string>? log = null)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var options = new JsonSerializerOptions { WriteIndented = true, PropertyNameCaseInsensitive = true };
 
         if (!File.Exists(path))
         {
             var created = new AchievementsConfig();
-            File.WriteAllText(path, JsonSerializer.Serialize(created, options));
+            Save(path, created);
             return created;
         }
 
         try
         {
-            return JsonSerializer.Deserialize<AchievementsConfig>(File.ReadAllText(path), options) ?? new AchievementsConfig();
+            var config = JsonSerializer.Deserialize<AchievementsConfig>(File.ReadAllText(path), JsonOptions)
+                         ?? new AchievementsConfig();
+
+            // Re-save successful configs so previously escaped Unicode (\uXXXX)
+            // is converted to normal readable UTF-8 text.
+            Save(path, config);
+            return config;
         }
         catch (Exception ex)
         {
             log?.Invoke(ex.Message);
             return new AchievementsConfig();
         }
+    }
+
+    private static void Save(string path, AchievementsConfig config)
+    {
+        File.WriteAllText(path, JsonSerializer.Serialize(config, JsonOptions));
     }
 
     private static List<AchievementDefinition> CreateDefaults() =>
