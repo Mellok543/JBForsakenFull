@@ -2,6 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
 using JBF.Api;
 using JBF.Menu.Services;
+using Microsoft.Extensions.Logging;
 
 namespace JBF.Menu;
 
@@ -10,7 +11,7 @@ public sealed class JBFMenu : BasePlugin
     private MenuService? _menuService;
 
     public override string ModuleName => "JBF Menu";
-    public override string ModuleVersion => "3.0.0";
+    public override string ModuleVersion => "3.0.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
