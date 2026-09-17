@@ -11,7 +11,7 @@ public sealed class JBFHudTest : BasePlugin
     private HudPanel? _panel;
 
     public override string ModuleName => "JBF HUD Test";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -22,6 +22,7 @@ public sealed class JBFHudTest : BasePlugin
 
         _panel.Clicked += OnClicked;
         _panel.Start(this, hotReload);
+        Logger.LogInformation("JBF HUD Test loaded. Use !hudtest in game.");
     }
 
     public override void Unload(bool hotReload)
@@ -39,11 +40,27 @@ public sealed class JBFHudTest : BasePlugin
     {
         if (player is null || !player.IsValid)
         {
-            command.ReplyToCommand("Command is available only to players.");
+            command.ReplyToCommand("[HudTest] Команда доступна только игрокам.");
+            return;
+        }
+
+        command.ReplyToCommand("[HudTest] Команда получена. Проверяю HUD...");
+        Logger.LogInformation("HudTest command received from {Player}", player.PlayerName);
+
+        if (_panel is null)
+        {
+            command.ReplyToCommand("[HudTest] Ошибка: HudPanel не создан.");
+            return;
+        }
+
+        if (!_panel.EnsureReady())
+        {
+            command.ReplyToCommand("[HudTest] Ошибка: custom_hud_layout не удалось создать. Смотри серверную консоль.");
             return;
         }
 
         Open(player);
+        command.ReplyToCommand("[HudTest] HUD отправлен клиенту. Если окна нет — проблема в Panorama-файлах на клиенте.");
     }
 
     [GameEventHandler]
