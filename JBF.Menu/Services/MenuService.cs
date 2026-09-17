@@ -78,7 +78,10 @@ internal sealed class MenuService : IMenuApi
         if (!_activeMenus.TryGetValue(player.Slot, out var state))
             return;
 
-        if (pressed.HasFlag(PlayerButtons.Scoreboard))
+        // Keep the same controls that worked in JBF.HudTest:
+        // W/S = navigate, E = select, R = close.
+        // We never capture Panorama input, so the mouse remains free for normal camera movement.
+        if (pressed.HasFlag(PlayerButtons.Reload))
         {
             Close(player);
             return;
