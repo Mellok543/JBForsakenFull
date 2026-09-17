@@ -8,6 +8,8 @@ namespace JBF.MapMarkers.Services;
 
 internal sealed class MarkerDrawingService
 {
+    private const int MaxTrackedEntities = 256;
+
     private readonly List<TemporaryEntity> _entities = [];
     private readonly List<CEntityInstance> _redCircleEntities = [];
 
@@ -15,14 +17,14 @@ internal sealed class MarkerDrawingService
         Vector start,
         Vector end,
         Color color,
-        float durationSeconds = 20.0f,
+        float durationSeconds = 12.0f,
         ICollection<CEntityInstance>? group = null)
     {
+        TrimEntityBudget();
+
         var beam = Utilities.CreateEntityByName<CBeam>("beam");
         if (beam is null)
-        {
             return;
-        }
 
         beam.Width = 1.75f;
         beam.Render = color;
@@ -38,9 +40,9 @@ internal sealed class MarkerDrawingService
 
     public void DrawRedCircle(Vector center)
     {
-        const int pointCount = 32;
+        const int pointCount = 16;
         const int radius = 70;
-        const float durationSeconds = 18.0f;
+        const float durationSeconds = 12.0f;
         ClearRedCircle();
 
         Vector? first = null;
@@ -56,34 +58,26 @@ internal sealed class MarkerDrawingService
 
             first ??= point;
             if (previous is not null)
-            {
                 DrawLine(previous, point, Color.Red, durationSeconds, _redCircleEntities);
-            }
 
             previous = point;
         }
 
         if (previous is not null && first is not null)
-        {
             DrawLine(previous, first, Color.Red, durationSeconds, _redCircleEntities);
-        }
     }
 
     public void CleanupExpired()
     {
         var now = DateTime.UtcNow;
         foreach (var temporaryEntity in _entities.Where(entity => entity.ExpiresAt <= now).ToArray())
-        {
             Remove(temporaryEntity);
-        }
     }
 
     public void Clear()
     {
         foreach (var temporaryEntity in _entities.ToArray())
-        {
             Remove(temporaryEntity);
-        }
 
         _redCircleEntities.Clear();
     }
@@ -93,12 +87,17 @@ internal sealed class MarkerDrawingService
         _entities.Add(new TemporaryEntity(entity, DateTime.UtcNow.AddSeconds(durationSeconds)));
     }
 
+    private void TrimEntityBudget()
+    {
+        CleanupExpired();
+        while (_entities.Count >= MaxTrackedEntities && _entities.Count > 0)
+            Remove(_entities[0]);
+    }
+
     private void Remove(TemporaryEntity temporaryEntity)
     {
         if (temporaryEntity.Entity.IsValid)
-        {
             temporaryEntity.Entity.Remove();
-        }
 
         _entities.Remove(temporaryEntity);
         _redCircleEntities.Remove(temporaryEntity.Entity);
@@ -110,13 +109,9 @@ internal sealed class MarkerDrawingService
         {
             var temporaryEntity = _entities.FirstOrDefault(item => ReferenceEquals(item.Entity, entity));
             if (temporaryEntity is not null)
-            {
                 Remove(temporaryEntity);
-            }
             else if (entity.IsValid)
-            {
                 entity.Remove();
-            }
         }
 
         _redCircleEntities.Clear();
