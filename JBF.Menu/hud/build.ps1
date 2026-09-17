@@ -1,6 +1,7 @@
 param(
     [string]$Cs2 = "",
-    [string]$Addon = "jbf_menu"
+    [string]$Addon = "jbforsaken_ui",
+    [switch]$NoLocalInstall
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,32 +41,45 @@ if (-not (Test-Path $compiler)) {
     exit 1
 }
 
-$layoutDir = Join-Path $Cs2 "content\csgo_addons\$Addon\panorama\layout\custom_game"
-$styleDir = Join-Path $Cs2 "content\csgo_addons\$Addon\panorama\styles\custom_game"
+$contentAddon = Join-Path $Cs2 "content\csgo_addons\$Addon"
+$gameAddon = Join-Path $Cs2 "game\csgo_addons\$Addon"
+$layoutDir = Join-Path $contentAddon "panorama\layout\custom_game"
+$styleDir = Join-Path $contentAddon "panorama\styles\custom_game"
 New-Item -ItemType Directory -Force -Path $layoutDir, $styleDir | Out-Null
 
 Copy-Item (Join-Path $src "layout\$Name.xml") $layoutDir -Force
 Copy-Item (Join-Path $src "styles\$Name.css") $styleDir -Force
 
 & $compiler -i (Join-Path $layoutDir "$Name.xml") -r
-& $compiler -i (Join-Path $styleDir "$Name.css") -r
+if ($LASTEXITCODE -ne 0) { throw "Layout compilation failed." }
 
-$outLayout = Join-Path $Cs2 "game\csgo_addons\$Addon\panorama\layout\custom_game\$Name.vxml_c"
-$outStyle = Join-Path $Cs2 "game\csgo_addons\$Addon\panorama\styles\custom_game\$Name.vcss_c"
-$clientLayoutDir = Join-Path $Cs2 "game\csgo\panorama\layout\custom_game"
-$clientStyleDir = Join-Path $Cs2 "game\csgo\panorama\styles\custom_game"
+& $compiler -i (Join-Path $styleDir "$Name.css") -r
+if ($LASTEXITCODE -ne 0) { throw "Stylesheet compilation failed." }
+
+$outLayout = Join-Path $gameAddon "panorama\layout\custom_game\$Name.vxml_c"
+$outStyle = Join-Path $gameAddon "panorama\styles\custom_game\$Name.vcss_c"
 
 if (-not (Test-Path $outLayout) -or -not (Test-Path $outStyle)) {
-    Write-Output "Compilation failed. Check resourcecompiler output above."
-    exit 1
+    throw "Compilation finished without the expected .vxml_c/.vcss_c files."
 }
 
-New-Item -ItemType Directory -Force -Path $clientLayoutDir, $clientStyleDir | Out-Null
-Copy-Item $outLayout (Join-Path $clientLayoutDir "$Name.vxml_c") -Force
-Copy-Item $outStyle (Join-Path $clientStyleDir "$Name.vcss_c") -Force
+Write-Output ""
+Write-Output "JBForsaken UI addon compiled successfully."
+Write-Output "Addon source:   $contentAddon"
+Write-Output "Addon compiled: $gameAddon"
+Write-Output "Layout:         $outLayout"
+Write-Output "Style:          $outStyle"
+
+if (-not $NoLocalInstall) {
+    $clientLayoutDir = Join-Path $Cs2 "game\csgo\panorama\layout\custom_game"
+    $clientStyleDir = Join-Path $Cs2 "game\csgo\panorama\styles\custom_game"
+    New-Item -ItemType Directory -Force -Path $clientLayoutDir, $clientStyleDir | Out-Null
+    Copy-Item $outLayout (Join-Path $clientLayoutDir "$Name.vxml_c") -Force
+    Copy-Item $outStyle (Join-Path $clientStyleDir "$Name.vcss_c") -Force
+
+    Write-Output "Local client copy updated. Restart CS2 before testing."
+}
 
 Write-Output ""
-Write-Output "JBF.Menu Panorama resources compiled and copied to the local CS2 client."
-Write-Output "Layout: $clientLayoutDir\$Name.vxml_c"
-Write-Output "Style:  $clientStyleDir\$Name.vcss_c"
-Write-Output "Restart CS2 completely before testing because Panorama resources are cached."
+Write-Output "Workshop addon name: $Addon"
+Write-Output "Publish/update this addon through Counter-Strike 2 Workshop Tools."
