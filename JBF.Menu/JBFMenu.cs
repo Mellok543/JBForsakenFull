@@ -10,7 +10,7 @@ public sealed class JBFMenu : BasePlugin
     private MenuService? _menuService;
 
     public override string ModuleName => "JBF Menu";
-    public override string ModuleVersion => "2.0.0";
+    public override string ModuleVersion => "2.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
