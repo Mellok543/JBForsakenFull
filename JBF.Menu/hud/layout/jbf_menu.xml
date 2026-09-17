@@ -23,9 +23,7 @@
                     <Panel id="jbf_menu_row_6" class="jbf-menu-row"><Label id="jbf_menu_row_6_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
                 </Panel>
 
-                <Panel class="jbf-menu-footer" hittest="false">
-                    <Label class="jbf-menu-hint" text="W/S — выбор   E — открыть   R — закрыть" />
-                </Panel>
+                <Label id="jbf_menu_status" class="jbf-menu-status" text="{s:text}" />
             </Panel>
         </Panel>
     </Panel>
