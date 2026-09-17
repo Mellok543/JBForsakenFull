@@ -172,7 +172,8 @@ internal sealed class AchievementService : IAchievementsApi, IDisposable
             ("Сыграно раундов", "rounds_played"), ("Побед за КТ", "ct_round_wins"), ("Побед за T", "t_round_wins"),
             ("Убийств", "kills_total"), ("Убийств КТ за T", "ct_kills_as_t"), ("Headshot", "headshot_kills"),
             ("Убийств ножом", "knife_kills"), ("Убийств HE", "grenade_kills"), ("Стать КМД", "warden_claims"),
-            ("Побед LR", "lr_wins"), ("Участий LR", "lr_participations")
+            ("Побед LR", "lr_wins"), ("Участий LR", "lr_participations"),
+            ("Начал бунт", "times_became_rebel"), ("Убито бунтарей", "rebels_killed"), ("Получено FreeDay", "freedays_received")
         };
         var options = rows.Select(row => new JailbreakMenuOption($"{row.Name}: {state.Stats.GetValueOrDefault(row.Key)}", _ => { }, true)).ToArray();
         menu.Open(player, "Статистика", options);
