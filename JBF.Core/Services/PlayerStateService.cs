@@ -7,6 +7,7 @@ internal sealed class PlayerStateService : IPlayerStateApi
 {
     private readonly HashSet<ulong> _rebels = [];
     private readonly HashSet<ulong> _freeDays = [];
+    private readonly HashSet<ulong> _freeDayGrantedThisRound = [];
 
     public event Action<CCSPlayerController>? RebelStarted;
     public event Action<RebelKilledEvent>? RebelKilled;
@@ -42,11 +43,10 @@ internal sealed class PlayerStateService : IPlayerStateApi
 
         if (enabled)
         {
-            if (!_freeDays.Add(steamId.Value))
-                return false;
-
-            FreeDayGranted?.Invoke(player);
-            return true;
+            var changed = _freeDays.Add(steamId.Value);
+            if (_freeDayGrantedThisRound.Add(steamId.Value))
+                FreeDayGranted?.Invoke(player);
+            return changed;
         }
 
         return _freeDays.Remove(steamId.Value);
@@ -72,12 +72,14 @@ internal sealed class PlayerStateService : IPlayerStateApi
 
         _rebels.Remove(steamId.Value);
         _freeDays.Remove(steamId.Value);
+        _freeDayGrantedThisRound.Remove(steamId.Value);
     }
 
     public void ResetRound()
     {
         _rebels.Clear();
         _freeDays.Clear();
+        _freeDayGrantedThisRound.Clear();
     }
 
     private static ulong? GetSteamId(CCSPlayerController player)
