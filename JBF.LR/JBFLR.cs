@@ -1,9 +1,7 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
-using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
 using JBF.Api;
-using JBF.LR.Games;
 using JBF.LR.Services;
 
 namespace JBF.LR;
@@ -12,10 +10,9 @@ public sealed class JBFLR : BasePlugin
 {
     private readonly LrService _lr = new();
     private readonly LrParticipantNormalizer _normalizer = new();
-    private readonly List<IDisposable> _registrations = [];
 
-    public override string ModuleName => "JBF LR";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleName => "JBF LR Core";
+    public override string ModuleVersion => "2.0.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -25,18 +22,10 @@ public sealed class JBFLR : BasePlugin
         RegisterListener<Listeners.OnClientDisconnect>(_lr.HandleDisconnect);
         RegisterListener<Listeners.OnTick>(_lr.Tick);
         RegisterListener<Listeners.OnTick>(_normalizer.Tick);
-
-        _registrations.Add(_lr.RegisterGame(new KnifeDuelGame()));
-        _registrations.Add(_lr.RegisterGame(new NoScopeGame()));
-        _registrations.Add(_lr.RegisterGame(new RouletteGame()));
     }
 
     public override void Unload(bool hotReload)
     {
-        foreach (var registration in _registrations)
-            registration.Dispose();
-
-        _registrations.Clear();
         _lr.ResetRound();
     }
 
