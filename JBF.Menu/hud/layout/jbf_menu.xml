@@ -3,16 +3,14 @@
         <include src="s2r://panorama/styles/custom_game/jbf_menu.vcss_c" />
     </styles>
 
-    <Panel class="jbf-menu-screen" hittest="false">
+    <Panel class="jbf-ui-screen" hittest="false">
         <Panel id="jbf_menu_root" class="jbf-menu-window" hittest="false">
             <Panel class="jbf-menu-accent" hittest="false" />
-
             <Panel class="jbf-menu-content" hittest="false">
                 <Panel class="jbf-menu-header" hittest="false">
                     <Label id="jbf_menu_title" class="jbf-menu-title" text="{s:text}" />
                     <Label id="jbf_menu_page" class="jbf-menu-page" text="{s:text}" />
                 </Panel>
-
                 <Panel class="jbf-menu-rows" hittest="false">
                     <Panel id="jbf_menu_row_0" class="jbf-menu-row"><Label id="jbf_menu_row_0_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
                     <Panel id="jbf_menu_row_1" class="jbf-menu-row"><Label id="jbf_menu_row_1_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
@@ -22,9 +20,33 @@
                     <Panel id="jbf_menu_row_5" class="jbf-menu-row"><Label id="jbf_menu_row_5_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
                     <Panel id="jbf_menu_row_6" class="jbf-menu-row"><Label id="jbf_menu_row_6_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
                 </Panel>
-
                 <Label id="jbf_menu_status" class="jbf-menu-status" text="{s:text}" />
             </Panel>
+        </Panel>
+
+        <Panel id="jbf_notify_root" class="jbf-notify" hittest="false">
+            <Panel class="jbf-notify-accent" hittest="false" />
+            <Label id="jbf_notify_text" class="jbf-notify-text" text="{s:text}" />
+        </Panel>
+
+        <Panel id="jbf_announce_root" class="jbf-announce" hittest="false">
+            <Label id="jbf_announce_title" class="jbf-announce-title" text="{s:text}" />
+            <Label id="jbf_announce_subtitle" class="jbf-announce-subtitle" text="{s:text}" />
+        </Panel>
+
+        <Panel id="jbf_round_root" class="jbf-round-status" hittest="false">
+            <Label id="jbf_round_title" class="jbf-round-title" text="{s:text}" />
+            <Label id="jbf_round_value" class="jbf-round-value" text="{s:text}" />
+        </Panel>
+
+        <Panel id="jbf_player_root" class="jbf-player-status" hittest="false">
+            <Label id="jbf_player_primary" class="jbf-player-primary" text="{s:text}" />
+            <Label id="jbf_player_secondary" class="jbf-player-secondary" text="{s:text}" />
+        </Panel>
+
+        <Panel id="jbf_event_root" class="jbf-event-banner" hittest="false">
+            <Label id="jbf_event_title" class="jbf-event-title" text="{s:text}" />
+            <Label id="jbf_event_value" class="jbf-event-value" text="{s:text}" />
         </Panel>
     </Panel>
 </root>
