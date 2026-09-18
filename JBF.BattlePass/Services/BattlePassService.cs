@@ -208,6 +208,16 @@ internal sealed class BattlePassService : IBattlePassApi
             }
             UiCapability.Api.Get()?.Notify(player, $"Получено {reward.Amount} кредитов • Баланс {balance}", UiNotificationType.Success, 4.0f);
         }
+        else if (reward.Type == RewardType.Cosmetic)
+        {
+            if (string.IsNullOrWhiteSpace(reward.ItemId)) return;
+            var cosmetics = CosmeticsCapability.Api.Get();
+            if (cosmetics is null || !cosmetics.Grant(player, reward.ItemId, "BattlePass"))
+            {
+                UiCapability.Api.Get()?.Notify(player, "Не удалось выдать косметику. Попробуйте позже.", UiNotificationType.Error, 4.0f);
+                return;
+            }
+        }
         else
         {
             if (string.IsNullOrWhiteSpace(reward.ItemId)) return;

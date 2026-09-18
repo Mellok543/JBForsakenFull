@@ -1,0 +1,51 @@
+<root>
+    <styles>
+        <include src="s2r://panorama/styles/custom_game/jbf_cosmetics.vcss_c" />
+    </styles>
+    <Panel class="cos-host" hittest="false">
+        <Panel id="jbf_cos_root" class="cos-screen" hittest="true">
+            <Panel class="cos-backdrop" hittest="true"/>
+            <Panel class="cos-window" hittest="true">
+                <Panel class="cos-header">
+                    <Panel>
+                        <Label class="cos-kicker" text="JBFORSAKEN • COLLECTION"/>
+                        <Label class="cos-title" text="КОСМЕТИКА"/>
+                        <Label class="cos-subtitle" text="СОБИРАЙ • ЭКИПИРУЙ • СОЗДАВАЙ СВОЙ СТИЛЬ"/>
+                    </Panel>
+                    <Label id="jbf_cos_counter" class="cos-counter" text="{s:text}"/>
+                    <Button id="jbf_cos_close" class="cos-close"><Label text="×"/></Button>
+                </Panel>
+                <Panel class="cos-body">
+                    <Panel class="cos-sidebar">
+                        <Button id="jbf_cos_cat_all" class="cos-category"><Label text="◆  ВСЕ"/></Button>
+                        <Button id="jbf_cos_cat_head" class="cos-category"><Label text="♛  ГОЛОВА"/></Button>
+                        <Button id="jbf_cos_cat_back" class="cos-category"><Label text="▰  СПИНА"/></Button>
+                        <Button id="jbf_cos_cat_trail" class="cos-category"><Label text="≋  ТРЕЙЛ"/></Button>
+                        <Button id="jbf_cos_cat_aura" class="cos-category"><Label text="✦  АУРА"/></Button>
+                        <Button id="jbf_cos_cat_death" class="cos-category"><Label text="☠  ЭФФЕКТ СМЕРТИ"/></Button>
+                        <Button id="jbf_cos_cat_player" class="cos-category"><Label text="◉  МОДЕЛЬ ИГРОКА"/></Button>
+                    </Panel>
+                    <Panel class="cos-content">
+                        <Panel class="cos-grid">
+                            <Panel id="jbf_cos_item_0" class="cos-item"><Label class="cos-item-icon" text="✦"/><Label id="jbf_cos_item_0_name" class="cos-item-name" text="{s:text}"/><Label id="jbf_cos_item_0_type" class="cos-item-type" text="{s:text}"/><Label id="jbf_cos_item_0_state" class="cos-item-state" text="{s:text}"/><Button id="jbf_cos_select_0" class="cos-select"><Label text="ВЫБРАТЬ"/></Button></Panel>
+                            <Panel id="jbf_cos_item_1" class="cos-item"><Label class="cos-item-icon" text="✦"/><Label id="jbf_cos_item_1_name" class="cos-item-name" text="{s:text}"/><Label id="jbf_cos_item_1_type" class="cos-item-type" text="{s:text}"/><Label id="jbf_cos_item_1_state" class="cos-item-state" text="{s:text}"/><Button id="jbf_cos_select_1" class="cos-select"><Label text="ВЫБРАТЬ"/></Button></Panel>
+                            <Panel id="jbf_cos_item_2" class="cos-item"><Label class="cos-item-icon" text="✦"/><Label id="jbf_cos_item_2_name" class="cos-item-name" text="{s:text}"/><Label id="jbf_cos_item_2_type" class="cos-item-type" text="{s:text}"/><Label id="jbf_cos_item_2_state" class="cos-item-state" text="{s:text}"/><Button id="jbf_cos_select_2" class="cos-select"><Label text="ВЫБРАТЬ"/></Button></Panel>
+                            <Panel id="jbf_cos_item_3" class="cos-item"><Label class="cos-item-icon" text="✦"/><Label id="jbf_cos_item_3_name" class="cos-item-name" text="{s:text}"/><Label id="jbf_cos_item_3_type" class="cos-item-type" text="{s:text}"/><Label id="jbf_cos_item_3_state" class="cos-item-state" text="{s:text}"/><Button id="jbf_cos_select_3" class="cos-select"><Label text="ВЫБРАТЬ"/></Button></Panel>
+                            <Panel id="jbf_cos_item_4" class="cos-item"><Label class="cos-item-icon" text="✦"/><Label id="jbf_cos_item_4_name" class="cos-item-name" text="{s:text}"/><Label id="jbf_cos_item_4_type" class="cos-item-type" text="{s:text}"/><Label id="jbf_cos_item_4_state" class="cos-item-state" text="{s:text}"/><Button id="jbf_cos_select_4" class="cos-select"><Label text="ВЫБРАТЬ"/></Button></Panel>
+                            <Panel id="jbf_cos_item_5" class="cos-item"><Label class="cos-item-icon" text="✦"/><Label id="jbf_cos_item_5_name" class="cos-item-name" text="{s:text}"/><Label id="jbf_cos_item_5_type" class="cos-item-type" text="{s:text}"/><Label id="jbf_cos_item_5_state" class="cos-item-state" text="{s:text}"/><Button id="jbf_cos_select_5" class="cos-select"><Label text="ВЫБРАТЬ"/></Button></Panel>
+                        </Panel>
+                        <Panel class="cos-pager"><Button id="jbf_cos_prev"><Label text="‹"/></Button><Label id="jbf_cos_page" text="{s:text}"/><Button id="jbf_cos_next"><Label text="›"/></Button></Panel>
+                    </Panel>
+                    <Panel id="jbf_cos_details" class="cos-details">
+                        <Panel class="cos-preview"><Label id="jbf_cos_preview_symbol" text="{s:text}"/></Panel>
+                        <Label id="jbf_cos_detail_name" class="cos-detail-name" text="{s:text}"/>
+                        <Label id="jbf_cos_detail_meta" class="cos-detail-meta" text="{s:text}"/>
+                        <Label id="jbf_cos_detail_desc" class="cos-detail-desc" text="{s:text}"/>
+                        <Button id="jbf_cos_action" class="cos-action"><Label id="jbf_cos_action_text" text="{s:text}"/></Button>
+                        <Label class="cos-source-hint" text="Косметика не продаётся за игровые кредиты"/>
+                    </Panel>
+                </Panel>
+            </Panel>
+        </Panel>
+    </Panel>
+</root>
