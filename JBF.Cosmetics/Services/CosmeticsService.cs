@@ -197,7 +197,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
         for (var slot = 0; slot < Slots; slot++)
         {
             var index = page * Slots + slot;
-            var panel = $"jbf_cos_select_{slot}";
+            var panel = $"jbf_cos_item_{slot}";
             var visible = index < items.Length;
             _renderer.SetClass(player, panel, "visible", visible);
             if (!visible) continue;
