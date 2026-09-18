@@ -1,6 +1,10 @@
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Core.Capabilities;
+using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Timers;
 using JBF.Api;
 using JBF.Cosmetics.Models;
 using JBF.Cosmetics.Services;
@@ -14,7 +18,7 @@ public sealed class JBFCosmetics : BasePlugin
     private CosmeticsRenderer? _renderer;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -26,6 +30,13 @@ public sealed class JBFCosmetics : BasePlugin
         _service = new CosmeticsService(config, _renderer, m => Logger.LogError("{Message}", m));
         Capabilities.RegisterPluginCapability(CosmeticsCapability.Api, () => _service!);
         RegisterListener<Listeners.OnClientDisconnect>(slot => _service?.Disconnect(slot));
+        RegisterListener<Listeners.OnMapStart>(_ => _service?.OnMapStart());
+
+        if (hotReload)
+        {
+            foreach (var player in Utilities.GetPlayers().Where(p => p is { IsValid: true, IsBot: false, PawnIsAlive: true }))
+                AddTimer(0.25f, () => _service?.RefreshVisuals(player));
+        }
     }
 
     public override void Unload(bool hotReload)
@@ -35,8 +46,38 @@ public sealed class JBFCosmetics : BasePlugin
             _renderer.Clicked -= OnHudClicked;
             _renderer.Stop(this);
         }
+        _service?.Shutdown();
         _service = null;
         _renderer = null;
+    }
+
+    [GameEventHandler]
+    public HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player is { IsValid: true, IsBot: false })
+            AddTimer(0.25f, () => _service?.RefreshVisuals(player));
+        return HookResult.Continue;
+    }
+
+    [GameEventHandler]
+    public HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
+    {
+        _service?.OnDeath(@event.Userid);
+        return HookResult.Continue;
+    }
+
+    [ConsoleCommand("css_cos_grant_self", "Grant a cosmetic to yourself for testing")]
+    [RequiresPermissions("@jbf/admin")]
+    [CommandHelper(minArgs: 1, usage: "<cosmetic_id>", whoCanExecute: CommandUsage.CLIENT_ONLY)]
+    public void GrantSelf(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player is null || _service is null) return;
+        var id = command.GetArg(1);
+        if (!_service.Grant(player, id, "Admin"))
+            command.ReplyToCommand($"[JBF] Не удалось выдать косметику '{id}'.");
+        else
+            command.ReplyToCommand($"[JBF] Косметика '{id}' выдана.");
     }
 
     [ConsoleCommand("css_cosmetics", "Open JBF cosmetics")]

@@ -18,7 +18,11 @@ internal sealed class CosmeticsConfig
             Category = CosmeticCategory.Head,
             Rarity = "Legendary",
             Source = "BattlePass",
-            AssetPath = "models/jbf/cosmetics/frozen_forsaken_crown.vmdl",
+            AssetPath = "models/cosmetics/frozen_forsaken_crown/frozen_forsaken_crown.vmdl",
+            Attachment = "head",
+            Offset = [0.0f, 0.0f, 0.0f],
+            Rotation = [0.0f, 0.0f, 0.0f],
+            Scale = 1.0f,
             PreviewKey = "crown",
             Enabled = true
         }
@@ -75,6 +79,10 @@ internal sealed class CosmeticDefinition
     public string Rarity { get; set; } = "Common";
     public string Source { get; set; } = "BattlePass";
     public string AssetPath { get; set; } = "";
+    public string Attachment { get; set; } = "";
+    public float[] Offset { get; set; } = [0.0f, 0.0f, 0.0f];
+    public float[] Rotation { get; set; } = [0.0f, 0.0f, 0.0f];
+    public float Scale { get; set; } = 1.0f;
     public string PreviewKey { get; set; } = "";
     public bool Enabled { get; set; } = true;
 }

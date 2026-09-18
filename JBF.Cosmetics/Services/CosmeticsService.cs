@@ -10,6 +10,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
     private readonly CosmeticsConfig _config;
     private readonly CosmeticsStorage _storage;
     private readonly CosmeticsRenderer _renderer;
+    private readonly CosmeticsVisualService _visuals;
     private readonly Action<string>? _log;
     private readonly Dictionary<ulong, HashSet<string>> _owned;
     private readonly Dictionary<ulong, Dictionary<CosmeticCategory, string>> _equipped;
@@ -21,6 +22,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
     {
         _config = config;
         _renderer = renderer;
+        _visuals = new CosmeticsVisualService(log);
         _log = log;
         _storage = new CosmeticsStorage(config.Database);
         (_owned, _equipped) = _storage.LoadAll(log);
@@ -108,6 +110,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
         if (!_storage.SaveEquip(player.SteamID, item.Category, cosmeticId, _log)) return false;
         if (!_equipped.TryGetValue(player.SteamID, out var map)) _equipped[player.SteamID] = map = [];
         map[item.Category] = cosmeticId;
+        _visuals.Apply(player, item);
         UiCapability.Api.Get()?.Notify(player, $"Экипировано: {item.Name}", UiNotificationType.Success, 3f);
         return true;
     }
@@ -117,6 +120,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
         if (!Usable(player)) return false;
         if (!_storage.SaveEquip(player.SteamID, category, null, _log)) return false;
         if (_equipped.TryGetValue(player.SteamID, out var map)) map.Remove(category);
+        _visuals.Remove(player, category);
         UiCapability.Api.Get()?.Notify(player, "Косметика снята.", UiNotificationType.Info, 3f);
         return true;
     }
@@ -124,8 +128,34 @@ internal sealed class CosmeticsService : ICosmeticsApi
     public string? GetEquipped(CCSPlayerController player, CosmeticCategory category)
         => Usable(player) && _equipped.TryGetValue(player.SteamID, out var map) ? map.GetValueOrDefault(category) : null;
 
+    public void RefreshVisuals(CCSPlayerController player)
+    {
+        if (!Usable(player)) return;
+        _visuals.RemoveAll(player);
+        if (!player.PawnIsAlive) return;
+        if (!_equipped.TryGetValue(player.SteamID, out var map)) return;
+
+        foreach (var cosmeticId in map.Values.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var item = Find(cosmeticId);
+            if (item is not null)
+                _visuals.Apply(player, item);
+        }
+    }
+
+    public void OnDeath(CCSPlayerController? player)
+    {
+        if (player is not null)
+            _visuals.RemoveAll(player);
+    }
+
+    public void OnMapStart() => _visuals.Reset();
+
+    public void Shutdown() => _visuals.Reset();
+
     public void Disconnect(int slot)
     {
+        _visuals.RemoveAll(slot);
         _categories.Remove(slot);
         _pages.Remove(slot);
         _selected.Remove(slot);
