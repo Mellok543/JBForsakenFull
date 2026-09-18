@@ -5,6 +5,7 @@ using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Timers;
+using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
 using JBF.Cosmetics.Models;
 using JBF.Cosmetics.Services;
@@ -16,14 +17,16 @@ public sealed class JBFCosmetics : BasePlugin
 {
     private CosmeticsService? _service;
     private CosmeticsRenderer? _renderer;
+    private CosmeticsConfig? _config;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
         var config = CosmeticsConfig.LoadOrCreate(Path.Combine(ModuleDirectory, "cosmetics.json"), m => Logger.LogError("{Message}", m));
+        _config = config;
         _renderer = new CosmeticsRenderer(m => Logger.LogInformation("{Message}", m));
         _renderer.Clicked += OnHudClicked;
         _renderer.Start(this, hotReload);
@@ -31,6 +34,7 @@ public sealed class JBFCosmetics : BasePlugin
         Capabilities.RegisterPluginCapability(CosmeticsCapability.Api, () => _service!);
         RegisterListener<Listeners.OnClientDisconnect>(slot => _service?.Disconnect(slot));
         RegisterListener<Listeners.OnMapStart>(_ => _service?.OnMapStart());
+        RegisterListener<Listeners.OnServerPrecacheResources>(OnServerPrecacheResources);
 
         if (hotReload)
         {
@@ -49,6 +53,28 @@ public sealed class JBFCosmetics : BasePlugin
         _service?.Shutdown();
         _service = null;
         _renderer = null;
+        _config = null;
+    }
+
+    private void OnServerPrecacheResources(ResourceManifest manifest)
+    {
+        if (_config is null) return;
+
+        foreach (var item in _config.Items.Where(x =>
+                     x.Enabled &&
+                     x.Category is CosmeticCategory.Head or CosmeticCategory.Back &&
+                     !string.IsNullOrWhiteSpace(x.AssetPath)))
+        {
+            try
+            {
+                manifest.AddResource(item.AssetPath);
+                Logger.LogInformation("Cosmetics: added resource to manifest: {AssetPath}", item.AssetPath);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Cosmetics: failed to add resource to manifest: {AssetPath}", item.AssetPath);
+            }
+        }
     }
 
     [GameEventHandler]
