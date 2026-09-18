@@ -25,8 +25,6 @@ internal sealed class CosmeticsVisualService
 
         try
         {
-            Server.PrecacheModel(item.AssetPath);
-
             var prop = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
             if (prop is null || !prop.IsValid)
             {
