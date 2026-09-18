@@ -1,6 +1,5 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Extensions;
 using JBF.Api;
 using JBF.Cosmetics.Models;
 
@@ -9,7 +8,7 @@ namespace JBF.Cosmetics.Services;
 internal sealed class CosmeticsVisualService
 {
     private readonly Action<string>? _log;
-    private readonly Dictionary<int, Dictionary<CosmeticCategory, CDynamicProp>> _entities = [];
+    private readonly Dictionary<int, Dictionary<CosmeticCategory, VisualEntry>> _entities = [];
 
     public CosmeticsVisualService(Action<string>? log = null) => _log = log;
 
@@ -35,29 +34,44 @@ internal sealed class CosmeticsVisualService
             prop.SetModel(item.AssetPath);
             prop.DispatchSpawn();
 
-            var origin = pawn.AbsOrigin;
-            var angles = pawn.AbsRotation;
-            if (origin is not null)
-                prop.Teleport(origin, angles, null);
-
-            // Parent to the player pawn first. Source 2 accepts !activator as the SetParent target.
-            prop.AcceptInput("SetParent", pawn, pawn, "!activator");
-
-            if (!string.IsNullOrWhiteSpace(item.Attachment))
-                prop.AcceptInput("SetParentAttachment", pawn, pawn, item.Attachment);
-
-            ApplyLocalTransform(prop, item);
+            var entry = new VisualEntry(prop, item);
+            ApplyScale(entry);
+            UpdateEntry(player, entry);
 
             if (!_entities.TryGetValue(player.Slot, out var map))
                 _entities[player.Slot] = map = [];
-            map[item.Category] = prop;
+            map[item.Category] = entry;
 
-            _log?.Invoke($"Cosmetics: attached {item.Id} to {player.PlayerName} ({item.Attachment}).");
+            _log?.Invoke($"Cosmetics: attached {item.Id} to {player.PlayerName} using world-follow offset.");
         }
         catch (Exception ex)
         {
             _log?.Invoke($"Cosmetics: failed to attach {item.Id} to {player.PlayerName}: {ex.Message}");
             Remove(player.Slot, item.Category);
+        }
+    }
+
+    public void Update()
+    {
+        if (_entities.Count == 0) return;
+
+        var players = Utilities.GetPlayers()
+            .Where(CanRender)
+            .ToDictionary(player => player.Slot);
+
+        foreach (var (slot, map) in _entities.ToArray())
+        {
+            if (!players.TryGetValue(slot, out var player))
+            {
+                RemoveAll(slot);
+                continue;
+            }
+
+            foreach (var entry in map.Values.ToArray())
+            {
+                if (entry.Entity is not { IsValid: true }) continue;
+                UpdateEntry(player, entry);
+            }
         }
     }
 
@@ -68,8 +82,8 @@ internal sealed class CosmeticsVisualService
     public void RemoveAll(int slot)
     {
         if (!_entities.TryGetValue(slot, out var map)) return;
-        foreach (var entity in map.Values.ToArray())
-            SafeRemove(entity);
+        foreach (var entry in map.Values.ToArray())
+            SafeRemove(entry.Entity);
         _entities.Remove(slot);
     }
 
@@ -83,32 +97,48 @@ internal sealed class CosmeticsVisualService
     private void Remove(int slot, CosmeticCategory category)
     {
         if (!_entities.TryGetValue(slot, out var map)) return;
-        if (map.Remove(category, out var entity))
-            SafeRemove(entity);
+        if (map.Remove(category, out var entry))
+            SafeRemove(entry.Entity);
         if (map.Count == 0)
             _entities.Remove(slot);
     }
 
-    private static void ApplyLocalTransform(CDynamicProp prop, CosmeticDefinition item)
+    private static void UpdateEntry(CCSPlayerController player, VisualEntry entry)
     {
-        var node = prop.CBodyComponent?.SceneNode;
+        var pawn = player.PlayerPawn.Value;
+        var origin = pawn?.AbsOrigin;
+        var angles = pawn?.AbsRotation;
+        if (pawn is null || origin is null || angles is null || !entry.Entity.IsValid) return;
+
+        var offset = Normalize(entry.Item.Offset);
+        var rotation = Normalize(entry.Item.Rotation);
+
+        // Rotate local XY offset by the player's yaw so forward/back/side offsets follow the model.
+        var yawRad = angles.Y * MathF.PI / 180.0f;
+        var cos = MathF.Cos(yawRad);
+        var sin = MathF.Sin(yawRad);
+        var worldX = offset[0] * cos - offset[1] * sin;
+        var worldY = offset[0] * sin + offset[1] * cos;
+
+        var position = new CounterStrikeSharp.API.Modules.Utils.Vector(
+            origin.X + worldX,
+            origin.Y + worldY,
+            origin.Z + offset[2]);
+
+        var finalAngles = new CounterStrikeSharp.API.Modules.Utils.QAngle(
+            angles.X + rotation[0],
+            angles.Y + rotation[1],
+            angles.Z + rotation[2]);
+
+        entry.Entity.Teleport(position, finalAngles, null);
+    }
+
+    private static void ApplyScale(VisualEntry entry)
+    {
+        var node = entry.Entity.CBodyComponent?.SceneNode;
         if (node is null) return;
-
-        var offset = Normalize(item.Offset);
-        var rotation = Normalize(item.Rotation);
-
-        node.Origin.X = offset[0];
-        node.Origin.Y = offset[1];
-        node.Origin.Z = offset[2];
-
-        node.Rotation.X = rotation[0];
-        node.Rotation.Y = rotation[1];
-        node.Rotation.Z = rotation[2];
-
-        node.Scale = Math.Clamp(item.Scale, 0.01f, 10.0f);
-
-        // Origin/rotation/scale live under the body component, so mark it dirty for clients.
-        Utilities.SetStateChanged(prop, "CBaseEntity", "m_CBodyComponent");
+        node.Scale = Math.Clamp(entry.Item.Scale, 0.01f, 10.0f);
+        Utilities.SetStateChanged(entry.Entity, "CBaseEntity", "m_CBodyComponent");
     }
 
     private static float[] Normalize(float[]? values)
@@ -130,4 +160,6 @@ internal sealed class CosmeticsVisualService
     private static bool CanRender(CCSPlayerController? player)
         => player is { IsValid: true, IsBot: false, PawnIsAlive: true }
            && player.PlayerPawn.Value is { IsValid: true };
+
+    private sealed record VisualEntry(CDynamicProp Entity, CosmeticDefinition Item);
 }
