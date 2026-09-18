@@ -92,14 +92,14 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
 
         if (_state == SetupState.WaitingStart)
         {
-            var candidate = new Vector(origin.X, origin.Y, origin.Z);
-            if (IsTooCloseToWall(player, candidate))
+            var startCandidate = new Vector(origin.X, origin.Y, origin.Z);
+            if (IsTooCloseToWall(player, startCandidate))
             {
                 UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
                 return;
             }
 
-            _start = candidate;
+            _start = startCandidate;
             _state = SetupState.WaitingFinish;
             UiCapability.Api.Get()?.Notify(player, "Старт сохранён. Встаньте в ФИНИШ и нажмите E", UiNotificationType.Info, 8.0f);
             return;
@@ -107,14 +107,14 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
 
         if (_state != SetupState.WaitingFinish || _start is null) return;
 
-        var candidate = new Vector(origin.X, origin.Y, origin.Z);
-        if (IsTooCloseToWall(player, candidate))
+        var finishCandidate = new Vector(origin.X, origin.Y, origin.Z);
+        if (IsTooCloseToWall(player, finishCandidate))
         {
             UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
             return;
         }
 
-        if (Distance2D(candidate, _start) < MinCourseLength)
+        if (Distance2D(finishCandidate, _start) < MinCourseLength)
         {
             UiCapability.Api.Get()?.Notify(player,
                 $"Финиш слишком близко к старту. Минимум {MinCourseLength:0} юнитов.",
@@ -122,7 +122,7 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
             return;
         }
 
-        _finish = candidate;
+        _finish = finishCandidate;
         DrawCourse();
         BeginRace();
     }
