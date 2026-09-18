@@ -279,6 +279,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
         yield return ("jbf_cos_cat_all", null);
         yield return ("jbf_cos_cat_head", CosmeticCategory.Head);
         yield return ("jbf_cos_cat_back", CosmeticCategory.Back);
+        yield return ("jbf_cos_cat_pet", CosmeticCategory.ShoulderPet);
         yield return ("jbf_cos_cat_trail", CosmeticCategory.Trail);
         yield return ("jbf_cos_cat_aura", CosmeticCategory.Aura);
         yield return ("jbf_cos_cat_death", CosmeticCategory.DeathEffect);
@@ -295,6 +296,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
     {
         CosmeticCategory.Head => "ГОЛОВА",
         CosmeticCategory.Back => "СПИНА",
+        CosmeticCategory.ShoulderPet => "ПИТОМЕЦ НА ПЛЕЧЕ",
         CosmeticCategory.Trail => "ТРЕЙЛ",
         CosmeticCategory.Aura => "АУРА",
         CosmeticCategory.DeathEffect => "ЭФФЕКТ СМЕРТИ",
@@ -314,6 +316,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
     {
         CosmeticCategory.Head => "♛",
         CosmeticCategory.Back => "◆",
+        CosmeticCategory.ShoulderPet => "●",
         CosmeticCategory.Trail => "≋",
         CosmeticCategory.Aura => "✦",
         CosmeticCategory.DeathEffect => "☠",

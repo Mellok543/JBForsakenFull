@@ -21,7 +21,7 @@ public sealed class JBFCosmetics : BasePlugin
     private string? _configPath;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.6.2";
+    public override string ModuleVersion => "1.7.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -65,7 +65,7 @@ public sealed class JBFCosmetics : BasePlugin
 
         foreach (var item in _config.Items.Where(x =>
                      x.Enabled &&
-                     x.Category is CosmeticCategory.Head or CosmeticCategory.Back &&
+                     x.Category is CosmeticCategory.Head or CosmeticCategory.Back or CosmeticCategory.ShoulderPet &&
                      !string.IsNullOrWhiteSpace(x.AssetPath)))
         {
             try
@@ -151,6 +151,7 @@ public sealed class JBFCosmetics : BasePlugin
             case "jbf_cos_cat_all": _service.SetCategory(player, null); return;
             case "jbf_cos_cat_head": _service.SetCategory(player, CosmeticCategory.Head); return;
             case "jbf_cos_cat_back": _service.SetCategory(player, CosmeticCategory.Back); return;
+            case "jbf_cos_cat_pet": _service.SetCategory(player, CosmeticCategory.ShoulderPet); return;
             case "jbf_cos_cat_trail": _service.SetCategory(player, CosmeticCategory.Trail); return;
             case "jbf_cos_cat_aura": _service.SetCategory(player, CosmeticCategory.Aura); return;
             case "jbf_cos_cat_death": _service.SetCategory(player, CosmeticCategory.DeathEffect); return;
@@ -160,7 +161,7 @@ public sealed class JBFCosmetics : BasePlugin
             case "jbf_cos_action": _service.ToggleSelected(player); return;
         }
 
-        const string prefix = "jbf_cos_select_";
+        const string prefix = "jbf_cos_item_";
         if (id.StartsWith(prefix, StringComparison.Ordinal) && int.TryParse(id[prefix.Length..], out var slot))
             _service.SelectSlot(player, slot);
     }

@@ -15,7 +15,7 @@ internal sealed class CosmeticsVisualService
     public void Apply(CCSPlayerController player, CosmeticDefinition item)
     {
         if (!CanRender(player) || string.IsNullOrWhiteSpace(item.AssetPath)) return;
-        if (item.Category is not (CosmeticCategory.Head or CosmeticCategory.Back)) return;
+        if (item.Category is not (CosmeticCategory.Head or CosmeticCategory.Back or CosmeticCategory.ShoulderPet)) return;
 
         Remove(player.Slot, item.Category);
 

@@ -7,5 +7,6 @@ public enum CosmeticCategory
     Trail,
     Aura,
     DeathEffect,
-    PlayerModel
+    PlayerModel,
+    ShoulderPet
 }
