@@ -20,7 +20,7 @@ public sealed class JBFCosmetics : BasePlugin
     private CosmeticsConfig? _config;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.4.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -35,7 +35,6 @@ public sealed class JBFCosmetics : BasePlugin
         RegisterListener<Listeners.OnClientDisconnect>(slot => _service?.Disconnect(slot));
         RegisterListener<Listeners.OnMapStart>(_ => _service?.OnMapStart());
         RegisterListener<Listeners.OnServerPrecacheResources>(OnServerPrecacheResources);
-        RegisterListener<Listeners.OnTick>(() => _service?.UpdateVisuals());
 
         if (hotReload)
         {

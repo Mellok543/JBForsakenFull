@@ -143,7 +143,6 @@ internal sealed class CosmeticsService : ICosmeticsApi
         }
     }
 
-    public void UpdateVisuals() => _visuals.Update();
 
     public void OnDeath(CCSPlayerController? player)
     {
