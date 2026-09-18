@@ -177,7 +177,7 @@ internal sealed class CosmeticsService : ICosmeticsApi
         for (var slot = 0; slot < Slots; slot++)
         {
             var index = page * Slots + slot;
-            var panel = $"jbf_cos_item_{slot}";
+            var panel = $"jbf_cos_select_{slot}";
             var visible = index < items.Length;
             _renderer.SetClass(player, panel, "visible", visible);
             if (!visible) continue;
@@ -186,9 +186,9 @@ internal sealed class CosmeticsService : ICosmeticsApi
             var owned = Owns(player, item.Id);
             var equipped = GetEquipped(player, item.Category)?.Equals(item.Id, StringComparison.OrdinalIgnoreCase) == true;
             var selected = _selected.GetValueOrDefault(player.Slot)?.Equals(item.Id, StringComparison.OrdinalIgnoreCase) == true;
-            _renderer.Text(player, $"{panel}_name", item.Name);
-            _renderer.Text(player, $"{panel}_type", CategoryName(item.Category));
-            _renderer.Text(player, $"{panel}_state", equipped ? "ЭКИПИРОВАНО" : owned ? "ДОСТУПНО" : SourceName(item.Source));
+            _renderer.Text(player, $"jbf_cos_item_{slot}_name", item.Name);
+            _renderer.Text(player, $"jbf_cos_item_{slot}_type", CategoryName(item.Category));
+            _renderer.Text(player, $"jbf_cos_item_{slot}_state", equipped ? "ЭКИПИРОВАНО" : owned ? "ДОСТУПНО" : SourceName(item.Source));
             _renderer.SetClass(player, panel, "owned", owned);
             _renderer.SetClass(player, panel, "equipped", equipped);
             _renderer.SetClass(player, panel, "selected", selected);

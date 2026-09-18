@@ -20,7 +20,7 @@ public sealed class JBFCosmetics : BasePlugin
     private CosmeticsConfig? _config;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.4.0";
+    public override string ModuleVersion => "1.5.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
