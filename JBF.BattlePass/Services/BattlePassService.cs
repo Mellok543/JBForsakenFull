@@ -36,6 +36,32 @@ internal sealed class BattlePassService : IBattlePassApi
         _states = _storage.LoadAll(log);
     }
 
+    public bool ReloadConfig(BattlePassConfig config, out string error)
+    {
+        error = string.Empty;
+
+        if (!config.SeasonId.Equals(_config.SeasonId, StringComparison.OrdinalIgnoreCase))
+        {
+            error = "SeasonId нельзя менять через reload; требуется перезапуск плагина.";
+            return false;
+        }
+
+        _config.SeasonName = config.SeasonName;
+        _config.XpPerLevel = config.XpPerLevel;
+        _config.MaxLevel = config.MaxLevel;
+        _config.Missions = config.Missions;
+        _config.Rewards = config.Rewards;
+
+        foreach (var player in Utilities.GetPlayers().Where(IsUsable))
+        {
+            _pages[player.Slot] = Math.Min(_pages.GetValueOrDefault(player.Slot), MaxPage(player));
+            if (_tabs.ContainsKey(player.Slot))
+                Render(player);
+        }
+
+        return true;
+    }
+
     public void Open(CCSPlayerController player)
     {
         if (!IsUsable(player)) return;

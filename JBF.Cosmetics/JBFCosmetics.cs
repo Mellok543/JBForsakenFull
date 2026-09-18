@@ -18,14 +18,16 @@ public sealed class JBFCosmetics : BasePlugin
     private CosmeticsService? _service;
     private CosmeticsRenderer? _renderer;
     private CosmeticsConfig? _config;
+    private string? _configPath;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.5.0";
+    public override string ModuleVersion => "1.6.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
-        var config = CosmeticsConfig.LoadOrCreate(Path.Combine(ModuleDirectory, "cosmetics.json"), m => Logger.LogError("{Message}", m));
+        _configPath = Path.Combine(ModuleDirectory, "cosmetics.json");
+        var config = CosmeticsConfig.LoadOrCreate(_configPath, m => Logger.LogError("{Message}", m));
         _config = config;
         _renderer = new CosmeticsRenderer(m => Logger.LogInformation("{Message}", m));
         _renderer.Clicked += OnHudClicked;
@@ -54,6 +56,7 @@ public sealed class JBFCosmetics : BasePlugin
         _service = null;
         _renderer = null;
         _config = null;
+        _configPath = null;
     }
 
     private void OnServerPrecacheResources(ResourceManifest manifest)
@@ -91,6 +94,32 @@ public sealed class JBFCosmetics : BasePlugin
     {
         _service?.OnDeath(@event.Userid);
         return HookResult.Continue;
+    }
+
+    [ConsoleCommand("css_cos_reload", "Reload cosmetics config")]
+    [RequiresPermissions("@jbf/admin")]
+    public void ReloadConfig(CCSPlayerController? player, CommandInfo command)
+    {
+        if (_service is null || _config is null || string.IsNullOrWhiteSpace(_configPath))
+        {
+            command.ReplyToCommand("[JBF] Cosmetics ещё не готов.");
+            return;
+        }
+
+        if (!CosmeticsConfig.TryLoad(_configPath, out var config, out var error))
+        {
+            command.ReplyToCommand($"[JBF] Ошибка cosmetics.json: {error}");
+            return;
+        }
+
+        if (!_service.ReloadConfig(config, out var reloadError))
+        {
+            command.ReplyToCommand($"[JBF] Не удалось перезагрузить Cosmetics: {reloadError}");
+            return;
+        }
+
+        _config.Items = config.Items;
+        command.ReplyToCommand("[JBF] Cosmetics config перезагружен. Новым моделям всё ещё нужна смена карты для resource manifest.");
     }
 
     [ConsoleCommand("css_cos_grant_self", "Grant a cosmetic to yourself for testing")]

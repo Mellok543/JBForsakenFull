@@ -2,6 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Timers;
 using JBF.Api;
 using JBF.BattlePass.Models;
@@ -15,15 +16,16 @@ public sealed class JBFBattlePass : BasePlugin
     private BattlePassService? _service;
     private BattlePassRenderer? _renderer;
     private ILrApi? _lr;
+    private string? _configPath;
 
     public override string ModuleName => "JBF Battle Pass";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
-        var configPath = Path.Combine(ModuleDirectory, "battlepass.json");
-        var config = BattlePassConfig.LoadOrCreate(configPath, message => Logger.LogError("{Message}", message));
+        _configPath = Path.Combine(ModuleDirectory, "battlepass.json");
+        var config = BattlePassConfig.LoadOrCreate(_configPath, message => Logger.LogError("{Message}", message));
         _renderer = new BattlePassRenderer(message => Logger.LogInformation("{Message}", message));
         _renderer.Clicked += OnHudClicked;
         _renderer.Start(this, hotReload);
@@ -51,6 +53,7 @@ public sealed class JBFBattlePass : BasePlugin
         _service?.Shutdown();
         _service = null;
         _renderer = null;
+        _configPath = null;
     }
 
     [ConsoleCommand("css_bp", "Open Winter Battle Pass")]
@@ -59,6 +62,31 @@ public sealed class JBFBattlePass : BasePlugin
     {
         if (player is null) return;
         _service?.Open(player);
+    }
+
+    [ConsoleCommand("css_bp_reload", "Reload Battle Pass config")]
+    [RequiresPermissions("@jbf/admin")]
+    public void OnReload(CCSPlayerController? player, CommandInfo command)
+    {
+        if (_service is null || string.IsNullOrWhiteSpace(_configPath))
+        {
+            command.ReplyToCommand("[JBF] Battle Pass ещё не готов.");
+            return;
+        }
+
+        if (!BattlePassConfig.TryLoad(_configPath, out var config, out var error))
+        {
+            command.ReplyToCommand($"[JBF] Ошибка battlepass.json: {error}");
+            return;
+        }
+
+        if (!_service.ReloadConfig(config, out var reloadError))
+        {
+            command.ReplyToCommand($"[JBF] Не удалось перезагрузить Battle Pass: {reloadError}");
+            return;
+        }
+
+        command.ReplyToCommand("[JBF] Battle Pass config перезагружен.");
     }
 
     [ConsoleCommand("css_bp_close", "Close Battle Pass")]

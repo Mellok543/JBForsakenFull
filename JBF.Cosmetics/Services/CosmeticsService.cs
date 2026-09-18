@@ -28,6 +28,26 @@ internal sealed class CosmeticsService : ICosmeticsApi
         (_owned, _equipped) = _storage.LoadAll(log);
     }
 
+    public bool ReloadConfig(CosmeticsConfig config, out string error)
+    {
+        error = string.Empty;
+
+        // Storage is bound to the database configured at plugin startup. Live reload is for
+        // cosmetic definitions; database changes require a plugin restart.
+        _config.Items = config.Items;
+
+        foreach (var player in CounterStrikeSharp.API.Utilities.GetPlayers().Where(Usable))
+        {
+            _selected.Remove(player.Slot);
+            _pages[player.Slot] = Math.Min(_pages.GetValueOrDefault(player.Slot), MaxPage(player));
+            RefreshVisuals(player);
+            if (_categories.ContainsKey(player.Slot))
+                Render(player);
+        }
+
+        return true;
+    }
+
     public void Open(CCSPlayerController player)
     {
         if (!Usable(player)) return;

@@ -44,6 +44,38 @@ internal sealed class BattlePassConfig
         }
     }
 
+    public static bool TryLoad(string path, out BattlePassConfig config, out string error)
+    {
+        config = new BattlePassConfig();
+        error = string.Empty;
+
+        try
+        {
+            if (!File.Exists(path))
+            {
+                error = "Файл не найден.";
+                return false;
+            }
+
+            config = JsonSerializer.Deserialize<BattlePassConfig>(File.ReadAllText(path), JsonOptions())
+                     ?? throw new InvalidDataException("Пустой или некорректный JSON.");
+
+            if (string.IsNullOrWhiteSpace(config.SeasonId))
+                throw new InvalidDataException("SeasonId не может быть пустым.");
+            if (config.XpPerLevel <= 0)
+                throw new InvalidDataException("XpPerLevel должен быть больше 0.");
+            if (config.MaxLevel <= 0)
+                throw new InvalidDataException("MaxLevel должен быть больше 0.");
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
     private static void Save(string path, BattlePassConfig config)
     {
         File.WriteAllText(path, JsonSerializer.Serialize(config, JsonOptions()));

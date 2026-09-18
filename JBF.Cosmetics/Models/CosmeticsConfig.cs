@@ -60,6 +60,44 @@ internal sealed class CosmeticsConfig
     }
 }
 
+    public static bool TryLoad(string path, out CosmeticsConfig config, out string error)
+    {
+        config = new CosmeticsConfig();
+        error = string.Empty;
+
+        try
+        {
+            if (!File.Exists(path))
+            {
+                error = "Файл не найден.";
+                return false;
+            }
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            };
+            options.Converters.Add(new JsonStringEnumConverter());
+
+            config = JsonSerializer.Deserialize<CosmeticsConfig>(File.ReadAllText(path), options)
+                     ?? throw new InvalidDataException("Пустой или некорректный JSON.");
+
+            var duplicate = config.Items
+                .GroupBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault(group => string.IsNullOrWhiteSpace(group.Key) || group.Count() > 1);
+            if (duplicate is not null)
+                throw new InvalidDataException($"Повторяющийся или пустой cosmetic Id: '{duplicate.Key}'.");
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+    }
+
 internal sealed class CosmeticsDatabaseConfig
 {
     public string Host { get; set; } = "127.0.0.1";
