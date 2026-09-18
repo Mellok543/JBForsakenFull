@@ -192,17 +192,24 @@ internal sealed class LrService : ILrApi
             Server.PrintToChatAll(JailbreakChat.Format("Время LR: осталось 2 заключённых. Они получили бессмертие на 10 секунд."));
         }
 
-        if (aliveInmates.Length != 1 || _activeMatch is not null || _lastInmateMenuOpened)
+        if (aliveInmates.Length is < 1 or > 2 || _activeMatch is not null || _lastInmateMenuOpened)
             return;
 
-        var last = aliveInmates[0];
         var aliveGuards = Utilities.GetPlayers().Any(player =>
             player.IsUsable() && player.PawnIsAlive && player.Team == CsTeam.CounterTerrorist);
         if (!aliveGuards) return;
 
         _lastInmateMenuOpened = true;
-        UiCapability.Api.Get()?.Announce(last, "LAST REQUEST", "Выберите игру и соперника", UiNotificationType.Success, 4.0f);
-        OpenMenu(last);
+        foreach (var inmate in aliveInmates)
+        {
+            UiCapability.Api.Get()?.Announce(
+                inmate,
+                "LAST REQUEST",
+                aliveInmates.Length == 2 ? "Осталось 2 заключённых • выберите игру и соперника" : "Выберите игру и соперника",
+                UiNotificationType.Success,
+                4.0f);
+            OpenMenu(inmate);
+        }
     }
 
     private bool CanOpenLr(CCSPlayerController player)
@@ -231,10 +238,11 @@ internal sealed class LrService : ILrApi
             return false;
         }
 
-        var aliveInmates = Utilities.GetPlayers().Count(candidate => candidate.IsUsable() && candidate.PawnIsAlive && candidate.Team == CsTeam.Terrorist);
-        if (aliveInmates != 1)
+        var aliveInmates = Utilities.GetPlayers().Count(candidate =>
+            candidate.IsUsable() && candidate.PawnIsAlive && candidate.Team == CsTeam.Terrorist);
+        if (aliveInmates is < 1 or > 2)
         {
-            player.PrintToChat(JailbreakChat.Format("LR доступен последнему живому заключённому."));
+            player.PrintToChat(JailbreakChat.Format("LR доступен, когда осталось не больше двух живых заключённых."));
             return false;
         }
 
