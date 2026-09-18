@@ -21,7 +21,7 @@ public sealed class JBFCosmetics : BasePlugin
     private string? _configPath;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.7.2";
+    public override string ModuleVersion => "1.7.3";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -161,12 +161,8 @@ public sealed class JBFCosmetics : BasePlugin
             case "jbf_cos_action": _service.ToggleSelected(player); return;
         }
 
-        foreach (var prefix in new[] { "jbf_cos_select_", "jbf_cos_item_" })
-        {
-            if (!id.StartsWith(prefix, StringComparison.Ordinal)) continue;
-            if (int.TryParse(id[prefix.Length..], out var slot))
-                _service.SelectSlot(player, slot);
-            return;
-        }
+        const string prefix = "jbf_cos_select_";
+        if (id.StartsWith(prefix, StringComparison.Ordinal) && int.TryParse(id[prefix.Length..], out var slot))
+            _service.SelectSlot(player, slot);
     }
 }
