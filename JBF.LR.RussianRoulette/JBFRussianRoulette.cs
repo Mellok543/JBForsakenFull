@@ -12,7 +12,7 @@ public sealed class JBFRussianRoulette : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Russian Roulette";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -36,6 +36,8 @@ public sealed class JBFRussianRoulette : BasePlugin
 internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
 {
     private const float MovementTolerance = 8.0f;
+    private const float DesiredSeparation = 140.0f;
+    private const float MaxApproachPerPlayer = 128.0f;
     private ILrMatchContext? _context;
     private Vector? _inmateAnchor;
     private Vector? _guardianAnchor;
@@ -129,13 +131,31 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         var b = context.Guardian.PlayerPawn.Value?.AbsOrigin;
         if (a is null || b is null) return;
 
-        // The current player origins are already validated by the engine. Keeping them avoids
-        // arbitrary world-axis teleports that could place a participant inside map geometry.
-        _inmateAnchor = new Vector(a.X, a.Y, a.Z);
-        _guardianAnchor = new Vector(b.X, b.Y, b.Z);
+        var dx = b.X - a.X;
+        var dy = b.Y - a.Y;
+        var distance = MathF.Sqrt(dx * dx + dy * dy);
 
-        var inmateYaw = MathF.Atan2(b.Y - a.Y, b.X - a.X) * 180.0f / MathF.PI;
-        var guardianYaw = MathF.Atan2(a.Y - b.Y, a.X - b.X) * 180.0f / MathF.PI;
+        var inmate = new Vector(a.X, a.Y, a.Z);
+        var guardian = new Vector(b.X, b.Y, b.Z);
+
+        // Pull both players toward each other, but cap the displacement so we do not perform
+        // a large blind teleport across map geometry.
+        if (distance > DesiredSeparation && distance > 1.0f)
+        {
+            var shift = MathF.Min((distance - DesiredSeparation) * 0.5f, MaxApproachPerPlayer);
+            var nx = dx / distance;
+            var ny = dy / distance;
+            inmate.X += nx * shift;
+            inmate.Y += ny * shift;
+            guardian.X -= nx * shift;
+            guardian.Y -= ny * shift;
+        }
+
+        _inmateAnchor = inmate;
+        _guardianAnchor = guardian;
+
+        var inmateYaw = MathF.Atan2(_guardianAnchor.Y - _inmateAnchor.Y, _guardianAnchor.X - _inmateAnchor.X) * 180.0f / MathF.PI;
+        var guardianYaw = MathF.Atan2(_inmateAnchor.Y - _guardianAnchor.Y, _inmateAnchor.X - _guardianAnchor.X) * 180.0f / MathF.PI;
         _inmateAngle = new QAngle(0, inmateYaw, 0);
         _guardianAngle = new QAngle(0, guardianYaw, 0);
 

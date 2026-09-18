@@ -12,7 +12,7 @@ public sealed class JBFRace : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Race";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -38,11 +38,18 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
 {
     private const float FinishRadius = 72.0f;
     private const float StartLaneOffset = 42.0f;
+    private const float MinCourseLength = 300.0f;
+    private const int CountdownSeconds = 3;
     private readonly List<CBeam> _markers = [];
     private ILrMatchContext? _context;
     private Vector? _start;
     private Vector? _finish;
     private SetupState _state;
+    private Vector? _inmateStart;
+    private Vector? _guardianStart;
+    private QAngle? _startAngle;
+    private DateTime _countdownEndsAt;
+    private int _lastCountdownValue;
 
     public string Id => "race";
     public string Name => "Гонка";
@@ -65,6 +72,11 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         _start = null;
         _finish = null;
         _state = SetupState.None;
+        _inmateStart = null;
+        _guardianStart = null;
+        _startAngle = null;
+        _countdownEndsAt = default;
+        _lastCountdownValue = 0;
     }
 
     public bool IsWeaponAllowed(CBasePlayerWeapon weapon) =>
@@ -85,14 +97,33 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         }
 
         if (_state != SetupState.WaitingFinish || _start is null) return;
-        _finish = new Vector(origin.X, origin.Y, origin.Z);
+
+        var candidate = new Vector(origin.X, origin.Y, origin.Z);
+        if (Distance2D(candidate, _start) < MinCourseLength)
+        {
+            UiCapability.Api.Get()?.Notify(player,
+                $"Финиш слишком близко к старту. Минимум {MinCourseLength:0} юнитов.",
+                UiNotificationType.Warning, 5.0f);
+            return;
+        }
+
+        _finish = candidate;
         DrawCourse();
         BeginRace();
     }
 
     public void Tick()
     {
-        if (_context is null || _state != SetupState.Running || _finish is null) return;
+        if (_context is null) return;
+
+        if (_state == SetupState.Countdown)
+        {
+            HoldAtStart();
+            UpdateCountdown();
+            return;
+        }
+
+        if (_state != SetupState.Running || _finish is null) return;
         CheckFinish(_context.Inmate, _context.Guardian);
         if (_context is not null) CheckFinish(_context.Guardian, _context.Inmate);
     }
@@ -107,16 +138,46 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         var px = length > 1.0f ? -dy / length : 1.0f;
         var py = length > 1.0f ? dx / length : 0.0f;
 
-        var inmateStart = new Vector(_start.X + px * StartLaneOffset, _start.Y + py * StartLaneOffset, _start.Z);
-        var guardianStart = new Vector(_start.X - px * StartLaneOffset, _start.Y - py * StartLaneOffset, _start.Z);
+        _inmateStart = new Vector(_start.X + px * StartLaneOffset, _start.Y + py * StartLaneOffset, _start.Z);
+        _guardianStart = new Vector(_start.X - px * StartLaneOffset, _start.Y - py * StartLaneOffset, _start.Z);
         var yaw = MathF.Atan2(dy, dx) * 180.0f / MathF.PI;
-        var angle = new QAngle(0, yaw, 0);
+        _startAngle = new QAngle(0, yaw, 0);
 
-        _context.Inmate.PlayerPawn.Value?.Teleport(inmateStart, angle, new Vector());
-        _context.Guardian.PlayerPawn.Value?.Teleport(guardianStart, angle, new Vector());
-        _state = SetupState.Running;
-        UiCapability.Api.Get()?.Notify(_context.Inmate, "СТАРТ!", UiNotificationType.Success, 3.0f);
-        UiCapability.Api.Get()?.Notify(_context.Guardian, "СТАРТ!", UiNotificationType.Success, 3.0f);
+        _context.Inmate.PlayerPawn.Value?.Teleport(_inmateStart, _startAngle, new Vector());
+        _context.Guardian.PlayerPawn.Value?.Teleport(_guardianStart, _startAngle, new Vector());
+
+        _state = SetupState.Countdown;
+        _countdownEndsAt = DateTime.UtcNow.AddSeconds(CountdownSeconds);
+        _lastCountdownValue = 0;
+        UpdateCountdown();
+    }
+
+    private void HoldAtStart()
+    {
+        if (_context is null || _inmateStart is null || _guardianStart is null || _startAngle is null) return;
+        _context.Inmate.PlayerPawn.Value?.Teleport(_inmateStart, _startAngle, new Vector());
+        _context.Guardian.PlayerPawn.Value?.Teleport(_guardianStart, _startAngle, new Vector());
+    }
+
+    private void UpdateCountdown()
+    {
+        if (_context is null || _state != SetupState.Countdown) return;
+
+        var remaining = (_countdownEndsAt - DateTime.UtcNow).TotalSeconds;
+        if (remaining <= 0)
+        {
+            _state = SetupState.Running;
+            _lastCountdownValue = 0;
+            UiCapability.Api.Get()?.Notify(_context.Inmate, "СТАРТ!", UiNotificationType.Success, 2.0f);
+            UiCapability.Api.Get()?.Notify(_context.Guardian, "СТАРТ!", UiNotificationType.Success, 2.0f);
+            return;
+        }
+
+        var value = Math.Clamp((int)Math.Ceiling(remaining), 1, CountdownSeconds);
+        if (value == _lastCountdownValue) return;
+        _lastCountdownValue = value;
+        UiCapability.Api.Get()?.Notify(_context.Inmate, $"Старт через {value}...", UiNotificationType.Important, 1.1f);
+        UiCapability.Api.Get()?.Notify(_context.Guardian, $"Старт через {value}...", UiNotificationType.Important, 1.1f);
     }
 
     private void CheckFinish(CCSPlayerController runner, CCSPlayerController loser)
@@ -177,5 +238,5 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         return MathF.Sqrt(dx * dx + dy * dy);
     }
 
-    private enum SetupState { None, WaitingStart, WaitingFinish, Running }
+    private enum SetupState { None, WaitingStart, WaitingFinish, Countdown, Running }
 }

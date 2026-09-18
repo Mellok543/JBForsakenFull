@@ -20,7 +20,7 @@ public sealed class JBFWarden : BasePlugin
     }
 
     public override string ModuleName => "JBF Warden";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -120,6 +120,12 @@ public sealed class JBFWarden : BasePlugin
         if (SpecialDaysCapability.Api.Get()?.IsActive == true)
         {
             command.ReplyToCommand(JailbreakChat.Format("Во время игрового дня выбрать командира нельзя."));
+            return false;
+        }
+
+        if (LrCapability.Api.Get()?.IsActive == true)
+        {
+            command.ReplyToCommand(JailbreakChat.Format("Во время LR выбрать командира нельзя."));
             return false;
         }
 
