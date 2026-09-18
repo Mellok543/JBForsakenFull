@@ -58,8 +58,6 @@ internal sealed class CosmeticsConfig
             return new CosmeticsConfig();
         }
     }
-}
-
     public static bool TryLoad(string path, out CosmeticsConfig config, out string error)
     {
         config = new CosmeticsConfig();
@@ -97,6 +95,8 @@ internal sealed class CosmeticsConfig
             return false;
         }
     }
+
+}
 
 internal sealed class CosmeticsDatabaseConfig
 {

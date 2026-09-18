@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace JBF.BattlePass.Models;
 
@@ -81,12 +82,17 @@ internal sealed class BattlePassConfig
         File.WriteAllText(path, JsonSerializer.Serialize(config, JsonOptions()));
     }
 
-    private static JsonSerializerOptions JsonOptions() => new()
+    private static JsonSerializerOptions JsonOptions()
     {
-        WriteIndented = true,
-        PropertyNameCaseInsensitive = true,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-    };
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        options.Converters.Add(new JsonStringEnumConverter());
+        return options;
+    }
 
     private static List<MissionDefinition> DefaultMissions() =>
     [
