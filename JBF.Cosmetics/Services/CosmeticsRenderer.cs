@@ -55,13 +55,31 @@ internal sealed class CosmeticsRenderer
     public void Text(CCSPlayerController player, string id, string text)
     {
         if (!EnsureReady() || !player.IsValid) return;
-        _entity!.SetDialogVariableStringForPlayer(player, id, "text", text ?? "");
+
+        try
+        {
+            _entity!.SetDialogVariableStringForPlayer(player, id, "text", text ?? "");
+        }
+        catch (Exception ex)
+        {
+            _log?.Invoke($"Cosmetics HUD text update skipped for '{id}': {ex.Message}");
+        }
     }
 
     public void SetClass(CCSPlayerController player, string id, string name, bool value)
     {
         if (!EnsureReady() || !player.IsValid) return;
-        _entity!.SetHasClassForPlayer(player, id, name, value);
+
+        try
+        {
+            _entity!.SetHasClassForPlayer(player, id, name, value);
+        }
+        catch (Exception ex)
+        {
+            // During a Workshop UI update, a player can temporarily have an older layout
+            // without a newly added panel/category. Missing panel ids must not abort !cos.
+            _log?.Invoke($"Cosmetics HUD class update skipped for '{id}.{name}': {ex.Message}");
+        }
     }
 
     private bool EnsureReady()

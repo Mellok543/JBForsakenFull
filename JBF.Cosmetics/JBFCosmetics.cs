@@ -21,7 +21,7 @@ public sealed class JBFCosmetics : BasePlugin
     private string? _configPath;
 
     public override string ModuleName => "JBF Cosmetics";
-    public override string ModuleVersion => "1.7.1";
+    public override string ModuleVersion => "1.7.2";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
