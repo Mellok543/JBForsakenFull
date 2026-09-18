@@ -214,9 +214,24 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         if (_activeDay is null || _finishRequested) return;
 
         _finishRequested = true;
-        var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules")
-            .FirstOrDefault()?.GameRules;
-        gameRules?.TerminateRound(5.0f, reason);
+
+        // Special days deliberately disable the engine's normal win checks. Before forcing
+        // the result, re-enable them or TerminateRound can be ignored by the game rules.
+        ConVar.Find("mp_ignore_round_win_conditions")?.SetValue(false);
+
+        Server.NextFrame(() =>
+        {
+            var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules")
+                .FirstOrDefault()?.GameRules;
+
+            if (gameRules is null)
+            {
+                _finishRequested = false;
+                return;
+            }
+
+            gameRules.TerminateRound(3.0f, reason);
+        });
     }
 
     private static IEnumerable<CCSPlayerController> HumanPlayers() =>

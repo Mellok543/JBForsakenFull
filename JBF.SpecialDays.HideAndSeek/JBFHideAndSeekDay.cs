@@ -28,7 +28,7 @@ public sealed class JBFHideAndSeekDay : BasePlugin, ISpecialDay
     private bool _ctFrozen;
 
     public override string ModuleName => "JBF Special Day: Hide and Seek";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public string Id => "hide-and-seek";
@@ -122,23 +122,27 @@ public sealed class JBFHideAndSeekDay : BasePlugin, ISpecialDay
 
     public HookResult OnTakeDamage(CBaseEntity entity, CTakeDamageInfo damageInfo)
     {
-        if (!_ctFrozen || entity.DesignerName != "player")
-        {
+        if (entity.DesignerName != "player")
             return HookResult.Continue;
-        }
 
         var victim = entity.As<CCSPlayerPawn>().Controller.Value?.As<CCSPlayerController>();
         var attackerEntity = damageInfo.Attacker.Value;
         if (attackerEntity?.DesignerName != "player")
-        {
             return HookResult.Continue;
-        }
 
         var attacker = attackerEntity.As<CCSPlayerPawn>().Controller.Value?.As<CCSPlayerController>();
-        return IsUsable(victim) && IsUsable(attacker) &&
-               victim.Team == CsTeam.Terrorist && attacker.Team == CsTeam.CounterTerrorist
-            ? HookResult.Handled
-            : HookResult.Continue;
+        if (!IsUsable(victim) || !IsUsable(attacker))
+            return HookResult.Continue;
+
+        // Prisoners cannot damage guards during Hide and Seek.
+        if (attacker.Team == CsTeam.Terrorist && victim.Team == CsTeam.CounterTerrorist)
+            return HookResult.Handled;
+
+        // Guards are frozen during the hiding phase, so they also cannot damage prisoners yet.
+        if (_ctFrozen && attacker.Team == CsTeam.CounterTerrorist && victim.Team == CsTeam.Terrorist)
+            return HookResult.Handled;
+
+        return HookResult.Continue;
     }
 
     private void PreparePlayer(CCSPlayerController player)

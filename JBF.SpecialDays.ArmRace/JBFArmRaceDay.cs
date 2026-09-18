@@ -27,7 +27,7 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
     private Timer? _respawnTimer;
 
     public override string ModuleName => "JBF Special Day: Arm Race";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public string Id => "arm-race";
@@ -168,24 +168,30 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
 
         var kills = _kills.GetValueOrDefault(player.Slot);
         var level = Levels.Last(candidate => candidate.RequiredKills <= kills);
-        player.RemoveWeapons();
-
         var pawn = player.PlayerPawn.Value!;
-        if (pawn.WeaponServices is not null)
-            pawn.WeaponServices.PreventWeaponPickup = true;
 
+        // PreventWeaponPickup also blocks GiveNamedItem on CS2. Temporarily allow pickup while
+        // constructing the player's loadout, then lock pickups again on the next frame.
+        if (pawn.WeaponServices is not null)
+            pawn.WeaponServices.PreventWeaponPickup = false;
+
+        player.RemoveWeapons();
         player.GiveNamedItem(CsItem.Knife);
 
         if (level.GiveZeus)
-        {
             player.GiveNamedItem(CsItem.Zeus);
-        }
 
         var weapon = level.Weapons[Random.Shared.Next(level.Weapons.Count)];
         if (weapon != CsItem.Knife)
-        {
             player.GiveNamedItem(weapon);
-        }
+
+        Server.NextFrame(() =>
+        {
+            if (_context is null || !IsUsable(player) || !player.PawnIsAlive) return;
+            var currentPawn = player.PlayerPawn.Value;
+            if (currentPawn?.WeaponServices is not null)
+                currentPawn.WeaponServices.PreventWeaponPickup = true;
+        });
     }
 
     private void ApplySpawnProtection(CCSPlayerController player)

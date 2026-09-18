@@ -13,7 +13,7 @@ public sealed class JBFRussianRoulette : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Russian Roulette";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -40,7 +40,8 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
     private const float ArenaRadius = 110.0f;
     private const float PlayerOffset = 70.0f;
     private const float WallMargin = 28.0f;
-    private const float WallCheckHeight = 24.0f;
+    private static readonly float[] WallCheckHeights = [8.0f, 28.0f, 48.0f, 68.0f];
+    private const int WallCheckRays = 64;
     private static readonly TraceOptions WallTraceOptions = new()
     {
         InteractsWith = Masks.SolidBrushOnly,
@@ -205,11 +206,11 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         Vector guardianOrigin)
     {
         var candidates = new List<Vector> { preferredCenter };
-        foreach (var distance in new[] { 64.0f, 128.0f, 192.0f })
+        foreach (var distance in new[] { 64.0f, 128.0f, 192.0f, 256.0f, 320.0f })
         {
-            for (var i = 0; i < 8; i++)
+            for (var i = 0; i < 16; i++)
             {
-                var angle = MathF.PI * 2.0f * i / 8.0f;
+                var angle = MathF.PI * 2.0f * i / 16.0f;
                 candidates.Add(new Vector(
                     preferredCenter.X + MathF.Cos(angle) * distance,
                     preferredCenter.Y + MathF.Sin(angle) * distance,
@@ -233,20 +234,25 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         var pawn = player.PlayerPawn.Value;
         if (pawn is null) return false;
 
-        var start = new Vector(center.X, center.Y, center.Z + WallCheckHeight);
         var required = ArenaRadius + WallMargin;
 
-        for (var i = 0; i < 16; i++)
+        // Sweep the entire arena radius densely at several body heights. Any wall intersecting
+        // the playable circle rejects this center.
+        foreach (var height in WallCheckHeights)
         {
-            var angle = MathF.PI * 2.0f * i / 16.0f;
-            var end = new Vector(
-                start.X + MathF.Cos(angle) * required,
-                start.Y + MathF.Sin(angle) * required,
-                start.Z);
+            var start = new Vector(center.X, center.Y, center.Z + height);
+            for (var i = 0; i < WallCheckRays; i++)
+            {
+                var angle = MathF.PI * 2.0f * i / WallCheckRays;
+                var end = new Vector(
+                    start.X + MathF.Cos(angle) * required,
+                    start.Y + MathF.Sin(angle) * required,
+                    start.Z);
 
-            var trace = Trace.TraceEndShape(start, end, pawn, WallTraceOptions);
-            if (trace.DidHit() && Distance2D(start, trace.HitPoint) < required - 1.0f)
-                return false;
+                var trace = Trace.TraceEndShape(start, end, pawn, WallTraceOptions);
+                if (trace.DidHit() && Distance2D(start, trace.HitPoint) < required - 1.0f)
+                    return false;
+            }
         }
 
         return true;
@@ -257,8 +263,8 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         var pawn = player.PlayerPawn.Value;
         if (pawn is null) return false;
 
-        var start = new Vector(from.X, from.Y, from.Z + WallCheckHeight);
-        var end = new Vector(center.X, center.Y, center.Z + WallCheckHeight);
+        var start = new Vector(from.X, from.Y, from.Z + 32.0f);
+        var end = new Vector(center.X, center.Y, center.Z + 32.0f);
         var trace = Trace.TraceEndShape(start, end, pawn, WallTraceOptions);
         return !trace.DidHit() || Distance2D(trace.HitPoint, end) < 8.0f;
     }

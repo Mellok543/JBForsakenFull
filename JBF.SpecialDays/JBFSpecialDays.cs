@@ -14,7 +14,7 @@ public sealed class JBFSpecialDays : BasePlugin
     private ICommanderMenuApi? _commanderMenu;
 
     public override string ModuleName => "JBF Special Days";
-    public override string ModuleVersion => "1.1.1";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
