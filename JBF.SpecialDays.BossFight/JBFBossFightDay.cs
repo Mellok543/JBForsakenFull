@@ -31,7 +31,7 @@ public sealed class JBFBossFightDay : BasePlugin, ISpecialDay
     private bool _combatStarted;
 
     public override string ModuleName => "JBF Special Day: Boss Fight";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public string Id => "boss-fight";
@@ -110,15 +110,29 @@ public sealed class JBFBossFightDay : BasePlugin, ISpecialDay
 
     public void OnPlayerDeath(CCSPlayerController? victim, CCSPlayerController? attacker)
     {
-        if (victim == _boss)
+        Server.NextFrame(EvaluateWinner);
+    }
+
+    private void EvaluateWinner()
+    {
+        if (_context is null || _boss is null) return;
+
+        var bossAlive = IsUsable(_boss) && _boss.PawnIsAlive;
+        var othersAlive = ActivePlayers().Any(player => player.Slot != _boss.Slot);
+
+        if (!bossAlive)
         {
-            _context?.Finish(RoundEndReason.RoundDraw);
+            _context.Finish(_boss.Team == CsTeam.Terrorist
+                ? RoundEndReason.CTsWin
+                : RoundEndReason.TerroristsWin);
             return;
         }
 
-        if (ActivePlayers().Count(player => player != _boss) == 0)
+        if (!othersAlive)
         {
-            _context?.Finish(RoundEndReason.RoundDraw);
+            _context.Finish(_boss.Team == CsTeam.Terrorist
+                ? RoundEndReason.TerroristsWin
+                : RoundEndReason.CTsWin);
         }
     }
 

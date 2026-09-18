@@ -28,7 +28,7 @@ public sealed class JBFHideAndSeekDay : BasePlugin, ISpecialDay
     private bool _ctFrozen;
 
     public override string ModuleName => "JBF Special Day: Hide and Seek";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public string Id => "hide-and-seek";
@@ -102,12 +102,22 @@ public sealed class JBFHideAndSeekDay : BasePlugin, ISpecialDay
 
     public void OnPlayerDeath(CCSPlayerController? victim, CCSPlayerController? attacker)
     {
-        var aliveInmates = Utilities.GetPlayers().Count(player =>
+        Server.NextFrame(EvaluateWinner);
+    }
+
+    private void EvaluateWinner()
+    {
+        if (_context is null) return;
+
+        var aliveT = Utilities.GetPlayers().Count(player =>
             IsUsable(player) && player.PawnIsAlive && player.Team == CsTeam.Terrorist);
-        if (aliveInmates == 0)
-        {
-            _context?.Finish(RoundEndReason.CTsWin);
-        }
+        var aliveCt = Utilities.GetPlayers().Count(player =>
+            IsUsable(player) && player.PawnIsAlive && player.Team == CsTeam.CounterTerrorist);
+
+        if (aliveT == 0 && aliveCt > 0)
+            _context.Finish(RoundEndReason.CTsWin);
+        else if (aliveCt == 0 && aliveT > 0)
+            _context.Finish(RoundEndReason.TerroristsWin);
     }
 
     public HookResult OnTakeDamage(CBaseEntity entity, CTakeDamageInfo damageInfo)

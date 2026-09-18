@@ -89,7 +89,7 @@ internal sealed class BattlePassService : IBattlePassApi
         var state = GetState(player);
         var changed = false;
 
-        foreach (var mission in _config.Missions.Where(m => m.ObjectiveId.Equals(objectiveId, StringComparison.OrdinalIgnoreCase)))
+        foreach (var mission in ActiveMissions(player).Where(m => m.ObjectiveId.Equals(objectiveId, StringComparison.OrdinalIgnoreCase)))
         {
             var period = PeriodKey(mission.Period);
             var key = $"{mission.Id}:{period}";
@@ -327,7 +327,7 @@ internal sealed class BattlePassService : IBattlePassApi
 
     private void RenderMissions(CCSPlayerController player, BattlePassPlayerState state)
     {
-        var missions = _config.Missions.ToArray();
+        var missions = ActiveMissions(player).ToArray();
         var page = _pages.GetValueOrDefault(player.Slot);
         for (var slot = 0; slot < MissionSlots; slot++)
         {
@@ -408,7 +408,7 @@ internal sealed class BattlePassService : IBattlePassApi
         var count = tab switch
         {
             "track" => Math.Max(0, _config.MaxLevel),
-            "missions" => _config.Missions.Count,
+            "missions" => ActiveMissions(player).Count,
             "inventory" => GetState(player).Inventory.Count(x => x.Value > 0),
             _ => 0
         };
@@ -451,6 +451,38 @@ internal sealed class BattlePassService : IBattlePassApi
     private void Save(BattlePassPlayerState state) => _storage.Save(state, _log);
 
     private int LevelForXp(int xp) => Math.Clamp(xp / Math.Max(1, _config.XpPerLevel), 0, _config.MaxLevel);
+
+    private IReadOnlyList<MissionDefinition> ActiveMissions(CCSPlayerController player)
+    {
+        var result = new List<MissionDefinition>();
+        result.AddRange(SelectPeriodMissions(player, MissionPeriod.Daily, 3));
+        result.AddRange(SelectPeriodMissions(player, MissionPeriod.Weekly, 3));
+        result.AddRange(_config.Missions.Where(m => m.Period == MissionPeriod.Season));
+        return result;
+    }
+
+    private IEnumerable<MissionDefinition> SelectPeriodMissions(CCSPlayerController player, MissionPeriod period, int count)
+    {
+        var periodKey = PeriodKey(period);
+        return _config.Missions
+            .Where(m => m.Period == period)
+            .OrderBy(m => StableMissionOrder(player.SteamID, periodKey, m.Id))
+            .Take(count);
+    }
+
+    private static ulong StableMissionOrder(ulong steamId, string periodKey, string missionId)
+    {
+        const ulong offset = 14695981039346656037UL;
+        const ulong prime = 1099511628211UL;
+        var hash = offset;
+        var value = $"{steamId}:{periodKey}:{missionId}";
+        foreach (var ch in value)
+        {
+            hash ^= ch;
+            hash *= prime;
+        }
+        return hash;
+    }
 
     private string PeriodKey(MissionPeriod period)
     {

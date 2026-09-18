@@ -29,7 +29,7 @@ public sealed class JBFHungerGamesDay : BasePlugin, ISpecialDay
     private bool _preparing;
 
     public override string ModuleName => "JBF Special Day: Hunger Games";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public string Id => "hunger-games";
@@ -93,19 +93,25 @@ public sealed class JBFHungerGamesDay : BasePlugin, ISpecialDay
             SetHealthValue(attacker, attacker.PlayerPawn.Value!.Health + 100);
         }
 
-        var survivors = ActivePlayers().ToArray();
-        if (survivors.Length <= 1)
-        {
-            var reason = survivors.FirstOrDefault()?.Team == CsTeam.Terrorist
-                ? RoundEndReason.TerroristsWin
-                : RoundEndReason.CTsWin;
-            _context?.Finish(reason);
-        }
+        Server.NextFrame(EvaluateWinner);
     }
 
     public HookResult OnTakeDamage(CBaseEntity entity, CTakeDamageInfo damageInfo)
     {
         return HookResult.Continue;
+    }
+
+    private void EvaluateWinner()
+    {
+        if (_context is null) return;
+
+        var aliveT = ActivePlayers().Count(player => player.Team == CsTeam.Terrorist);
+        var aliveCt = ActivePlayers().Count(player => player.Team == CsTeam.CounterTerrorist);
+
+        if (aliveT == 0 && aliveCt > 0)
+            _context.Finish(RoundEndReason.CTsWin);
+        else if (aliveCt == 0 && aliveT > 0)
+            _context.Finish(RoundEndReason.TerroristsWin);
     }
 
     private void PreparePlayer(CCSPlayerController player)

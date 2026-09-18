@@ -27,6 +27,12 @@ internal sealed class BattlePassConfig
         {
             var loaded = JsonSerializer.Deserialize<BattlePassConfig>(File.ReadAllText(path), JsonOptions()) ?? new BattlePassConfig();
 
+            foreach (var mission in DefaultMissions())
+            {
+                if (loaded.Missions.All(existing => !existing.Id.Equals(mission.Id, StringComparison.OrdinalIgnoreCase)))
+                    loaded.Missions.Add(mission);
+            }
+
             // Rewrite an existing config once with readable UTF-8 characters instead of \uXXXX escapes.
             Save(path, loaded);
             return loaded;
@@ -55,9 +61,15 @@ internal sealed class BattlePassConfig
         new("daily-rounds", "Сыграть 5 раундов", "round_played", 5, 250, MissionPeriod.Daily),
         new("daily-kills", "Сделать 5 убийств", "kill", 5, 300, MissionPeriod.Daily),
         new("daily-time", "Провести 15 минут на сервере", "play_minute", 15, 300, MissionPeriod.Daily),
+        new("daily-rounds-8", "Сыграть 8 раундов", "round_played", 8, 350, MissionPeriod.Daily),
+        new("daily-kills-10", "Сделать 10 убийств", "kill", 10, 450, MissionPeriod.Daily),
+        new("daily-time-25", "Провести 25 минут на сервере", "play_minute", 25, 450, MissionPeriod.Daily),
         new("weekly-rounds", "Сыграть 25 раундов", "round_played", 25, 900, MissionPeriod.Weekly),
         new("weekly-lr", "Выиграть 3 LR", "lr_win", 3, 1000, MissionPeriod.Weekly),
         new("weekly-kills", "Сделать 40 убийств", "kill", 40, 1200, MissionPeriod.Weekly),
+        new("weekly-rounds-40", "Сыграть 40 раундов", "round_played", 40, 1400, MissionPeriod.Weekly),
+        new("weekly-lr-5", "Выиграть 5 LR", "lr_win", 5, 1500, MissionPeriod.Weekly),
+        new("weekly-time-180", "Провести 3 часа на сервере", "play_minute", 180, 1600, MissionPeriod.Weekly),
         new("season-rounds", "Сыграть 200 раундов", "round_played", 200, 4000, MissionPeriod.Season),
         new("season-lr", "Выиграть 25 LR", "lr_win", 25, 4500, MissionPeriod.Season),
         new("season-time", "Провести 10 часов на сервере", "play_minute", 600, 5000, MissionPeriod.Season)

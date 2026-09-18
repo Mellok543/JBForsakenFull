@@ -21,12 +21,13 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
     ];
 
     private readonly Dictionary<int, int> _kills = [];
+    private readonly Dictionary<int, DateTime> _spawnProtectionUntil = [];
     private IDisposable? _registration;
     private ISpecialDayContext? _context;
     private Timer? _respawnTimer;
 
     public override string ModuleName => "JBF Special Day: Arm Race";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public string Id => "arm-race";
@@ -70,17 +71,53 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
         _respawnTimer?.Kill();
         _respawnTimer = null;
         _kills.Clear();
+        _spawnProtectionUntil.Clear();
+
+        foreach (var player in Utilities.GetPlayers().Where(IsUsable))
+        {
+            var pawn = player.PlayerPawn.Value;
+            if (pawn is null) continue;
+            pawn.TakesDamage = true;
+            if (pawn.WeaponServices is not null)
+                pawn.WeaponServices.PreventWeaponPickup = false;
+        }
+
         _context = null;
     }
 
     public void OnPlayerSpawn(CCSPlayerController player)
     {
         _kills.TryAdd(player.Slot, 0);
-        Server.NextFrame(() => GiveLevelWeapon(player));
+        Server.NextFrame(() =>
+        {
+            GiveLevelWeapon(player);
+            ApplySpawnProtection(player);
+        });
     }
 
     public void OnPlayerDeath(CCSPlayerController? victim, CCSPlayerController? attacker)
     {
+        if (IsUsable(victim))
+        {
+            _spawnProtectionUntil.Remove(victim.Slot);
+            var dropped = victim.PlayerPawn.Value?.WeaponServices?.MyWeapons
+                .Select(handle => handle.Value)
+                .Where(weapon => weapon is { IsValid: true })
+                .ToArray() ?? [];
+
+            Server.NextFrame(() =>
+            {
+                foreach (var weapon in dropped)
+                {
+                    try
+                    {
+                        if (weapon.IsValid) weapon.Remove();
+                    }
+                    catch { }
+                }
+            });
+        }
+
         if (!IsUsable(attacker) || attacker == victim ||
             attacker.Team is not (CsTeam.Terrorist or CsTeam.CounterTerrorist))
         {
@@ -102,6 +139,22 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
 
     public HookResult OnTakeDamage(CBaseEntity entity, CTakeDamageInfo damageInfo)
     {
+        if (_context is null || entity.DesignerName != "player")
+            return HookResult.Continue;
+
+        var victim = entity.As<CCSPlayerPawn>().Controller.Value?.As<CCSPlayerController>();
+        if (!IsUsable(victim)) return HookResult.Continue;
+
+        if (_spawnProtectionUntil.TryGetValue(victim.Slot, out var until))
+        {
+            if (DateTime.UtcNow < until)
+                return HookResult.Handled;
+
+            _spawnProtectionUntil.Remove(victim.Slot);
+            if (victim.PlayerPawn.Value is { IsValid: true } pawn)
+                pawn.TakesDamage = true;
+        }
+
         return HookResult.Continue;
     }
 
@@ -116,6 +169,11 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
         var kills = _kills.GetValueOrDefault(player.Slot);
         var level = Levels.Last(candidate => candidate.RequiredKills <= kills);
         player.RemoveWeapons();
+
+        var pawn = player.PlayerPawn.Value!;
+        if (pawn.WeaponServices is not null)
+            pawn.WeaponServices.PreventWeaponPickup = true;
+
         player.GiveNamedItem(CsItem.Knife);
 
         if (level.GiveZeus)
@@ -128,6 +186,22 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
         {
             player.GiveNamedItem(weapon);
         }
+    }
+
+    private void ApplySpawnProtection(CCSPlayerController player)
+    {
+        if (_context is null || !IsUsable(player) || !player.PawnIsAlive) return;
+
+        var pawn = player.PlayerPawn.Value!;
+        pawn.TakesDamage = false;
+        _spawnProtectionUntil[player.Slot] = DateTime.UtcNow.AddSeconds(3);
+
+        AddTimer(3.05f, () =>
+        {
+            if (_context is null || !IsUsable(player) || !player.PawnIsAlive) return;
+            _spawnProtectionUntil.Remove(player.Slot);
+            player.PlayerPawn.Value!.TakesDamage = true;
+        }, TimerFlags.STOP_ON_MAPCHANGE);
     }
 
     private static IEnumerable<CCSPlayerController> ActivePlayers()

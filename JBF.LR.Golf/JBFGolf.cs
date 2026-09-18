@@ -13,7 +13,7 @@ public sealed class JBFGolf : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Golf";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -42,6 +42,8 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
 {
     private const float MarkerRadius = 72.0f;
     private const float MovementTolerance = 10.0f;
+    private const float WallClearance = 48.0f;
+    private static readonly TraceOptions WallTraceOptions = new() { InteractsWith = Masks.SolidBrushOnly, InteractsExclude = Contents.Pickup };
     private readonly List<CBeam> _markers = [];
     private ILrMatchContext? _context;
     private Vector? _start;
@@ -94,14 +96,28 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
 
         if (_state == SetupState.WaitingStart)
         {
-            _start = new Vector(origin.X, origin.Y, origin.Z);
+            var candidate = new Vector(origin.X, origin.Y, origin.Z);
+            if (IsTooCloseToWall(player, candidate))
+            {
+                UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+                return;
+            }
+
+            _start = candidate;
             _state = SetupState.WaitingHole;
             UiCapability.Api.Get()?.Notify(player, "Старт сохранён. Встаньте в центр ЛУНКИ и нажмите E", UiNotificationType.Info, 8.0f);
             return;
         }
 
         if (_state != SetupState.WaitingHole || _start is null) return;
-        _hole = new Vector(origin.X, origin.Y, origin.Z);
+        var hole = new Vector(origin.X, origin.Y, origin.Z);
+        if (IsTooCloseToWall(player, hole))
+        {
+            UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+            return;
+        }
+
+        _hole = hole;
         DrawCourse();
         BeginGolf();
     }
@@ -233,6 +249,24 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
     {
         foreach (var beam in _markers.Where(x => x.IsValid)) beam.Remove();
         _markers.Clear();
+    }
+
+    private static bool IsTooCloseToWall(CCSPlayerController player, Vector point)
+    {
+        var pawn = player.PlayerPawn.Value;
+        if (pawn is null) return true;
+
+        var start = new Vector(point.X, point.Y, point.Z + 24.0f);
+        var directions = new (float X, float Y)[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
+        foreach (var (x, y) in directions)
+        {
+            var end = new Vector(start.X + x * WallClearance, start.Y + y * WallClearance, start.Z);
+            var trace = Trace.TraceEndShape(start, end, pawn, WallTraceOptions);
+            if (trace.DidHit() && Distance2D(start, trace.HitPoint) < WallClearance - 1.0f)
+                return true;
+        }
+
+        return false;
     }
 
     private static float Distance2D(Vector a, Vector b)

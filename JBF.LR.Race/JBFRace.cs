@@ -12,7 +12,7 @@ public sealed class JBFRace : BasePlugin
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Race";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -40,6 +40,8 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
     private const float StartLaneOffset = 42.0f;
     private const float MinCourseLength = 300.0f;
     private const int CountdownSeconds = 3;
+    private const float WallClearance = 48.0f;
+    private static readonly TraceOptions WallTraceOptions = new() { InteractsWith = Masks.SolidBrushOnly, InteractsExclude = Contents.Pickup };
     private readonly List<CBeam> _markers = [];
     private ILrMatchContext? _context;
     private Vector? _start;
@@ -90,7 +92,14 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
 
         if (_state == SetupState.WaitingStart)
         {
-            _start = new Vector(origin.X, origin.Y, origin.Z);
+            var candidate = new Vector(origin.X, origin.Y, origin.Z);
+            if (IsTooCloseToWall(player, candidate))
+            {
+                UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+                return;
+            }
+
+            _start = candidate;
             _state = SetupState.WaitingFinish;
             UiCapability.Api.Get()?.Notify(player, "Старт сохранён. Встаньте в ФИНИШ и нажмите E", UiNotificationType.Info, 8.0f);
             return;
@@ -99,6 +108,12 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         if (_state != SetupState.WaitingFinish || _start is null) return;
 
         var candidate = new Vector(origin.X, origin.Y, origin.Z);
+        if (IsTooCloseToWall(player, candidate))
+        {
+            UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+            return;
+        }
+
         if (Distance2D(candidate, _start) < MinCourseLength)
         {
             UiCapability.Api.Get()?.Notify(player,
@@ -229,6 +244,24 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
     {
         foreach (var beam in _markers.Where(x => x.IsValid)) beam.Remove();
         _markers.Clear();
+    }
+
+    private static bool IsTooCloseToWall(CCSPlayerController player, Vector point)
+    {
+        var pawn = player.PlayerPawn.Value;
+        if (pawn is null) return true;
+
+        var start = new Vector(point.X, point.Y, point.Z + 24.0f);
+        var directions = new (float X, float Y)[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
+        foreach (var (x, y) in directions)
+        {
+            var end = new Vector(start.X + x * WallClearance, start.Y + y * WallClearance, start.Z);
+            var trace = Trace.TraceEndShape(start, end, pawn, WallTraceOptions);
+            if (trace.DidHit() && Distance2D(start, trace.HitPoint) < WallClearance - 1.0f)
+                return true;
+        }
+
+        return false;
     }
 
     private static float Distance2D(Vector a, Vector b)
