@@ -21,7 +21,7 @@ public sealed class JBFBattlePass : BasePlugin
     private string? _configPath;
 
     public override string ModuleName => "JBF Battle Pass";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)

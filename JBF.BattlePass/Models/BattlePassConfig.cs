@@ -180,7 +180,13 @@ internal sealed class DatabaseConfig
 }
 
 internal sealed record MissionDefinition(string Id, string Name, string ObjectiveId, int Target, int XpReward, MissionPeriod Period);
-internal sealed record RewardDefinition(int Level, RewardType Type, int Amount, string? ItemId, string Name);
+internal sealed record RewardDefinition(
+    int Level,
+    RewardType Type,
+    int Amount,
+    string? ItemId,
+    string Name,
+    string? ImagePath = null);
 
 internal enum MissionPeriod { Daily, Weekly, Season }
 internal enum RewardType { Credits, Consumable, Weapon, Cosmetic, Vip, Effect }

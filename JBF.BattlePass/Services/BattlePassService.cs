@@ -413,6 +413,7 @@ internal sealed class BattlePassService : IBattlePassApi
 
             _renderer.Text(player, $"{panel}_level", $"LVL {rewardLevel}");
             _renderer.Text(player, $"{panel}_name", reward!.Name);
+            _renderer.Image(player, $"{panel}_image", ResolveRewardImage(reward));
             var claimed = state.ClaimedLevels.Contains(rewardLevel);
             var available = !claimed && level >= rewardLevel;
             _renderer.Text(player, $"{panel}_state", claimed ? "ПОЛУЧЕНО" : available ? "ЗАБРАТЬ" : "ЗАКРЫТО");
@@ -599,6 +600,34 @@ internal sealed class BattlePassService : IBattlePassApi
         MissionPeriod.Weekly => "ЕЖЕНЕДЕЛЬНОЕ",
         _ => "СЕЗОННОЕ"
     };
+
+    private static string ResolveRewardImage(RewardDefinition reward)
+    {
+        if (!string.IsNullOrWhiteSpace(reward.ImagePath))
+            return reward.ImagePath;
+
+        if (reward.Type == RewardType.Credits)
+            return "file://{images}/custom_game/battlepass/credits_png.vtex";
+
+        if (reward.Type == RewardType.Cosmetic && !string.IsNullOrWhiteSpace(reward.ItemId))
+            return $"file://{{images}}/custom_game/cosmetics/{SanitizeImageKey(reward.ItemId)}_png.vtex";
+
+        if (!string.IsNullOrWhiteSpace(reward.ItemId))
+            return $"file://{{images}}/custom_game/battlepass/{SanitizeImageKey(reward.ItemId)}_png.vtex";
+
+        return $"file://{{images}}/custom_game/battlepass/{reward.Type.ToString().ToLowerInvariant()}_png.vtex";
+    }
+
+    private static string SanitizeImageKey(string value)
+    {
+        var chars = value
+            .Trim()
+            .ToLowerInvariant()
+            .Select(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-' ? ch : '_')
+            .ToArray();
+
+        return new string(chars);
+    }
 
     private static string ItemDisplayName(string itemId) => itemId switch
     {

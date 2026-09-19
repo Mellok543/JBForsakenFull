@@ -66,6 +66,20 @@ internal sealed class BattlePassRenderer
         _entity!.SetDialogVariableStringForPlayer(player, panelId, "text", text ?? string.Empty);
     }
 
+    public void Image(CCSPlayerController player, string panelId, string source)
+    {
+        if (!EnsureReady() || !player.IsValid) return;
+
+        try
+        {
+            _entity!.SetDialogVariableStringForPlayer(player, panelId, "src", source ?? string.Empty);
+        }
+        catch (Exception ex)
+        {
+            _log?.Invoke($"BattlePass HUD image update skipped for '{panelId}': {ex.Message}");
+        }
+    }
+
     public void SetClass(CCSPlayerController player, string panelId, string className, bool value)
     {
         if (!EnsureReady() || !player.IsValid) return;
