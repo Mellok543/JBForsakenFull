@@ -1,0 +1,10 @@
+bin/
+obj/
+.idea/
+*.user
+
+# Locally-generated plugin config files may contain real DB credentials — never commit these.
+cosmetics.json
+shop.json
+battlepass.json
+achievements.json
