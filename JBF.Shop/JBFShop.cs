@@ -2,6 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Timers;
 using JBF.Api;
 using JBF.Shop.Extensions;
@@ -16,7 +17,7 @@ public sealed class JBFShop : BasePlugin
     private IPlayerStateApi? _playerStateApi;
 
     public override string ModuleName => "JBF Shop";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.3.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -66,7 +67,27 @@ public sealed class JBFShop : BasePlugin
             return;
         }
 
-        command.ReplyToCommand(JailbreakChat.Format($"Ваш баланс: {_shop?.GetCredits(player) ?? 0} кредитов."));
+        _shop?.PrintCreditStatus(player);
+    }
+
+
+    [ConsoleCommand("css_shop_reload", "Reload JBF shop config")]
+    [RequiresPermissions("@jbf/admin")]
+    public void OnShopReload(CCSPlayerController? player, CommandInfo command)
+    {
+        if (_shop is null)
+        {
+            command.ReplyToCommand(JailbreakChat.Format("Shop ещё не готов."));
+            return;
+        }
+
+        if (!_shop.TryReloadConfig(out var error))
+        {
+            command.ReplyToCommand(JailbreakChat.Format($"Ошибка JBF.Shop.json: {error}"));
+            return;
+        }
+
+        command.ReplyToCommand(JailbreakChat.Format("Shop config перезагружен."));
     }
 
     [GameEventHandler]

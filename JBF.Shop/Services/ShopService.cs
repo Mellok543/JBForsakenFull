@@ -40,8 +40,72 @@ internal sealed class ShopService : IShopApi
 
     public void ReloadConfig()
     {
-        _config = LoadConfig();
+        if (TryReloadConfig(out var error))
+            return;
+
+        Server.PrintToConsole($"[JBF] Shop reload failed: {error}");
+    }
+
+    public bool TryReloadConfig(out string error)
+    {
+        if (!ShopConfig.TryLoad(_configPath, out var loaded, out error))
+            return false;
+
+        _config = loaded;
         _items = BuildItems(_config.Items);
+        return true;
+    }
+
+    public void PrintCreditStatus(CCSPlayerController player)
+    {
+        var state = GetState(player);
+        if (state is null)
+        {
+            player.PrintToChat(JailbreakChat.Format("Не удалось определить данные кредитов."));
+            return;
+        }
+
+        player.PrintToChat(JailbreakChat.Format($"Баланс: {state.Credits} кредитов."));
+
+        if (player.Team == CsTeam.Terrorist)
+        {
+            var isRebelThisRound = _rebelsThisRound.Contains(player.SteamID);
+            var lawfulNext = StreakReward(
+                IncrementStreak(state.LawfulStreak),
+                _config.Rewards.LawfulStreakBase,
+                _config.Rewards.LawfulStreakStep,
+                _config.Rewards.LawfulStreakMaxReward);
+            var rebelNext = StreakReward(
+                IncrementStreak(state.RebelStreak),
+                _config.Rewards.RebelStreakBase,
+                _config.Rewards.RebelStreakStep,
+                _config.Rewards.RebelStreakMaxReward);
+
+            player.PrintToChat(JailbreakChat.Format(
+                $"Мирная серия: {state.LawfulStreak} | следующий мирный раунд: +{lawfulNext}."));
+            player.PrintToChat(JailbreakChat.Format(
+                $"Серия бунта: {state.RebelStreak} | следующий бунтующий раунд: +{rebelNext}."));
+            player.PrintToChat(JailbreakChat.Format(
+                isRebelThisRound ? "Текущий раунд: вы уже стали бунтарём." : "Текущий раунд: пока без бунта."));
+        }
+        else if (player.Team == CsTeam.CounterTerrorist)
+        {
+            var guardNext = StreakReward(
+                IncrementStreak(state.GuardDutyStreak),
+                _config.Rewards.GuardDutyStreakBase,
+                _config.Rewards.GuardDutyStreakStep,
+                _config.Rewards.GuardDutyStreakMaxReward);
+
+            player.PrintToChat(JailbreakChat.Format(
+                $"Серия CT: {state.GuardDutyStreak} | следующий раунд за CT: +{guardNext}."));
+            player.PrintToChat(JailbreakChat.Format(
+                $"Убийство бунтаря: +{_config.Rewards.GuardKillRebel} | победа CT: +{_config.Rewards.GuardTeamWin}."));
+        }
+        else
+        {
+            player.PrintToChat(JailbreakChat.Format(
+                $"Серии: мирная {state.LawfulStreak}, бунт {state.RebelStreak}, CT {state.GuardDutyStreak}."));
+        }
     }
 
     public int GetCredits(CCSPlayerController player)

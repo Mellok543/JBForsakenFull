@@ -32,11 +32,37 @@ internal sealed class ShopConfig
         }
     }
 
+    public static bool TryLoad(string path, out ShopConfig config, out string error)
+    {
+        config = new ShopConfig();
+        error = string.Empty;
+
+        try
+        {
+            if (!File.Exists(path))
+            {
+                error = "Файл конфигурации не найден.";
+                return false;
+            }
+
+            config = JsonSerializer.Deserialize<ShopConfig>(File.ReadAllText(path), JsonOptions())
+                     ?? throw new InvalidDataException("Пустой или некорректный JSON.");
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            error = exception.Message;
+            return false;
+        }
+    }
+
     private static JsonSerializerOptions JsonOptions()
     {
         return new JsonSerializerOptions
         {
-            WriteIndented = true
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true
         };
     }
 }
