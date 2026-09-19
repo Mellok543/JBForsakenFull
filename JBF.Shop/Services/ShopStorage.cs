@@ -52,7 +52,7 @@ internal sealed class ShopStorage : IDisposable
             connection.Open();
 
             using var command = connection.CreateCommand();
-            command.CommandText = $"SELECT steam_id, player_name, credits FROM `{_balancesTable}`";
+            command.CommandText = $"SELECT steam_id, player_name, credits, lawful_streak, rebel_streak, guard_duty_streak FROM `{_balancesTable}`";
 
             using var reader = command.ExecuteReader();
             while (reader.Read())
@@ -62,7 +62,10 @@ internal sealed class ShopStorage : IDisposable
                 {
                     SteamId = steamId,
                     PlayerName = reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
-                    Credits = Math.Max(0, reader.IsDBNull(2) ? 0 : reader.GetInt32(2))
+                    Credits = Math.Max(0, reader.IsDBNull(2) ? 0 : reader.GetInt32(2)),
+                    LawfulStreak = Math.Max(0, reader.IsDBNull(3) ? 0 : reader.GetInt32(3)),
+                    RebelStreak = Math.Max(0, reader.IsDBNull(4) ? 0 : reader.GetInt32(4)),
+                    GuardDutyStreak = Math.Max(0, reader.IsDBNull(5) ? 0 : reader.GetInt32(5))
                 };
             }
         }
@@ -80,6 +83,9 @@ internal sealed class ShopStorage : IDisposable
             state.SteamId,
             state.PlayerName,
             Math.Max(0, state.Credits),
+            Math.Max(0, state.LawfulStreak),
+            Math.Max(0, state.RebelStreak),
+            Math.Max(0, state.GuardDutyStreak),
             Interlocked.Increment(ref _version));
 
         _pending[state.SteamId] = snapshot;
@@ -190,15 +196,23 @@ internal sealed class ShopStorage : IDisposable
 
             await using var command = connection.CreateCommand();
             command.CommandText = $"""
-                                  INSERT INTO `{_balancesTable}` (steam_id, player_name, credits)
-                                  VALUES (@steamId, @playerName, @credits)
+                                  INSERT INTO `{_balancesTable}`
+                                      (steam_id, player_name, credits, lawful_streak, rebel_streak, guard_duty_streak)
+                                  VALUES
+                                      (@steamId, @playerName, @credits, @lawfulStreak, @rebelStreak, @guardDutyStreak)
                                   ON DUPLICATE KEY UPDATE
                                       player_name = VALUES(player_name),
-                                      credits = VALUES(credits);
+                                      credits = VALUES(credits),
+                                      lawful_streak = VALUES(lawful_streak),
+                                      rebel_streak = VALUES(rebel_streak),
+                                      guard_duty_streak = VALUES(guard_duty_streak);
                                   """;
             command.Parameters.AddWithValue("@steamId", state.SteamId);
             command.Parameters.AddWithValue("@playerName", state.PlayerName);
             command.Parameters.AddWithValue("@credits", state.Credits);
+            command.Parameters.AddWithValue("@lawfulStreak", state.LawfulStreak);
+            command.Parameters.AddWithValue("@rebelStreak", state.RebelStreak);
+            command.Parameters.AddWithValue("@guardDutyStreak", state.GuardDutyStreak);
             await command.ExecuteNonQueryAsync(cancellationToken);
             return true;
         }
@@ -224,6 +238,7 @@ internal sealed class ShopStorage : IDisposable
             command.CommandText = CreateTableSql();
             command.ExecuteNonQuery();
 
+            EnsureStreakColumns(connection);
             MarkConnected();
             return true;
         }
@@ -268,6 +283,7 @@ internal sealed class ShopStorage : IDisposable
                 command.CommandText = CreateTableSql();
                 await command.ExecuteNonQueryAsync(cancellationToken);
 
+                EnsureStreakColumns(connection);
                 MarkConnected();
                 return true;
             }
@@ -294,9 +310,33 @@ internal sealed class ShopStorage : IDisposable
                    steam_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
                    player_name VARCHAR(128) NOT NULL,
                    credits INT NOT NULL DEFAULT 0,
+                   lawful_streak INT NOT NULL DEFAULT 0,
+                   rebel_streak INT NOT NULL DEFAULT 0,
+                   guard_duty_streak INT NOT NULL DEFAULT 0,
                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
                """;
+    }
+
+    private void EnsureStreakColumns(MySqlConnection connection)
+    {
+        EnsureColumn(connection, "lawful_streak");
+        EnsureColumn(connection, "rebel_streak");
+        EnsureColumn(connection, "guard_duty_streak");
+    }
+
+    private void EnsureColumn(MySqlConnection connection, string column)
+    {
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = $"ALTER TABLE `{_balancesTable}` ADD COLUMN `{column}` INT NOT NULL DEFAULT 0";
+            command.ExecuteNonQuery();
+        }
+        catch (MySqlException exception) when (exception.Number == 1060)
+        {
+            // Column already exists.
+        }
     }
 
     private void MarkConnected()
@@ -348,5 +388,8 @@ internal sealed class ShopStorage : IDisposable
         ulong SteamId,
         string PlayerName,
         int Credits,
+        int LawfulStreak,
+        int RebelStreak,
+        int GuardDutyStreak,
         long Version);
 }

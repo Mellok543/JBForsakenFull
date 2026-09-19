@@ -22,6 +22,7 @@ internal sealed class ShopService : IShopApi
     private readonly Dictionary<ulong, Dictionary<string, int>> _roundPurchases = [];
     private readonly Dictionary<ulong, TimedEffectState> _speedEffects = [];
     private readonly Dictionary<ulong, TimedEffectState> _gravityEffects = [];
+    private readonly HashSet<ulong> _rebelsThisRound = [];
 
     private ShopConfig _config;
     private IReadOnlyList<ShopItem> _items;
@@ -117,18 +118,92 @@ internal sealed class ShopService : IShopApi
         menuApi.Open(player, $"Shop | {credits} кредитов", options);
     }
 
-    public void RewardRoundPlayers()
+    public void RewardRoundPlayers(CsTeam winner)
     {
         foreach (var player in Utilities.GetPlayers().Where(player =>
                      player.IsUsable() && !player.IsBot &&
                      player.Team is CsTeam.Terrorist or CsTeam.CounterTerrorist))
         {
             RewardPlayer(player, _config.Rewards.RoundParticipation, "за участие в раунде", announce: false);
+
             if (player.PawnIsAlive)
-            {
                 RewardPlayer(player, _config.Rewards.RoundSurvival, "за выживание", announce: false);
+
+            var state = GetState(player);
+            if (state is null)
+                continue;
+
+            if (player.Team == CsTeam.Terrorist)
+            {
+                state.GuardDutyStreak = 0;
+
+                if (_rebelsThisRound.Contains(player.SteamID))
+                {
+                    state.RebelStreak = IncrementStreak(state.RebelStreak);
+                    state.LawfulStreak = 0;
+
+                    var reward = StreakReward(
+                        state.RebelStreak,
+                        _config.Rewards.RebelStreakBase,
+                        _config.Rewards.RebelStreakStep,
+                        _config.Rewards.RebelStreakMaxReward);
+
+                    RewardPlayer(player, reward, $"за серию бунта x{state.RebelStreak}");
+                }
+                else
+                {
+                    state.LawfulStreak = IncrementStreak(state.LawfulStreak);
+                    state.RebelStreak = 0;
+
+                    var reward = StreakReward(
+                        state.LawfulStreak,
+                        _config.Rewards.LawfulStreakBase,
+                        _config.Rewards.LawfulStreakStep,
+                        _config.Rewards.LawfulStreakMaxReward);
+
+                    RewardPlayer(player, reward, $"за мирную серию x{state.LawfulStreak}");
+                }
+
+                if (winner == CsTeam.Terrorist)
+                    RewardPlayer(player, _config.Rewards.InmateTeamWin, "за победу заключённых", announce: false);
             }
+            else
+            {
+                state.LawfulStreak = 0;
+                state.RebelStreak = 0;
+                state.GuardDutyStreak = IncrementStreak(state.GuardDutyStreak);
+
+                var reward = StreakReward(
+                    state.GuardDutyStreak,
+                    _config.Rewards.GuardDutyStreakBase,
+                    _config.Rewards.GuardDutyStreakStep,
+                    _config.Rewards.GuardDutyStreakMaxReward);
+
+                RewardPlayer(player, reward, $"за службу в охране x{state.GuardDutyStreak}");
+
+                if (winner == CsTeam.CounterTerrorist)
+                    RewardPlayer(player, _config.Rewards.GuardTeamWin, "за победу охраны", announce: false);
+            }
+
+            _storage.QueueSave(state);
         }
+    }
+
+    public void MarkRebel(CCSPlayerController player)
+    {
+        if (!player.IsUsable() || player.Team != CsTeam.Terrorist)
+            return;
+
+        _rebelsThisRound.Add(player.SteamID);
+    }
+
+    public void RewardRebelKilled(RebelKilledEvent data)
+    {
+        var killer = data.Killer;
+        if (!killer.IsUsable() || killer!.Team != CsTeam.CounterTerrorist)
+            return;
+
+        RewardPlayer(killer, _config.Rewards.GuardKillRebel, "за убийство бунтаря");
     }
 
     public void RewardKill(CCSPlayerController? victim, CCSPlayerController? attacker)
@@ -163,6 +238,7 @@ internal sealed class ShopService : IShopApi
     public void ResetRound()
     {
         _roundPurchases.Clear();
+        _rebelsThisRound.Clear();
 
         // Old timers are invalidated because every new effect receives a globally
         // unique version. Clearing here prevents effects from leaking into a new round.
@@ -507,6 +583,19 @@ internal sealed class ShopService : IShopApi
         return ShopConfig.LoadOrCreate(
             _configPath,
             message => Server.PrintToConsole($"[JBF] Shop config error: {message}"));
+    }
+
+    private static int IncrementStreak(int current)
+        => current == int.MaxValue ? int.MaxValue : current + 1;
+
+    private static int StreakReward(int streak, int baseReward, int step, int maxReward)
+    {
+        if (streak <= 0 || baseReward <= 0 || maxReward <= 0)
+            return 0;
+
+        var safeStep = Math.Max(0, step);
+        var reward = (long)baseReward + (long)(streak - 1) * safeStep;
+        return (int)Math.Clamp(reward, 0L, Math.Max(0, maxReward));
     }
 
     private static int ClampCredits(long value)

@@ -13,26 +13,28 @@ public sealed class JBFShop : BasePlugin
 {
     private ShopService? _shop;
     private ILrApi? _lrApi;
+    private IPlayerStateApi? _playerStateApi;
 
     public override string ModuleName => "JBF Shop";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
         _shop = new ShopService(this);
         Capabilities.RegisterPluginCapability(ShopCapability.Api, () => _shop!);
-        AddTimer(2.0f, EnsureLrSubscription, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
+        AddTimer(2.0f, RefreshSubscriptions, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        EnsureLrSubscription();
+        RefreshSubscriptions();
     }
 
     public override void Unload(bool hotReload)
     {
         UnsubscribeFromLr();
+        UnsubscribeFromPlayerState();
         _shop?.Shutdown();
         _shop = null;
     }
@@ -77,7 +79,7 @@ public sealed class JBFShop : BasePlugin
     [GameEventHandler]
     public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
-        _shop?.RewardRoundPlayers();
+        _shop?.RewardRoundPlayers((CounterStrikeSharp.API.Modules.Utils.CsTeam)@event.Winner);
         _shop?.ResetRound();
         return HookResult.Continue;
     }
@@ -87,6 +89,12 @@ public sealed class JBFShop : BasePlugin
     {
         _shop?.RewardKill(@event.Userid, @event.Attacker);
         return HookResult.Continue;
+    }
+
+    private void RefreshSubscriptions()
+    {
+        EnsureLrSubscription();
+        EnsurePlayerStateSubscription();
     }
 
     private void EnsureLrSubscription()
@@ -107,6 +115,43 @@ public sealed class JBFShop : BasePlugin
             _lrApi.MatchEnded -= OnLrMatchEnded;
 
         _lrApi = null;
+    }
+
+    private void EnsurePlayerStateSubscription()
+    {
+        var current = PlayerStateCapability.Api.Get();
+        if (ReferenceEquals(current, _playerStateApi))
+            return;
+
+        UnsubscribeFromPlayerState();
+        _playerStateApi = current;
+
+        if (_playerStateApi is null)
+            return;
+
+        _playerStateApi.RebelStarted += OnRebelStarted;
+        _playerStateApi.RebelKilled += OnRebelKilled;
+    }
+
+    private void UnsubscribeFromPlayerState()
+    {
+        if (_playerStateApi is not null)
+        {
+            _playerStateApi.RebelStarted -= OnRebelStarted;
+            _playerStateApi.RebelKilled -= OnRebelKilled;
+        }
+
+        _playerStateApi = null;
+    }
+
+    private void OnRebelStarted(CCSPlayerController player)
+    {
+        _shop?.MarkRebel(player);
+    }
+
+    private void OnRebelKilled(RebelKilledEvent data)
+    {
+        _shop?.RewardRebelKilled(data);
     }
 
     private void OnLrMatchEnded(LrMatchEndedEvent match)

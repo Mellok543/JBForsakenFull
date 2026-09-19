@@ -7,4 +7,10 @@ internal sealed class ShopPlayerState
     public string PlayerName { get; set; } = string.Empty;
 
     public int Credits { get; set; }
+
+    public int LawfulStreak { get; set; }
+
+    public int RebelStreak { get; set; }
+
+    public int GuardDutyStreak { get; set; }
 }
