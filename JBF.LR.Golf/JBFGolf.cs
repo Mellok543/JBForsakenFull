@@ -1,6 +1,7 @@
 using System.Drawing;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
@@ -10,6 +11,7 @@ namespace JBF.LR.Golf;
 public sealed class JBFGolf : BasePlugin
 {
     private readonly GolfGame _game = new();
+    private ILrApi? _registeredApi;
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Golf";
@@ -18,24 +20,39 @@ public sealed class JBFGolf : BasePlugin
 
     public override void Load(bool hotReload)
     {
+        AddTimer(2.0f, EnsureRegistration, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
         RegisterListener<Listeners.OnPlayerButtonsChanged>(_game.OnButtonsChanged);
         RegisterListener<Listeners.OnTick>(_game.Tick);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        var lr = LrCapability.Api.Get();
-        if (lr is not null) _registration = lr.RegisterGame(_game);
+        EnsureRegistration();
     }
 
     public override void Unload(bool hotReload)
     {
         _registration?.Dispose();
+        _registration = null;
+        _registeredApi = null;
         _game.Stop();
     }
 
     [GameEventHandler]
     public HookResult OnDecoyStarted(EventDecoyStarted @event, GameEventInfo info) => _game.OnDecoyStarted(@event);
+    private void EnsureRegistration()
+    {
+        var current = LrCapability.Api.Get();
+        if (ReferenceEquals(current, _registeredApi))
+            return;
+
+        _registration?.Dispose();
+        _registration = null;
+        _registeredApi = current;
+
+        if (current is not null)
+            _registration = current.RegisterGame(_game);
+    }
 }
 
 internal sealed class GolfGame : ILrGame, ILrInventoryRules
