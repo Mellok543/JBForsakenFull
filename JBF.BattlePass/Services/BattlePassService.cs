@@ -23,6 +23,7 @@ internal sealed class BattlePassService : IBattlePassApi
     private readonly Dictionary<int, int> _pages = [];
     private readonly HashSet<int> _usedInventoryThisRound = [];
     private readonly Dictionary<int, DateTime> _playMinuteTicks = [];
+    private readonly HashSet<ulong> _rebelsThisRound = [];
 
     public string SeasonId => _config.SeasonId;
     public string SeasonName => _config.SeasonName;
@@ -154,23 +155,90 @@ internal sealed class BattlePassService : IBattlePassApi
     public void OnRoundStart()
     {
         _usedInventoryThisRound.Clear();
+        _rebelsThisRound.Clear();
         foreach (var player in Utilities.GetPlayers().Where(IsUsable))
             if (_tabs.ContainsKey(player.Slot)) Render(player);
     }
 
-    public void OnRoundEnd()
+    public void OnRoundEnd(CsTeam winner)
     {
-        foreach (var player in Utilities.GetPlayers().Where(IsUsable)) AddProgress(player, "round_played", 1);
+        foreach (var player in Utilities.GetPlayers().Where(IsUsable))
+        {
+            AddProgress(player, "round_played", 1);
+
+            if (player.PawnIsAlive)
+                AddProgress(player, "round_survived", 1);
+
+            if (player.Team == CsTeam.Terrorist)
+            {
+                AddProgress(player, "t_round_played", 1);
+                if (!_rebelsThisRound.Contains(player.SteamID))
+                    AddProgress(player, "lawful_round", 1);
+            }
+            else if (player.Team == CsTeam.CounterTerrorist)
+            {
+                AddProgress(player, "ct_round_played", 1);
+            }
+
+            if ((winner == CsTeam.Terrorist && player.Team == CsTeam.Terrorist) ||
+                (winner == CsTeam.CounterTerrorist && player.Team == CsTeam.CounterTerrorist))
+            {
+                AddProgress(player, "team_win", 1);
+            }
+        }
     }
 
-    public void OnKill(CCSPlayerController? victim, CCSPlayerController? attacker)
+    public void OnKill(CCSPlayerController? victim, CCSPlayerController? attacker, bool headshot, string weapon)
     {
-        if (!IsUsable(attacker) || victim is null || attacker.Slot == victim.Slot) return;
+        if (!IsUsable(attacker) || !IsUsable(victim) || attacker!.Slot == victim!.Slot) return;
+
         AddProgress(attacker, "kill", 1);
+
+        if (headshot)
+            AddProgress(attacker, "headshot_kill", 1);
+
+        if (!string.IsNullOrWhiteSpace(weapon) &&
+            (weapon.Contains("knife", StringComparison.OrdinalIgnoreCase) ||
+             weapon.Equals("bayonet", StringComparison.OrdinalIgnoreCase)))
+        {
+            AddProgress(attacker, "knife_kill", 1);
+        }
+
+        if (attacker.Team == CsTeam.Terrorist && victim.Team == CsTeam.CounterTerrorist)
+            AddProgress(attacker, "kill_guard", 1);
+        else if (attacker.Team == CsTeam.CounterTerrorist && victim.Team == CsTeam.Terrorist)
+            AddProgress(attacker, "kill_inmate", 1);
+    }
+
+    public void OnRebelStarted(CCSPlayerController player)
+    {
+        if (!IsUsable(player)) return;
+        _rebelsThisRound.Add(player.SteamID);
+        AddProgress(player, "became_rebel", 1);
+    }
+
+    public void OnRebelKilled(RebelKilledEvent data)
+    {
+        if (IsUsable(data.Killer) && data.Killer!.Team == CsTeam.CounterTerrorist)
+            AddProgress(data.Killer, "kill_rebel", 1);
+    }
+
+    public void OnFreeDayGranted(CCSPlayerController player)
+    {
+        if (IsUsable(player))
+            AddProgress(player, "freeday_received", 1);
+    }
+
+    public void OnWardenClaimed(CCSPlayerController player)
+    {
+        if (IsUsable(player))
+            AddProgress(player, "warden_claim", 1);
     }
 
     public void OnLrEnded(LrMatchEndedEvent match)
     {
+        if (IsUsable(match.Inmate)) AddProgress(match.Inmate, "lr_play", 1);
+        if (IsUsable(match.Guardian)) AddProgress(match.Guardian, "lr_play", 1);
         if (IsUsable(match.Winner)) AddProgress(match.Winner!, "lr_win", 1);
     }
 
@@ -196,6 +264,10 @@ internal sealed class BattlePassService : IBattlePassApi
         _pages.Remove(slot);
         _usedInventoryThisRound.Remove(slot);
         _playMinuteTicks.Remove(slot);
+
+        var player = Utilities.GetPlayerFromSlot(slot);
+        if (player is { IsValid: true } && player.SteamID != 0)
+            _rebelsThisRound.Remove(player.SteamID);
         _renderer.Forget(slot);
     }
 

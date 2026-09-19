@@ -16,10 +16,12 @@ public sealed class JBFBattlePass : BasePlugin
     private BattlePassService? _service;
     private BattlePassRenderer? _renderer;
     private ILrApi? _lr;
+    private IPlayerStateApi? _playerState;
+    private IWardenApi? _warden;
     private string? _configPath;
 
     public override string ModuleName => "JBF Battle Pass";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -38,13 +40,15 @@ public sealed class JBFBattlePass : BasePlugin
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        SubscribeLr();
+        RefreshSubscriptions();
+        AddTimer(2.0f, RefreshSubscriptions, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
     }
 
     public override void Unload(bool hotReload)
     {
-        if (_lr is not null) _lr.MatchEnded -= OnLrEnded;
-        _lr = null;
+        UnsubscribeLr();
+        UnsubscribePlayerState();
+        UnsubscribeWarden();
         if (_renderer is not null)
         {
             _renderer.Clicked -= OnHudClicked;
@@ -128,21 +132,21 @@ public sealed class JBFBattlePass : BasePlugin
     public HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
     {
         _service?.OnRoundStart();
-        SubscribeLr();
+        RefreshSubscriptions();
         return HookResult.Continue;
     }
 
     [GameEventHandler]
     public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
-        _service?.OnRoundEnd();
+        _service?.OnRoundEnd((CounterStrikeSharp.API.Modules.Utils.CsTeam)@event.Winner);
         return HookResult.Continue;
     }
 
     [GameEventHandler]
     public HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
     {
-        _service?.OnKill(@event.Userid, @event.Attacker);
+        _service?.OnKill(@event.Userid, @event.Attacker, @event.Headshot, @event.Weapon);
         return HookResult.Continue;
     }
 
@@ -197,14 +201,69 @@ public sealed class JBFBattlePass : BasePlugin
 
     private void OnDisconnect(int slot) => _service?.Disconnect(slot);
 
+    private void RefreshSubscriptions()
+    {
+        SubscribeLr();
+        SubscribePlayerState();
+        SubscribeWarden();
+    }
+
     private void SubscribeLr()
     {
         var current = LrCapability.Api.Get();
         if (ReferenceEquals(current, _lr)) return;
-        if (_lr is not null) _lr.MatchEnded -= OnLrEnded;
+        UnsubscribeLr();
         _lr = current;
         if (_lr is not null) _lr.MatchEnded += OnLrEnded;
     }
 
+    private void UnsubscribeLr()
+    {
+        if (_lr is not null) _lr.MatchEnded -= OnLrEnded;
+        _lr = null;
+    }
+
+    private void SubscribePlayerState()
+    {
+        var current = PlayerStateCapability.Api.Get();
+        if (ReferenceEquals(current, _playerState)) return;
+        UnsubscribePlayerState();
+        _playerState = current;
+        if (_playerState is null) return;
+        _playerState.RebelStarted += OnRebelStarted;
+        _playerState.RebelKilled += OnRebelKilled;
+        _playerState.FreeDayGranted += OnFreeDayGranted;
+    }
+
+    private void UnsubscribePlayerState()
+    {
+        if (_playerState is not null)
+        {
+            _playerState.RebelStarted -= OnRebelStarted;
+            _playerState.RebelKilled -= OnRebelKilled;
+            _playerState.FreeDayGranted -= OnFreeDayGranted;
+        }
+        _playerState = null;
+    }
+
+    private void SubscribeWarden()
+    {
+        var current = WardenCapability.Api.Get();
+        if (ReferenceEquals(current, _warden)) return;
+        UnsubscribeWarden();
+        _warden = current;
+        if (_warden is not null) _warden.WardenClaimed += OnWardenClaimed;
+    }
+
+    private void UnsubscribeWarden()
+    {
+        if (_warden is not null) _warden.WardenClaimed -= OnWardenClaimed;
+        _warden = null;
+    }
+
+    private void OnRebelStarted(CCSPlayerController player) => _service?.OnRebelStarted(player);
+    private void OnRebelKilled(RebelKilledEvent data) => _service?.OnRebelKilled(data);
+    private void OnFreeDayGranted(CCSPlayerController player) => _service?.OnFreeDayGranted(player);
+    private void OnWardenClaimed(CCSPlayerController player) => _service?.OnWardenClaimed(player);
     private void OnLrEnded(LrMatchEndedEvent match) => _service?.OnLrEnded(match);
 }
