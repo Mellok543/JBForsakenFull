@@ -12,7 +12,7 @@ public sealed class JBFLR : BasePlugin
     private readonly LrService _lr = new();
 
     public override string ModuleName => "JBF LR Core";
-    public override string ModuleVersion => "2.1.0";
+    public override string ModuleVersion => "2.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
