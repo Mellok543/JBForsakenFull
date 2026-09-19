@@ -10,6 +10,7 @@ namespace JBF.LR.Services;
 internal sealed class LrService : ILrApi
 {
     private static readonly TimeSpan MaintenanceInterval = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan MatchStartProtection = TimeSpan.FromSeconds(3);
     private readonly Dictionary<string, RegisteredLrGame> _games = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _preLrProtectedSlots = [];
     private readonly LrVipSuppressionService _vipSuppression = new();
@@ -312,6 +313,9 @@ internal sealed class LrService : ILrApi
 
         _activeMatch = new ActiveLrMatch(game, inmate, guardian);
         _preLrProtectedSlots.Clear();
+        _preLrProtectedSlots.Add(inmate.Slot);
+        _preLrProtectedSlots.Add(guardian.Slot);
+        _preLrProtectionUntil = DateTime.UtcNow + MatchStartProtection;
         MenuCapability.Api.Get()?.Close(inmate);
 
         var wardenApi = WardenCapability.Api.Get();
@@ -328,7 +332,7 @@ internal sealed class LrService : ILrApi
         foreach (var player in Utilities.GetPlayers().Where(p => p.IsUsable() && !p.IsBot))
             UiCapability.Api.Get()?.Announce(player, game.Name, $"{inmate.PlayerName}  VS  {guardian.PlayerName}", UiNotificationType.Important, 4.0f);
 
-        Server.PrintToChatAll(JailbreakChat.Format($"LR начался: {game.Name} | T: {inmate.PlayerName} vs CT: {guardian.PlayerName}."));
+        Server.PrintToChatAll(JailbreakChat.Format($"LR начался: {game.Name} | T: {inmate.PlayerName} vs CT: {guardian.PlayerName}. Защита обоих игроков: 3 сек."));
         game.Start(new LrMatchContext(inmate, guardian, winner => EndActive(winner, announce: true)));
     }
 
