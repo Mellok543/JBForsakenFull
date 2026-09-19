@@ -1,6 +1,7 @@
 using System.Drawing;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
 
@@ -9,6 +10,7 @@ namespace JBF.LR.Race;
 public sealed class JBFRace : BasePlugin
 {
     private readonly RaceGame _game = new();
+    private ILrApi? _registeredApi;
     private IDisposable? _registration;
 
     public override string ModuleName => "JBF LR: Race";
@@ -17,20 +19,35 @@ public sealed class JBFRace : BasePlugin
 
     public override void Load(bool hotReload)
     {
+        AddTimer(2.0f, EnsureRegistration, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
         RegisterListener<Listeners.OnPlayerButtonsChanged>(_game.OnButtonsChanged);
         RegisterListener<Listeners.OnTick>(_game.Tick);
     }
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        var lr = LrCapability.Api.Get();
-        if (lr is not null) _registration = lr.RegisterGame(_game);
+        EnsureRegistration();
     }
 
     public override void Unload(bool hotReload)
     {
         _registration?.Dispose();
+        _registration = null;
+        _registeredApi = null;
         _game.Stop();
+    }
+    private void EnsureRegistration()
+    {
+        var current = LrCapability.Api.Get();
+        if (ReferenceEquals(current, _registeredApi))
+            return;
+
+        _registration?.Dispose();
+        _registration = null;
+        _registeredApi = current;
+
+        if (current is not null)
+            _registration = current.RegisterGame(_game);
     }
 }
 
