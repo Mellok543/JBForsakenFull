@@ -11,14 +11,14 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 {
     private readonly Dictionary<ulong, CtTestSession> _sessions = [];
     private readonly Dictionary<ulong, DateTime> _bans = [];
-    private readonly HashSet<ulong> _qualified = [];
     private readonly Queue<ulong> _queue = new();
     private readonly Dictionary<ulong, DateTime> _guardJoinedAt = [];
+    private readonly HashSet<ulong> _approvedCtSwitches = [];
 
     private TeamBalanceDatabase? _database;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -36,17 +36,18 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
     public override void Load(bool hotReload)
     {
-        AddCommandListener("jointeam", OnJoinTeam);
+        AddCommandListener("jointeam", OnJoinTeam, HookMode.Pre);
         AddCommand("css_ct", "Пройти тест / встать в очередь за CT", OnCtCommand);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
     }
 
     public override void Unload(bool hotReload)
     {
-        RemoveCommandListener("jointeam", OnJoinTeam);
+        RemoveCommandListener("jointeam", OnJoinTeam, HookMode.Pre);
         _sessions.Clear();
         _queue.Clear();
         _guardJoinedAt.Clear();
+        _approvedCtSwitches.Clear();
     }
 
     private async Task InitializeDatabaseAsync()
@@ -58,7 +59,6 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         {
             await _database.InitializeAsync();
             var bans = await _database.LoadBansAsync();
-            var access = await _database.LoadAccessAsync();
 
             Server.NextFrame(() =>
             {
@@ -66,11 +66,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
                 foreach (var pair in bans)
                     _bans[pair.Key] = pair.Value;
 
-                _qualified.Clear();
-                foreach (var id in access)
-                    _qualified.Add(id);
-
-                Server.PrintToConsole($"[JBF] TeamBalance DB ready. CT access: {_qualified.Count}, bans: {_bans.Count}.");
+                Server.PrintToConsole($"[JBF] TeamBalance DB ready. Bans: {_bans.Count}.");
             });
         }
         catch (Exception ex)
@@ -135,13 +131,13 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             return;
         }
 
-        if (!_qualified.Contains(id))
+        if (_queue.Contains(id))
         {
-            StartTest(player);
+            player.PrintToChat(JailbreakChat.Format($"Ты уже в очереди CT. Позиция: {QueuePosition(id)}."));
             return;
         }
 
-        AddToQueue(player);
+        StartTest(player);
     }
 
     private void StartTest(CCSPlayerController player)
@@ -222,13 +218,9 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         }
 
         _sessions.Remove(player.SteamID);
-        _qualified.Add(player.SteamID);
-
-        if (_database is not null)
-            _ = SafeDb(() => _database.GrantAccessAsync(player.SteamID));
 
         MenuCapability.Api.Get()?.Close(player);
-        player.PrintToChat(JailbreakChat.Format("Тест CT пройден. Доступ сохранён."));
+        player.PrintToChat(JailbreakChat.Format("Тест CT пройден. Ты добавлен в очередь."));
         AddToQueue(player);
     }
 
@@ -260,6 +252,21 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
         if (player!.Team == CsTeam.CounterTerrorist)
         {
+            if (!_approvedCtSwitches.Remove(player.SteamID))
+            {
+                var unauthorized = player;
+                Server.NextFrame(() =>
+                {
+                    if (!IsUsable(unauthorized) || unauthorized.Team != CsTeam.CounterTerrorist)
+                        return;
+
+                    unauthorized.SwitchTeam(CsTeam.Terrorist);
+                    unauthorized.PrintToChat(JailbreakChat.Format("Автоматический/случайный перевод за CT отменён. Для входа используй !ct и пройди тест."));
+                });
+
+                return HookResult.Continue;
+            }
+
             _guardJoinedAt[player.SteamID] = DateTime.UtcNow;
             RemoveFromQueue(player.SteamID);
             _sessions.Remove(player.SteamID);
@@ -267,6 +274,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         else
         {
             _guardJoinedAt.Remove(player.SteamID);
+            _approvedCtSwitches.Remove(player.SteamID);
         }
 
         return HookResult.Continue;
@@ -317,9 +325,10 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             var id = _queue.Dequeue();
             var player = active.FirstOrDefault(p => p.SteamID == id);
 
-            if (player is null || player.Team != CsTeam.Terrorist || !_qualified.Contains(id))
+            if (player is null || player.Team != CsTeam.Terrorist)
                 continue;
 
+            _approvedCtSwitches.Add(id);
             player.SwitchTeam(CsTeam.CounterTerrorist);
             _guardJoinedAt[id] = DateTime.UtcNow;
 
@@ -374,6 +383,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
         _sessions.Remove(player.SteamID);
         _guardJoinedAt.Remove(player.SteamID);
+        _approvedCtSwitches.Remove(player.SteamID);
         RemoveFromQueue(player.SteamID);
     }
 
