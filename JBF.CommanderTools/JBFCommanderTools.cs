@@ -40,7 +40,7 @@ public sealed class JBFCommanderTools : BasePlugin
     }
 
     public override string ModuleName => "JBF Commander Tools";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -52,7 +52,15 @@ public sealed class JBFCommanderTools : BasePlugin
         foreach (var tool in _tools)
         {
             _registrations.Add(_commanderMenu.RegisterItem(
-                new CommanderMenuItem(tool.Id, tool.Text, tool.Execute, tool.Order)));
+                new CommanderMenuItem(
+                    tool.Id,
+                    tool.Text,
+                    commander =>
+                    {
+                        Server.PrintToChatAll(JailbreakChat.Format($"Командир {commander.PlayerName}: {tool.Text}."));
+                        tool.Execute(commander);
+                    },
+                    tool.Order)));
         }
 
     }
