@@ -1,0 +1,403 @@
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Utils;
+using JBF.Api;
+
+namespace JBF.TeamBalance;
+
+public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig>
+{
+    private readonly Dictionary<ulong, CtTestSession> _sessions = [];
+    private readonly Dictionary<ulong, DateTime> _bans = [];
+    private readonly HashSet<ulong> _qualified = [];
+    private readonly Queue<ulong> _queue = new();
+    private readonly Dictionary<ulong, DateTime> _guardJoinedAt = [];
+
+    private TeamBalanceDatabase? _database;
+
+    public override string ModuleName => "JBF Team Balance";
+    public override string ModuleVersion => "1.0.0";
+    public override string ModuleAuthor => "Mell";
+
+    public TeamBalanceConfig Config { get; set; } = new();
+
+    public void OnConfigParsed(TeamBalanceConfig config)
+    {
+        Config = config;
+        Config.TerroristsPerGuard = Math.Max(1, Config.TerroristsPerGuard);
+        Config.QuestionNumber = Math.Max(1, Config.QuestionNumber);
+        Config.CtBan = Math.Max(1, Config.CtBan);
+
+        _database = new TeamBalanceDatabase(Config.Connection);
+        _ = InitializeDatabaseAsync();
+    }
+
+    public override void Load(bool hotReload)
+    {
+        AddCommandListener("jointeam", OnJoinTeam);
+        AddCommand("css_ct", "Пройти тест / встать в очередь за CT", OnCtCommand);
+        RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
+    }
+
+    public override void Unload(bool hotReload)
+    {
+        RemoveCommandListener("jointeam", OnJoinTeam);
+        _sessions.Clear();
+        _queue.Clear();
+        _guardJoinedAt.Clear();
+    }
+
+    private async Task InitializeDatabaseAsync()
+    {
+        if (_database is null)
+            return;
+
+        try
+        {
+            await _database.InitializeAsync();
+            var bans = await _database.LoadBansAsync();
+            var access = await _database.LoadAccessAsync();
+
+            Server.NextFrame(() =>
+            {
+                _bans.Clear();
+                foreach (var pair in bans)
+                    _bans[pair.Key] = pair.Value;
+
+                _qualified.Clear();
+                foreach (var id in access)
+                    _qualified.Add(id);
+
+                Server.PrintToConsole($"[JBF] TeamBalance DB ready. CT access: {_qualified.Count}, bans: {_bans.Count}.");
+            });
+        }
+        catch (Exception ex)
+        {
+            Server.PrintToConsole($"[JBF] TeamBalance database error: {ex.Message}");
+        }
+    }
+
+    private HookResult OnJoinTeam(CCSPlayerController? player, CommandInfo command)
+    {
+        if (!IsUsable(player))
+            return HookResult.Continue;
+
+        if (!int.TryParse(command.ArgByIndex(1), out var team))
+            return HookResult.Continue;
+
+        if (team == 0)
+        {
+            player!.PrintToChat(JailbreakChat.Format("Случайный выбор команды отключён. Для CT используй !ct."));
+            return HookResult.Handled;
+        }
+
+        if (team == 3)
+        {
+            player!.PrintToChat(JailbreakChat.Format("Вход за CT доступен только через !ct."));
+            return HookResult.Handled;
+        }
+
+        return HookResult.Continue;
+    }
+
+    private void OnCtCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (!IsUsable(player))
+            return;
+
+        if (player!.Team != CsTeam.Terrorist)
+        {
+            player.PrintToChat(JailbreakChat.Format("Чтобы встать в очередь CT, сначала перейди за T."));
+            return;
+        }
+
+        var id = player.SteamID;
+
+        if (_bans.TryGetValue(id, out var banUntil))
+        {
+            if (DateTime.UtcNow < banUntil)
+            {
+                var minutes = (int)Math.Ceiling((banUntil - DateTime.UtcNow).TotalMinutes);
+                player.PrintToChat(JailbreakChat.Format($"Вход за CT заблокирован ещё на {minutes} мин."));
+                return;
+            }
+
+            _bans.Remove(id);
+            if (_database is not null)
+                _ = SafeDb(() => _database.RemoveBanAsync(id));
+        }
+
+        if (_sessions.ContainsKey(id))
+        {
+            player.PrintToChat(JailbreakChat.Format("Ты уже проходишь тест CT."));
+            return;
+        }
+
+        if (!_qualified.Contains(id))
+        {
+            StartTest(player);
+            return;
+        }
+
+        AddToQueue(player);
+    }
+
+    private void StartTest(CCSPlayerController player)
+    {
+        if (Config.Questions.Count == 0)
+        {
+            player.PrintToChat(JailbreakChat.Format("Тест CT не настроен: в конфиге нет вопросов."));
+            return;
+        }
+
+        var count = Math.Min(Config.QuestionNumber, Config.Questions.Count);
+        var questions = Config.Questions
+            .OrderBy(_ => Random.Shared.Next())
+            .Take(count)
+            .ToList();
+
+        _sessions[player.SteamID] = new CtTestSession(questions);
+
+        player.PrintToChat(JailbreakChat.Format($"Тест CT: {count} вопросов. Ошибаться нельзя."));
+        ShowQuestion(player);
+    }
+
+    private void ShowQuestion(CCSPlayerController player)
+    {
+        if (!_sessions.TryGetValue(player.SteamID, out var session) ||
+            session.CurrentQuestion >= session.Questions.Count)
+            return;
+
+        var menu = MenuCapability.Api.Get();
+        if (menu is null)
+        {
+            player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
+            _sessions.Remove(player.SteamID);
+            return;
+        }
+
+        var question = session.Questions[session.CurrentQuestion];
+        var options = question.Answers
+            .OrderBy(_ => Random.Shared.Next())
+            .Select(answer => new JailbreakMenuOption(answer, p => HandleAnswer(p, answer)))
+            .ToArray();
+
+        menu.Open(
+            player,
+            $"CT {session.CurrentQuestion + 1}/{session.Questions.Count}: {question.Question}",
+            options);
+    }
+
+    private void HandleAnswer(CCSPlayerController player, string answer)
+    {
+        if (!_sessions.TryGetValue(player.SteamID, out var session) ||
+            session.CurrentQuestion >= session.Questions.Count)
+            return;
+
+        var question = session.Questions[session.CurrentQuestion];
+
+        if (!string.Equals(answer, question.CorrectAnswer, StringComparison.Ordinal))
+        {
+            _sessions.Remove(player.SteamID);
+            MenuCapability.Api.Get()?.Close(player);
+
+            var until = DateTime.UtcNow.AddMinutes(Config.CtBan);
+            _bans[player.SteamID] = until;
+
+            if (_database is not null)
+                _ = SafeDb(() => _database.SetBanAsync(player.SteamID, until));
+
+            player.PrintToChat(JailbreakChat.Format($"Неверный ответ. CT заблокированы на {Config.CtBan} мин."));
+            return;
+        }
+
+        session.CurrentQuestion++;
+
+        if (session.CurrentQuestion < session.Questions.Count)
+        {
+            ShowQuestion(player);
+            return;
+        }
+
+        _sessions.Remove(player.SteamID);
+        _qualified.Add(player.SteamID);
+
+        if (_database is not null)
+            _ = SafeDb(() => _database.GrantAccessAsync(player.SteamID));
+
+        MenuCapability.Api.Get()?.Close(player);
+        player.PrintToChat(JailbreakChat.Format("Тест CT пройден. Доступ сохранён."));
+        AddToQueue(player);
+    }
+
+    private void AddToQueue(CCSPlayerController player)
+    {
+        if (_queue.Contains(player.SteamID))
+        {
+            player.PrintToChat(JailbreakChat.Format($"Ты уже в очереди CT. Позиция: {QueuePosition(player.SteamID)}."));
+            return;
+        }
+
+        _queue.Enqueue(player.SteamID);
+        player.PrintToChat(JailbreakChat.Format($"Ты добавлен в очередь CT. Позиция: {_queue.Count}. Перевод выполняется в конце раунда."));
+    }
+
+    [GameEventHandler]
+    public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
+    {
+        Server.NextFrame(BalanceAtRoundEnd);
+        return HookResult.Continue;
+    }
+
+    [GameEventHandler]
+    public HookResult OnPlayerTeam(EventPlayerTeam @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (!IsUsable(player))
+            return HookResult.Continue;
+
+        if (player!.Team == CsTeam.CounterTerrorist)
+        {
+            _guardJoinedAt[player.SteamID] = DateTime.UtcNow;
+            RemoveFromQueue(player.SteamID);
+            _sessions.Remove(player.SteamID);
+        }
+        else
+        {
+            _guardJoinedAt.Remove(player.SteamID);
+        }
+
+        return HookResult.Continue;
+    }
+
+    private void BalanceAtRoundEnd()
+    {
+        var active = Utilities.GetPlayers()
+            .Where(p => IsUsable(p) && p!.Team is CsTeam.Terrorist or CsTeam.CounterTerrorist)
+            .Select(p => p!)
+            .ToArray();
+
+        if (active.Length == 0)
+            return;
+
+        var maxCt = GetMaxCt(active.Length);
+        var guards = active
+            .Where(p => p.Team == CsTeam.CounterTerrorist)
+            .ToList();
+
+        if (guards.Count > maxCt)
+        {
+            var excess = guards.Count - maxCt;
+
+            foreach (var guard in guards
+                         .OrderByDescending(p => _guardJoinedAt.GetValueOrDefault(p.SteamID, DateTime.MinValue))
+                         .Take(excess))
+            {
+                guard.SwitchTeam(CsTeam.Terrorist);
+                _guardJoinedAt.Remove(guard.SteamID);
+                guard.PrintToChat(JailbreakChat.Format($"Баланс команд: ты переведён за T. Лимит CT: {maxCt}."));
+            }
+        }
+
+        while (_queue.Count > 0)
+        {
+            active = Utilities.GetPlayers()
+                .Where(p => IsUsable(p) && p!.Team is CsTeam.Terrorist or CsTeam.CounterTerrorist)
+                .Select(p => p!)
+                .ToArray();
+
+            maxCt = GetMaxCt(active.Length);
+            var ctCount = active.Count(p => p.Team == CsTeam.CounterTerrorist);
+
+            if (ctCount >= maxCt)
+                break;
+
+            var id = _queue.Dequeue();
+            var player = active.FirstOrDefault(p => p.SteamID == id);
+
+            if (player is null || player.Team != CsTeam.Terrorist || !_qualified.Contains(id))
+                continue;
+
+            player.SwitchTeam(CsTeam.CounterTerrorist);
+            _guardJoinedAt[id] = DateTime.UtcNow;
+
+            player.PrintToChat(JailbreakChat.Format($"Ты переведён за CT. CT: {ctCount + 1}/{maxCt}."));
+        }
+    }
+
+    private int GetMaxCt(int totalPlayers)
+    {
+        var ratio = Math.Max(1, Config.TerroristsPerGuard);
+        return totalPlayers <= 1
+            ? 0
+            : Math.Max(1, totalPlayers / (ratio + 1));
+    }
+
+    private int QueuePosition(ulong steamId)
+    {
+        var index = 1;
+
+        foreach (var id in _queue)
+        {
+            if (id == steamId)
+                return index;
+
+            index++;
+        }
+
+        return 0;
+    }
+
+    private void RemoveFromQueue(ulong steamId)
+    {
+        if (!_queue.Contains(steamId))
+            return;
+
+        var remaining = _queue
+            .Where(id => id != steamId)
+            .ToArray();
+
+        _queue.Clear();
+
+        foreach (var id in remaining)
+            _queue.Enqueue(id);
+    }
+
+    private void OnClientDisconnect(int slot)
+    {
+        var player = Utilities.GetPlayerFromSlot(slot);
+
+        if (player is null || player.SteamID == 0)
+            return;
+
+        _sessions.Remove(player.SteamID);
+        _guardJoinedAt.Remove(player.SteamID);
+        RemoveFromQueue(player.SteamID);
+    }
+
+    private async Task SafeDb(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            Server.PrintToConsole($"[JBF] TeamBalance DB write failed: {ex.Message}");
+        }
+    }
+
+    private static bool IsUsable(CCSPlayerController? player) =>
+        player is { IsValid: true, IsBot: false } && player.SteamID != 0;
+
+    private sealed class CtTestSession
+    {
+        public CtTestSession(List<CtQuestion> questions) => Questions = questions;
+
+        public List<CtQuestion> Questions { get; }
+
+        public int CurrentQuestion { get; set; }
+    }
+}
