@@ -2,6 +2,7 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
+using CounterStrikeSharp.API.Modules.Commands;
 using JBF.Api;
 
 namespace JBF.WeekCycle;
@@ -47,6 +48,20 @@ public sealed class JBFWeekCycle : BasePlugin, IWeekCycleApi
         }
 
         return HookResult.Continue;
+    }
+
+
+    [ConsoleCommand("css_day", "Show current Jailbreak week day")]
+    [ConsoleCommand("css_weekday", "Show current Jailbreak week day")]
+    public void OnDayCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player is null || !player.IsValid || player.IsBot)
+        {
+            command.ReplyToCommand(JailbreakChat.Format($"Сегодня: {CurrentDayName} • раунд {RoundIndex + 1}"));
+            return;
+        }
+
+        player.PrintToChat(JailbreakChat.Format($"Сегодня: {CurrentDayName} • раунд {RoundIndex + 1}"));
     }
 
     private static string GetRussianDayName(JailbreakWeekDay day) => day switch
