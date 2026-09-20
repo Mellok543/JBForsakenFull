@@ -42,7 +42,7 @@ public sealed class JBFGolf : BasePlugin
     public HookResult OnDecoyStarted(EventDecoyStarted @event, GameEventInfo info) => _game.OnDecoyStarted(@event);
     private void EnsureRegistration()
     {
-        var current = LrCapability.Api.Get();
+        var current = LrCapability.Api.GetOptional();
         if (ReferenceEquals(current, _registeredApi))
             return;
 
@@ -82,7 +82,7 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         LrPlayerRules.Normalize(context.Inmate);
         LrPlayerRules.Normalize(context.Guardian);
         _state = SetupState.WaitingStart;
-        UiCapability.Api.Get()?.Notify(context.Inmate, "Встаньте в центр СТАРТА и нажмите E", UiNotificationType.Info, 8.0f);
+        UiCapability.Api.GetOptional()?.Notify(context.Inmate, "Встаньте в центр СТАРТА и нажмите E", UiNotificationType.Info, 8.0f);
     }
 
     public void Stop()
@@ -116,13 +116,13 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
             var candidate = new Vector(origin.X, origin.Y, origin.Z);
             if (IsTooCloseToWall(player, candidate))
             {
-                UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+                UiCapability.Api.GetOptional()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
                 return;
             }
 
             _start = candidate;
             _state = SetupState.WaitingHole;
-            UiCapability.Api.Get()?.Notify(player, "Старт сохранён. Встаньте в центр ЛУНКИ и нажмите E", UiNotificationType.Info, 8.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Старт сохранён. Встаньте в центр ЛУНКИ и нажмите E", UiNotificationType.Info, 8.0f);
             return;
         }
 
@@ -130,7 +130,7 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         var hole = new Vector(origin.X, origin.Y, origin.Z);
         if (IsTooCloseToWall(player, hole))
         {
-            UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
             return;
         }
 
@@ -163,7 +163,7 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         else
             _guardianDistance = distance;
 
-        UiCapability.Api.Get()?.Notify(player, $"Точность броска: {distance:0.0} ед.", UiNotificationType.Info, 4.0f);
+        UiCapability.Api.GetOptional()?.Notify(player, $"Точность броска: {distance:0.0} ед.", UiNotificationType.Info, 4.0f);
 
         if (_inmateDistance is null || _guardianDistance is null) return HookResult.Continue;
 
@@ -173,8 +173,8 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
             _guardianDistance = null;
             GiveDecoy(_context.Inmate);
             GiveDecoy(_context.Guardian);
-            UiCapability.Api.Get()?.Notify(_context.Inmate, "Ничья. Повторный бросок", UiNotificationType.Warning, 4.0f);
-            UiCapability.Api.Get()?.Notify(_context.Guardian, "Ничья. Повторный бросок", UiNotificationType.Warning, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(_context.Inmate, "Ничья. Повторный бросок", UiNotificationType.Warning, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(_context.Guardian, "Ничья. Повторный бросок", UiNotificationType.Warning, 4.0f);
             return HookResult.Continue;
         }
 
@@ -206,8 +206,8 @@ internal sealed class GolfGame : ILrGame, ILrInventoryRules
         GiveDecoy(_context.Inmate);
         GiveDecoy(_context.Guardian);
         _state = SetupState.Throwing;
-        UiCapability.Api.Get()?.Notify(_context.Inmate, "Бросайте decoy как можно ближе к центру лунки. Движение ограничено.", UiNotificationType.Success, 6.0f);
-        UiCapability.Api.Get()?.Notify(_context.Guardian, "Бросайте decoy как можно ближе к центру лунки. Движение ограничено.", UiNotificationType.Success, 6.0f);
+        UiCapability.Api.GetOptional()?.Notify(_context.Inmate, "Бросайте decoy как можно ближе к центру лунки. Движение ограничено.", UiNotificationType.Success, 6.0f);
+        UiCapability.Api.GetOptional()?.Notify(_context.Guardian, "Бросайте decoy как можно ближе к центру лунки. Движение ограничено.", UiNotificationType.Success, 6.0f);
     }
 
     private static void KeepAtAnchor(CCSPlayerController player, Vector? anchor)
