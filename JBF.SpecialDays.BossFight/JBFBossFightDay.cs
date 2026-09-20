@@ -40,7 +40,7 @@ public sealed class JBFBossFightDay : BasePlugin, ISpecialDay
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        var specialDays = SpecialDaysCapability.Api.Get();
+        var specialDays = SpecialDaysCapability.Api.GetOptional();
         if (specialDays is null)
         {
             Logger.LogWarning("Special days capability is unavailable; boss fight was not registered.");
@@ -170,7 +170,7 @@ public sealed class JBFBossFightDay : BasePlugin, ISpecialDay
 
     private static void OpenWeaponSelection(CCSPlayerController player)
     {
-        var menuApi = MenuCapability.Api.Get();
+        var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null)
         {
             player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
