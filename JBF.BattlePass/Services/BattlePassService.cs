@@ -413,7 +413,7 @@ internal sealed class BattlePassService : IBattlePassApi
 
             _renderer.Text(player, $"{panel}_level", $"LVL {rewardLevel}");
             _renderer.Text(player, $"{panel}_name", reward!.Name);
-            _renderer.Image(player, $"{panel}_image", ResolveRewardImage(reward));
+            SetRewardImage(player, panel, reward);
             var claimed = state.ClaimedLevels.Contains(rewardLevel);
             var available = !claimed && level >= rewardLevel;
             _renderer.Text(player, $"{panel}_state", claimed ? "ПОЛУЧЕНО" : available ? "ЗАБРАТЬ" : "ЗАКРЫТО");
@@ -519,6 +519,37 @@ internal sealed class BattlePassService : IBattlePassApi
             _ => RewardSlots
         };
         return count <= 0 ? 0 : (count - 1) / pageSize;
+    }
+
+    private void SetRewardImage(CCSPlayerController player, string panel, RewardDefinition reward)
+    {
+        var selected = RewardImageKey(reward);
+        var keys = new[]
+        {
+            "credits",
+            "weapon_deagle",
+            "weapon_hegrenade",
+            "weapon_smokegrenade",
+            "weapon_flashbang"
+        };
+
+        foreach (var key in keys)
+            _renderer.SetClass(player, $"{panel}_image_{key}", "visible", key == selected);
+    }
+
+    private static string? RewardImageKey(RewardDefinition reward)
+    {
+        if (reward.Type == RewardType.Credits)
+            return "credits";
+
+        return reward.ItemId?.Trim().ToLowerInvariant() switch
+        {
+            "weapon_deagle" => "weapon_deagle",
+            "weapon_hegrenade" => "weapon_hegrenade",
+            "weapon_smokegrenade" => "weapon_smokegrenade",
+            "weapon_flashbang" => "weapon_flashbang",
+            _ => null
+        };
     }
 
     private void SetRewardTypeClasses(CCSPlayerController player, string panel, RewardType type)
