@@ -153,17 +153,17 @@ internal sealed class BattlePassConfig
         for (var level = 1; level <= 30; level++)
         {
             if (level % 10 == 0)
-                list.Add(new(level, RewardType.Credits, 750 + level * 10, null, $"Большая награда • {750 + level * 10} кредитов"));
+                list.Add(new(level, RewardType.Credits, 750 + level * 10, null, $"Большая награда • {750 + level * 10} кредитов", "credits"));
             else if (level % 5 == 0)
-                list.Add(new(level, RewardType.Weapon, 1, "weapon_deagle", "Desert Eagle ×1"));
+                list.Add(new(level, RewardType.Weapon, 1, "weapon_deagle", "Desert Eagle ×1", "deagle"));
             else if (level % 4 == 0)
-                list.Add(new(level, RewardType.Consumable, 1, "weapon_hegrenade", "HE Grenade ×1"));
+                list.Add(new(level, RewardType.Consumable, 1, "weapon_hegrenade", "HE Grenade ×1", "hegrenade"));
             else if (level % 3 == 0)
-                list.Add(new(level, RewardType.Consumable, 1, "weapon_smokegrenade", "Smoke ×1"));
+                list.Add(new(level, RewardType.Consumable, 1, "weapon_smokegrenade", "Smoke ×1", "smokegrenade"));
             else if (level % 2 == 0)
-                list.Add(new(level, RewardType.Consumable, 1, "weapon_flashbang", "Flashbang ×1"));
+                list.Add(new(level, RewardType.Consumable, 1, "weapon_flashbang", "Flashbang ×1", "flashbang"));
             else
-                list.Add(new(level, RewardType.Credits, 100 + level * 10, null, $"{100 + level * 10} кредитов"));
+                list.Add(new(level, RewardType.Credits, 100 + level * 10, null, $"{100 + level * 10} кредитов", "credits"));
         }
         return list;
     }
@@ -186,6 +186,7 @@ internal sealed record RewardDefinition(
     int Amount,
     string? ItemId,
     string Name,
+    string? ImageKey = null,
     string? ImagePath = null);
 
 internal enum MissionPeriod { Daily, Weekly, Season }
