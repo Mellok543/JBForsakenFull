@@ -523,31 +523,45 @@ internal sealed class BattlePassService : IBattlePassApi
 
     private void SetRewardImage(CCSPlayerController player, string panel, RewardDefinition reward)
     {
-        var selected = RewardImageKey(reward);
+        var selected = ResolveRewardImageKey(reward);
         var keys = new[]
         {
             "credits",
-            "weapon_deagle",
-            "weapon_hegrenade",
-            "weapon_smokegrenade",
-            "weapon_flashbang"
+            "deagle",
+            "hegrenade",
+            "smokegrenade",
+            "flashbang"
         };
 
         foreach (var key in keys)
             _renderer.SetClass(player, $"{panel}_image_{key}", "visible", key == selected);
     }
 
-    private static string? RewardImageKey(RewardDefinition reward)
+    private static string? ResolveRewardImageKey(RewardDefinition reward)
     {
+        if (!string.IsNullOrWhiteSpace(reward.ImageKey))
+        {
+            var configured = reward.ImageKey.Trim().ToLowerInvariant();
+            return configured switch
+            {
+                "credits" => "credits",
+                "deagle" or "weapon_deagle" => "deagle",
+                "hegrenade" or "weapon_hegrenade" => "hegrenade",
+                "smokegrenade" or "weapon_smokegrenade" => "smokegrenade",
+                "flashbang" or "weapon_flashbang" => "flashbang",
+                _ => null
+            };
+        }
+
         if (reward.Type == RewardType.Credits)
             return "credits";
 
         return reward.ItemId?.Trim().ToLowerInvariant() switch
         {
-            "weapon_deagle" => "weapon_deagle",
-            "weapon_hegrenade" => "weapon_hegrenade",
-            "weapon_smokegrenade" => "weapon_smokegrenade",
-            "weapon_flashbang" => "weapon_flashbang",
+            "weapon_deagle" => "deagle",
+            "weapon_hegrenade" => "hegrenade",
+            "weapon_smokegrenade" => "smokegrenade",
+            "weapon_flashbang" => "flashbang",
             _ => null
         };
     }
@@ -631,34 +645,6 @@ internal sealed class BattlePassService : IBattlePassApi
         MissionPeriod.Weekly => "ЕЖЕНЕДЕЛЬНОЕ",
         _ => "СЕЗОННОЕ"
     };
-
-    private static string ResolveRewardImage(RewardDefinition reward)
-    {
-        if (!string.IsNullOrWhiteSpace(reward.ImagePath))
-            return reward.ImagePath;
-
-        if (reward.Type == RewardType.Credits)
-            return "file://{images}/map_icons/jbforsaken/battlepass/credits_png.vtex";
-
-        if (reward.Type == RewardType.Cosmetic && !string.IsNullOrWhiteSpace(reward.ItemId))
-            return $"file://{{images}}/map_icons/jbforsaken/battlepass/{SanitizeImageKey(reward.ItemId)}_png.vtex";
-
-        if (!string.IsNullOrWhiteSpace(reward.ItemId))
-            return $"file://{{images}}/map_icons/jbforsaken/battlepass/{SanitizeImageKey(reward.ItemId)}_png.vtex";
-
-        return $"file://{{images}}/map_icons/jbforsaken/battlepass/{reward.Type.ToString().ToLowerInvariant()}_png.vtex";
-    }
-
-    private static string SanitizeImageKey(string value)
-    {
-        var chars = value
-            .Trim()
-            .ToLowerInvariant()
-            .Select(ch => char.IsLetterOrDigit(ch) || ch is '_' or '-' ? ch : '_')
-            .ToArray();
-
-        return new string(chars);
-    }
 
     private static string ItemDisplayName(string itemId) => itemId switch
     {
