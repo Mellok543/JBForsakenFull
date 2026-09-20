@@ -42,7 +42,7 @@ internal sealed class LrService : ILrApi
     {
         if (!CanOpenLr(player)) return;
 
-        var menuApi = MenuCapability.Api.Get();
+        var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null)
         {
             player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
@@ -157,8 +157,8 @@ internal sealed class LrService : ILrApi
         UpdateOpponentLink();
         EnforceLrInventory(_activeMatch.Inmate);
         EnforceLrInventory(_activeMatch.Guardian);
-        PlayerEffectsCapability.Api.Get()?.Clear(_activeMatch.Inmate);
-        PlayerEffectsCapability.Api.Get()?.Clear(_activeMatch.Guardian);
+        PlayerEffectsCapability.Api.GetOptional()?.Clear(_activeMatch.Inmate);
+        PlayerEffectsCapability.Api.GetOptional()?.Clear(_activeMatch.Guardian);
     }
 
     public void ResetRound()
@@ -173,7 +173,7 @@ internal sealed class LrService : ILrApi
 
     private void EvaluateLrPhase()
     {
-        if (JailbreakCapability.Api.Get()?.IsRoundActive != true || SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (JailbreakCapability.Api.GetOptional()?.IsRoundActive != true || SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
             return;
 
         var aliveInmates = Utilities.GetPlayers()
@@ -188,7 +188,7 @@ internal sealed class LrService : ILrApi
             _preLrProtectionUntil = DateTime.UtcNow.AddSeconds(10);
 
             foreach (var player in Utilities.GetPlayers().Where(p => p.IsUsable() && !p.IsBot))
-                UiCapability.Api.Get()?.Announce(player, "ВРЕМЯ LR", "Осталось 2 заключённых • 10 секунд защиты", UiNotificationType.Important, 5.0f);
+                UiCapability.Api.GetOptional()?.Announce(player, "ВРЕМЯ LR", "Осталось 2 заключённых • 10 секунд защиты", UiNotificationType.Important, 5.0f);
 
             Server.PrintToChatAll(JailbreakChat.Format("Время LR: осталось 2 заключённых. Они получили бессмертие на 10 секунд."));
         }
@@ -203,7 +203,7 @@ internal sealed class LrService : ILrApi
         _lastInmateMenuOpened = true;
         foreach (var inmate in aliveInmates)
         {
-            UiCapability.Api.Get()?.Announce(
+            UiCapability.Api.GetOptional()?.Announce(
                 inmate,
                 "LAST REQUEST",
                 aliveInmates.Length == 2 ? "Осталось 2 заключённых • выберите игру и соперника" : "Выберите игру и соперника",
@@ -221,13 +221,13 @@ internal sealed class LrService : ILrApi
             return false;
         }
 
-        if (JailbreakCapability.Api.Get()?.IsRoundActive != true)
+        if (JailbreakCapability.Api.GetOptional()?.IsRoundActive != true)
         {
             player.PrintToChat(JailbreakChat.Format("Сейчас нет активного раунда."));
             return false;
         }
 
-        if (SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
         {
             player.PrintToChat(JailbreakChat.Format("LR нельзя запускать во время игрового дня."));
             return false;
@@ -271,7 +271,7 @@ internal sealed class LrService : ILrApi
     private void OpenVariantMenu(CCSPlayerController inmate, string title, IReadOnlyList<ILrGame> variants)
     {
         if (!CanOpenLr(inmate)) return;
-        var menuApi = MenuCapability.Api.Get();
+        var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null) return;
 
         var options = variants
@@ -286,7 +286,7 @@ internal sealed class LrService : ILrApi
     {
         if (!CanOpenLr(inmate)) return;
 
-        var menuApi = MenuCapability.Api.Get();
+        var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null)
         {
             inmate.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
@@ -316,13 +316,13 @@ internal sealed class LrService : ILrApi
         _preLrProtectedSlots.Add(inmate.Slot);
         _preLrProtectedSlots.Add(guardian.Slot);
         _preLrProtectionUntil = DateTime.UtcNow + MatchStartProtection;
-        MenuCapability.Api.Get()?.Close(inmate);
+        MenuCapability.Api.GetOptional()?.Close(inmate);
 
-        var wardenApi = WardenCapability.Api.Get();
+        var wardenApi = WardenCapability.Api.GetOptional();
         if (wardenApi?.Warden is not null) wardenApi.TryResign(wardenApi.Warden);
 
-        PlayerEffectsCapability.Api.Get()?.Clear(inmate);
-        PlayerEffectsCapability.Api.Get()?.Clear(guardian);
+        PlayerEffectsCapability.Api.GetOptional()?.Clear(inmate);
+        PlayerEffectsCapability.Api.GetOptional()?.Clear(guardian);
         _vipSuppression.Suppress(inmate);
         _vipSuppression.Suppress(guardian);
         inmate.ResetForLr();
@@ -330,7 +330,7 @@ internal sealed class LrService : ILrApi
         CreateOpponentLink();
 
         foreach (var player in Utilities.GetPlayers().Where(p => p.IsUsable() && !p.IsBot))
-            UiCapability.Api.Get()?.Announce(player, game.Name, $"{inmate.PlayerName}  VS  {guardian.PlayerName}", UiNotificationType.Important, 4.0f);
+            UiCapability.Api.GetOptional()?.Announce(player, game.Name, $"{inmate.PlayerName}  VS  {guardian.PlayerName}", UiNotificationType.Important, 4.0f);
 
         Server.PrintToChatAll(JailbreakChat.Format($"LR начался: {game.Name} | T: {inmate.PlayerName} vs CT: {guardian.PlayerName}. Защита обоих игроков: 3 сек."));
         game.Start(new LrMatchContext(inmate, guardian, winner => EndActive(winner, announce: true)));
@@ -436,7 +436,7 @@ internal sealed class LrService : ILrApi
         {
             Server.PrintToChatAll(JailbreakChat.Format($"LR завершён: {winner.PlayerName} победил в {match.Game.Name}."));
             foreach (var player in Utilities.GetPlayers().Where(p => p.IsUsable() && !p.IsBot))
-                UiCapability.Api.Get()?.Notify(player, $"LR: победил {winner.PlayerName}", UiNotificationType.Success, 4.0f);
+                UiCapability.Api.GetOptional()?.Notify(player, $"LR: победил {winner.PlayerName}", UiNotificationType.Success, 4.0f);
         }
         else
         {
