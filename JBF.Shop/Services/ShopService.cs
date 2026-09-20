@@ -157,7 +157,7 @@ internal sealed class ShopService : IShopApi
             return;
         }
 
-        var menuApi = MenuCapability.Api.Get();
+        var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null)
         {
             player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
@@ -277,7 +277,7 @@ internal sealed class ShopService : IShopApi
             return;
         }
 
-        if (LrCapability.Api.Get()?.IsActive == true || SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (LrCapability.Api.GetOptional()?.IsActive == true || SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
         {
             return;
         }
@@ -434,19 +434,19 @@ internal sealed class ShopService : IShopApi
             return false;
         }
 
-        if (JailbreakCapability.Api.Get()?.IsRoundActive != true)
+        if (JailbreakCapability.Api.GetOptional()?.IsRoundActive != true)
         {
             player.PrintToChat(JailbreakChat.Format("Магазин доступен только во время активного раунда."));
             return false;
         }
 
-        if (LrCapability.Api.Get()?.IsActive == true)
+        if (LrCapability.Api.GetOptional()?.IsActive == true)
         {
             player.PrintToChat(JailbreakChat.Format("Покупки недоступны во время LR."));
             return false;
         }
 
-        if (SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
         {
             player.PrintToChat(JailbreakChat.Format("Покупки недоступны во время игрового дня."));
             return false;
