@@ -180,6 +180,14 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         _vipSuppression.Forget(slot);
     }
 
+    public void End()
+    {
+        if (_active is null)
+            return;
+
+        StopActiveDay("завершён");
+    }
+
     public void Finish(RoundEndReason reason)
     {
         if (_active is null || _finishRequested)
