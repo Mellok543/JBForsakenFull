@@ -129,7 +129,7 @@ internal sealed class BattlePassService : IBattlePassApi
             if (progress < mission.Target) continue;
             state.CompletedMissionPeriods.Add(key);
             state.Xp += mission.XpReward;
-            UiCapability.Api.Get()?.Notify(player, $"Задание выполнено: {mission.Name} • +{mission.XpReward} XP", UiNotificationType.Success, 5.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, $"Задание выполнено: {mission.Name} • +{mission.XpReward} XP", UiNotificationType.Success, 5.0f);
         }
 
         if (changed)
@@ -145,7 +145,7 @@ internal sealed class BattlePassService : IBattlePassApi
         var state = GetState(player);
         state.Xp = Math.Max(0, state.Xp + amount);
         Save(state);
-        UiCapability.Api.Get()?.Notify(player, $"+{amount} XP{(string.IsNullOrWhiteSpace(reason) ? string.Empty : $" • {reason}")}", UiNotificationType.Success, 3.0f);
+        UiCapability.Api.GetOptional()?.Notify(player, $"+{amount} XP{(string.IsNullOrWhiteSpace(reason) ? string.Empty : $" • {reason}")}", UiNotificationType.Success, 3.0f);
         if (_tabs.ContainsKey(player.Slot)) Render(player);
     }
 
@@ -284,12 +284,12 @@ internal sealed class BattlePassService : IBattlePassApi
         if (level < 1 || level > _config.MaxLevel) return;
         if (LevelForXp(state.Xp) < level)
         {
-            UiCapability.Api.Get()?.Notify(player, "Этот уровень ещё не открыт.", UiNotificationType.Warning, 3.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Этот уровень ещё не открыт.", UiNotificationType.Warning, 3.0f);
             return;
         }
         if (state.ClaimedLevels.Contains(level))
         {
-            UiCapability.Api.Get()?.Notify(player, "Награда уже получена.", UiNotificationType.Info, 3.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Награда уже получена.", UiNotificationType.Info, 3.0f);
             return;
         }
 
@@ -298,21 +298,21 @@ internal sealed class BattlePassService : IBattlePassApi
 
         if (reward.Type == RewardType.Credits)
         {
-            var shop = ShopCapability.Api.Get();
+            var shop = ShopCapability.Api.GetOptional();
             if (shop is null || !shop.TryAddCredits(player, reward.Amount, out var balance))
             {
-                UiCapability.Api.Get()?.Notify(player, "Не удалось начислить кредиты. Попробуйте позже.", UiNotificationType.Error, 4.0f);
+                UiCapability.Api.GetOptional()?.Notify(player, "Не удалось начислить кредиты. Попробуйте позже.", UiNotificationType.Error, 4.0f);
                 return;
             }
-            UiCapability.Api.Get()?.Notify(player, $"Получено {reward.Amount} кредитов • Баланс {balance}", UiNotificationType.Success, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, $"Получено {reward.Amount} кредитов • Баланс {balance}", UiNotificationType.Success, 4.0f);
         }
         else if (reward.Type == RewardType.Cosmetic)
         {
             if (string.IsNullOrWhiteSpace(reward.ItemId)) return;
-            var cosmetics = CosmeticsCapability.Api.Get();
+            var cosmetics = CosmeticsCapability.Api.GetOptional();
             if (cosmetics is null || !cosmetics.Grant(player, reward.ItemId, "BattlePass"))
             {
-                UiCapability.Api.Get()?.Notify(player, "Не удалось выдать косметику. Попробуйте позже.", UiNotificationType.Error, 4.0f);
+                UiCapability.Api.GetOptional()?.Notify(player, "Не удалось выдать косметику. Попробуйте позже.", UiNotificationType.Error, 4.0f);
                 return;
             }
         }
@@ -320,7 +320,7 @@ internal sealed class BattlePassService : IBattlePassApi
         {
             if (string.IsNullOrWhiteSpace(reward.ItemId)) return;
             state.Inventory[reward.ItemId] = state.Inventory.GetValueOrDefault(reward.ItemId) + Math.Max(1, reward.Amount);
-            UiCapability.Api.Get()?.Notify(player, $"Получено: {reward.Name}", UiNotificationType.Success, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, $"Получено: {reward.Name}", UiNotificationType.Success, 4.0f);
         }
 
         state.ClaimedLevels.Add(level);
@@ -332,19 +332,19 @@ internal sealed class BattlePassService : IBattlePassApi
     {
         var state = GetState(player);
         if (state.Inventory.GetValueOrDefault(itemId) <= 0) return;
-        if (!player.PawnIsAlive || JailbreakCapability.Api.Get()?.IsRoundActive != true)
+        if (!player.PawnIsAlive || JailbreakCapability.Api.GetOptional()?.IsRoundActive != true)
         {
-            UiCapability.Api.Get()?.Notify(player, "Предмет можно использовать только живым во время раунда.", UiNotificationType.Warning, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Предмет можно использовать только живым во время раунда.", UiNotificationType.Warning, 4.0f);
             return;
         }
-        if (LrCapability.Api.Get()?.IsActive == true || SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (LrCapability.Api.GetOptional()?.IsActive == true || SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
         {
-            UiCapability.Api.Get()?.Notify(player, "Инвентарь Battle Pass недоступен во время LR или игрового дня.", UiNotificationType.Warning, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Инвентарь Battle Pass недоступен во время LR или игрового дня.", UiNotificationType.Warning, 4.0f);
             return;
         }
         if (_usedInventoryThisRound.Contains(player.Slot))
         {
-            UiCapability.Api.Get()?.Notify(player, "Можно использовать только один предмет Battle Pass за раунд.", UiNotificationType.Warning, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Можно использовать только один предмет Battle Pass за раунд.", UiNotificationType.Warning, 4.0f);
             return;
         }
 
@@ -354,7 +354,7 @@ internal sealed class BattlePassService : IBattlePassApi
         }
         catch
         {
-            UiCapability.Api.Get()?.Notify(player, "Не удалось выдать предмет.", UiNotificationType.Error, 3.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Не удалось выдать предмет.", UiNotificationType.Error, 3.0f);
             return;
         }
 
@@ -363,7 +363,7 @@ internal sealed class BattlePassService : IBattlePassApi
         _usedInventoryThisRound.Add(player.Slot);
         _pages[player.Slot] = Math.Min(_pages.GetValueOrDefault(player.Slot), MaxPage(player));
         Save(state);
-        UiCapability.Api.Get()?.Notify(player, $"Использовано: {ItemDisplayName(itemId)}", UiNotificationType.Success, 3.0f);
+        UiCapability.Api.GetOptional()?.Notify(player, $"Использовано: {ItemDisplayName(itemId)}", UiNotificationType.Success, 3.0f);
         Render(player);
     }
 
@@ -476,17 +476,17 @@ internal sealed class BattlePassService : IBattlePassApi
 
     private bool CanUseInventory(CCSPlayerController player, out string status)
     {
-        if (!player.PawnIsAlive || JailbreakCapability.Api.Get()?.IsRoundActive != true)
+        if (!player.PawnIsAlive || JailbreakCapability.Api.GetOptional()?.IsRoundActive != true)
         {
             status = "Предметы доступны только живым игрокам во время обычного раунда.";
             return false;
         }
-        if (LrCapability.Api.Get()?.IsActive == true)
+        if (LrCapability.Api.GetOptional()?.IsActive == true)
         {
             status = "Инвентарь временно отключён во время LR.";
             return false;
         }
-        if (SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
         {
             status = "Инвентарь временно отключён во время игрового дня.";
             return false;
