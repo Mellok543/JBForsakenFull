@@ -34,7 +34,7 @@ public sealed class JBFMainMenu : BasePlugin
             return;
         }
 
-        var menuApi = MenuCapability.Api.Get();
+        var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null)
         {
             command.ReplyToCommand(JailbreakChat.Format("Menu API недоступно."));
