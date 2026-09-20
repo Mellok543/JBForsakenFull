@@ -607,15 +607,15 @@ internal sealed class BattlePassService : IBattlePassApi
             return reward.ImagePath;
 
         if (reward.Type == RewardType.Credits)
-            return "file://{images}/custom_game/battlepass/credits_png.vtex";
+            return "file://{images}/map_icons/jbforsaken/battlepass/credits_png.vtex";
 
         if (reward.Type == RewardType.Cosmetic && !string.IsNullOrWhiteSpace(reward.ItemId))
-            return $"file://{{images}}/custom_game/cosmetics/{SanitizeImageKey(reward.ItemId)}_png.vtex";
+            return $"file://{{images}}/map_icons/jbforsaken/battlepass/{SanitizeImageKey(reward.ItemId)}_png.vtex";
 
         if (!string.IsNullOrWhiteSpace(reward.ItemId))
-            return $"file://{{images}}/custom_game/battlepass/{SanitizeImageKey(reward.ItemId)}_png.vtex";
+            return $"file://{{images}}/map_icons/jbforsaken/battlepass/{SanitizeImageKey(reward.ItemId)}_png.vtex";
 
-        return $"file://{{images}}/custom_game/battlepass/{reward.Type.ToString().ToLowerInvariant()}_png.vtex";
+        return $"file://{{images}}/map_icons/jbforsaken/battlepass/{reward.Type.ToString().ToLowerInvariant()}_png.vtex";
     }
 
     private static string SanitizeImageKey(string value)
