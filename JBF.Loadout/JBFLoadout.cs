@@ -25,7 +25,7 @@ public sealed class JBFLoadout : BasePlugin
 
     private static void ApplyLoadout(CCSPlayerController player)
     {
-        if (SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
             return;
 
         if (!player.IsValid || !player.PawnIsAlive || player.PlayerPawn.Value is not { IsValid: true } pawn)
