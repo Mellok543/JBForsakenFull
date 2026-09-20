@@ -36,7 +36,7 @@ public sealed class JBFArmRaceDay : BasePlugin, ISpecialDay
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        var specialDays = SpecialDaysCapability.Api.Get();
+        var specialDays = SpecialDaysCapability.Api.GetOptional();
         if (specialDays is null)
         {
             Logger.LogWarning("Special days capability is unavailable; arm race was not registered.");
