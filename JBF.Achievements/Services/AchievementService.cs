@@ -146,7 +146,7 @@ internal sealed class AchievementService : IAchievementsApi, IDisposable
 
     public void OpenMenu(CCSPlayerController player)
     {
-        var menu = MenuCapability.Api.Get();
+        var menu = MenuCapability.Api.GetOptional();
         var state = GetState(player, true);
         if (menu is null || state is null) return;
 
@@ -163,7 +163,7 @@ internal sealed class AchievementService : IAchievementsApi, IDisposable
 
     public void OpenStats(CCSPlayerController player)
     {
-        var menu = MenuCapability.Api.Get();
+        var menu = MenuCapability.Api.GetOptional();
         var state = GetState(player, true);
         if (menu is null || state is null) return;
 
@@ -181,7 +181,7 @@ internal sealed class AchievementService : IAchievementsApi, IDisposable
 
     private void OpenCategory(CCSPlayerController player, string category)
     {
-        var menu = MenuCapability.Api.Get();
+        var menu = MenuCapability.Api.GetOptional();
         var state = GetState(player, true);
         if (menu is null || state is null) return;
 
@@ -199,7 +199,7 @@ internal sealed class AchievementService : IAchievementsApi, IDisposable
 
     private void OpenDetails(CCSPlayerController player, AchievementDefinition achievement)
     {
-        var menu = MenuCapability.Api.Get();
+        var menu = MenuCapability.Api.GetOptional();
         var state = GetState(player, true);
         if (menu is null || state is null) return;
         var unlocked = state.Unlocked.Contains(achievement.Id);
