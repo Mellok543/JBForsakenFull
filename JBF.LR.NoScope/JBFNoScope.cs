@@ -31,7 +31,7 @@ public sealed class JBFNoScope : BasePlugin
     }
     private void EnsureRegistration()
     {
-        var current = LrCapability.Api.Get();
+        var current = LrCapability.Api.GetOptional();
         if (ReferenceEquals(current, _registeredApi))
             return;
 
