@@ -37,7 +37,7 @@ public sealed class JBFHideAndSeekDay : BasePlugin, ISpecialDay
 
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        var specialDays = SpecialDaysCapability.Api.Get();
+        var specialDays = SpecialDaysCapability.Api.GetOptional();
         if (specialDays is null)
         {
             Logger.LogWarning("Special days capability is unavailable; hide and seek was not registered.");
