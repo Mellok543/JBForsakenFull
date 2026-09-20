@@ -51,7 +51,7 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
 
     public void OpenSelectionMenu(CCSPlayerController commander)
     {
-        if (WardenCapability.Api.Get()?.IsWarden(commander) != true)
+        if (WardenCapability.Api.GetOptional()?.IsWarden(commander) != true)
         {
             commander.PrintToChat(JailbreakChat.Format("Игровой день может назначить только командир."));
             return;
@@ -69,7 +69,7 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
             return;
         }
 
-        var menuApi = MenuCapability.Api.Get();
+        var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null)
         {
             commander.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
@@ -137,7 +137,7 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
         if (_activeDay is not null && player.IsValid && !player.IsBot)
         {
             _vipSuppression.Suppress(player);
-            UiCapability.Api.Get()?.SetRoundStatus(player, "ИГРОВОЙ ДЕНЬ", _activeDay.Name);
+            UiCapability.Api.GetOptional()?.SetRoundStatus(player, "ИГРОВОЙ ДЕНЬ", _activeDay.Name);
         }
     }
 
@@ -239,28 +239,28 @@ internal sealed class SpecialDaysService : ISpecialDaysApi, ISpecialDayContext
 
     private static void NotifyAll(string text, UiNotificationType type, float durationSeconds = 4.0f)
     {
-        var ui = UiCapability.Api.Get();
+        var ui = UiCapability.Api.GetOptional();
         if (ui is null) return;
         foreach (var player in HumanPlayers()) ui.Notify(player, text, type, durationSeconds);
     }
 
     private static void AnnounceAll(string title, string subtitle, UiNotificationType type, float durationSeconds)
     {
-        var ui = UiCapability.Api.Get();
+        var ui = UiCapability.Api.GetOptional();
         if (ui is null) return;
         foreach (var player in HumanPlayers()) ui.Announce(player, title, subtitle, type, durationSeconds);
     }
 
     private static void SetRoundStatusAll(string title, string value)
     {
-        var ui = UiCapability.Api.Get();
+        var ui = UiCapability.Api.GetOptional();
         if (ui is null) return;
         foreach (var player in HumanPlayers()) ui.SetRoundStatus(player, title, value);
     }
 
     private static void ClearRoundStatusAll()
     {
-        var ui = UiCapability.Api.Get();
+        var ui = UiCapability.Api.GetOptional();
         if (ui is null) return;
         foreach (var player in HumanPlayers()) ui.ClearRoundStatus(player);
     }
