@@ -38,7 +38,7 @@ public sealed class JBFRace : BasePlugin
     }
     private void EnsureRegistration()
     {
-        var current = LrCapability.Api.Get();
+        var current = LrCapability.Api.GetOptional();
         if (ReferenceEquals(current, _registeredApi))
             return;
 
@@ -81,7 +81,7 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         LrPlayerRules.Normalize(context.Inmate);
         LrPlayerRules.Normalize(context.Guardian);
         _state = SetupState.WaitingStart;
-        UiCapability.Api.Get()?.Notify(context.Inmate, "Встаньте в точку СТАРТ и нажмите E", UiNotificationType.Info, 8.0f);
+        UiCapability.Api.GetOptional()?.Notify(context.Inmate, "Встаньте в точку СТАРТ и нажмите E", UiNotificationType.Info, 8.0f);
     }
 
     public void Stop()
@@ -112,13 +112,13 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
             var startCandidate = new Vector(origin.X, origin.Y, origin.Z);
             if (IsTooCloseToWall(player, startCandidate))
             {
-                UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+                UiCapability.Api.GetOptional()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
                 return;
             }
 
             _start = startCandidate;
             _state = SetupState.WaitingFinish;
-            UiCapability.Api.Get()?.Notify(player, "Старт сохранён. Встаньте в ФИНИШ и нажмите E", UiNotificationType.Info, 8.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Старт сохранён. Встаньте в ФИНИШ и нажмите E", UiNotificationType.Info, 8.0f);
             return;
         }
 
@@ -127,13 +127,13 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         var finishCandidate = new Vector(origin.X, origin.Y, origin.Z);
         if (IsTooCloseToWall(player, finishCandidate))
         {
-            UiCapability.Api.Get()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
+            UiCapability.Api.GetOptional()?.Notify(player, "Точку нельзя ставить рядом со стеной.", UiNotificationType.Warning, 4.0f);
             return;
         }
 
         if (Distance2D(finishCandidate, _start) < MinCourseLength)
         {
-            UiCapability.Api.Get()?.Notify(player,
+            UiCapability.Api.GetOptional()?.Notify(player,
                 $"Финиш слишком близко к старту. Минимум {MinCourseLength:0} юнитов.",
                 UiNotificationType.Warning, 5.0f);
             return;
@@ -200,16 +200,16 @@ internal sealed class RaceGame : ILrGame, ILrInventoryRules
         {
             _state = SetupState.Running;
             _lastCountdownValue = 0;
-            UiCapability.Api.Get()?.Notify(_context.Inmate, "СТАРТ!", UiNotificationType.Success, 2.0f);
-            UiCapability.Api.Get()?.Notify(_context.Guardian, "СТАРТ!", UiNotificationType.Success, 2.0f);
+            UiCapability.Api.GetOptional()?.Notify(_context.Inmate, "СТАРТ!", UiNotificationType.Success, 2.0f);
+            UiCapability.Api.GetOptional()?.Notify(_context.Guardian, "СТАРТ!", UiNotificationType.Success, 2.0f);
             return;
         }
 
         var value = Math.Clamp((int)Math.Ceiling(remaining), 1, CountdownSeconds);
         if (value == _lastCountdownValue) return;
         _lastCountdownValue = value;
-        UiCapability.Api.Get()?.Notify(_context.Inmate, $"Старт через {value}...", UiNotificationType.Important, 1.1f);
-        UiCapability.Api.Get()?.Notify(_context.Guardian, $"Старт через {value}...", UiNotificationType.Important, 1.1f);
+        UiCapability.Api.GetOptional()?.Notify(_context.Inmate, $"Старт через {value}...", UiNotificationType.Important, 1.1f);
+        UiCapability.Api.GetOptional()?.Notify(_context.Guardian, $"Старт через {value}...", UiNotificationType.Important, 1.1f);
     }
 
     private void CheckFinish(CCSPlayerController runner, CCSPlayerController loser)
