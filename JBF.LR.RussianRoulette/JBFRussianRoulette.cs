@@ -38,7 +38,7 @@ public sealed class JBFRussianRoulette : BasePlugin
     }
     private void EnsureRegistration()
     {
-        var current = LrCapability.Api.Get();
+        var current = LrCapability.Api.GetOptional();
         if (ReferenceEquals(current, _registeredApi))
             return;
 
@@ -87,8 +87,8 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         var inmateStarts = Random.Shared.Next(0, 2) == 0;
         LrPlayerRules.SetAmmo(context.Inmate, inmateStarts ? 1 : 0, 0);
         LrPlayerRules.SetAmmo(context.Guardian, inmateStarts ? 0 : 1, 0);
-        UiCapability.Api.Get()?.Notify(context.Inmate, "Движение заблокировано на время рулетки", UiNotificationType.Info, 4.0f);
-        UiCapability.Api.Get()?.Notify(context.Guardian, "Движение заблокировано на время рулетки", UiNotificationType.Info, 4.0f);
+        UiCapability.Api.GetOptional()?.Notify(context.Inmate, "Движение заблокировано на время рулетки", UiNotificationType.Info, 4.0f);
+        UiCapability.Api.GetOptional()?.Notify(context.Guardian, "Движение заблокировано на время рулетки", UiNotificationType.Info, 4.0f);
     }
 
     public void Stop()
@@ -116,12 +116,12 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
 
         if (Random.Shared.Next(0, 6) != 0)
         {
-            UiCapability.Api.Get()?.Notify(victim, "Щелчок... повезло", UiNotificationType.Info, 2.0f);
+            UiCapability.Api.GetOptional()?.Notify(victim, "Щелчок... повезло", UiNotificationType.Info, 2.0f);
             return HookResult.Handled;
         }
 
         LrPlayerRules.SetHealth(victim, 1);
-        UiCapability.Api.Get()?.Notify(victim, "Боевой патрон!", UiNotificationType.Error, 2.0f);
+        UiCapability.Api.GetOptional()?.Notify(victim, "Боевой патрон!", UiNotificationType.Error, 2.0f);
         return HookResult.Continue;
     }
 
@@ -170,10 +170,10 @@ internal sealed class RussianRouletteGame : ILrGame, ILrInventoryRules
         var center = FindSafeCenter(context, preferredCenter, inmateOrigin, guardianOrigin);
         if (center is null)
         {
-            UiCapability.Api.Get()?.Notify(context.Inmate,
+            UiCapability.Api.GetOptional()?.Notify(context.Inmate,
                 "Рядом недостаточно свободного места для русской рулетки.",
                 UiNotificationType.Warning, 5.0f);
-            UiCapability.Api.Get()?.Notify(context.Guardian,
+            UiCapability.Api.GetOptional()?.Notify(context.Guardian,
                 "Рядом недостаточно свободного места для русской рулетки.",
                 UiNotificationType.Warning, 5.0f);
 
