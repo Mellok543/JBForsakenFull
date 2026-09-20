@@ -534,7 +534,7 @@ internal sealed class BattlePassService : IBattlePassApi
         };
 
         foreach (var key in keys)
-            _renderer.SetClass(player, $"{panel}_image_{key}", "visible", key == selected);
+            _renderer.SetClass(player, panel, $"icon-{key}", key == selected);
     }
 
     private static string? ResolveRewardImageKey(RewardDefinition reward)
