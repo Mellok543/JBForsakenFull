@@ -88,7 +88,9 @@
 .bp-reward-top { width: 100%; height: 54px; }
 .bp-reward-symbol { color: #6dd2ff; font-size: 25px; vertical-align: center; }
 .bp-reward-level { horizontal-align: right; vertical-align: center; color: #76cdf3; font-size: 14px; font-weight: bold; }
-.bp-reward-image { width: 118px; height: 118px; horizontal-align: center; margin-top: 4px; margin-bottom: 6px; opacity: 1; }
+.bp-reward-image-stack { width: 118px; height: 118px; horizontal-align: center; margin-top: 4px; margin-bottom: 6px; }
+.bp-reward-static-image { width: 118px; height: 118px; horizontal-align: center; vertical-align: center; visibility: collapse; opacity: 0; }
+.bp-reward-static-image.visible { visibility: visible; opacity: 1; }
 .bp-reward-name { width: 100%; height: 81px; color: #f0f8fc; font-size: 18px; font-weight: bold; text-align: center; horizontal-align: center; vertical-align: center; text-overflow: shrink; padding: 12px 4px; }
 .bp-reward Button { width: 100%; height: 48px; vertical-align: bottom; background-color: #409ecb38; border: 1px solid #69d1ff45; transition-property: background-color, border, pre-transform-scale2d; transition-duration: 0.10s; }
 .bp-reward Button:hover { background-color: #4fc8ff62; border: 1px solid #8be1ff82; pre-transform-scale2d: 1.025; }
