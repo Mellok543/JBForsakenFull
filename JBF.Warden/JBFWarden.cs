@@ -45,7 +45,7 @@ public sealed class JBFWarden : BasePlugin
 
         command.ReplyToCommand(JailbreakChat.Format("Вы командир."));
 
-        var commanderMenu = CommanderMenuCapability.Api.Get();
+        var commanderMenu = CommanderMenuCapability.Api.GetOptional();
         if (commanderMenu is null)
         {
             command.ReplyToCommand(JailbreakChat.Format("Модуль меню командира недоступен."));
@@ -64,7 +64,7 @@ public sealed class JBFWarden : BasePlugin
             return;
         }
 
-        MenuCapability.Api.Get()?.Close(player);
+        MenuCapability.Api.GetOptional()?.Close(player);
         command.ReplyToCommand(JailbreakChat.Format("Вы покинули пост командира."));
     }
 
@@ -90,7 +90,7 @@ public sealed class JBFWarden : BasePlugin
         {
             _wardenService.NotifyKilled(player, @event.Attacker, @event.Weapon);
             _wardenService.Reset();
-            MenuCapability.Api.Get()?.Close(player);
+            MenuCapability.Api.GetOptional()?.Close(player);
         }
 
         return HookResult.Continue;
@@ -104,7 +104,7 @@ public sealed class JBFWarden : BasePlugin
             return false;
         }
 
-        var jailbreakApi = JailbreakCapability.Api.Get();
+        var jailbreakApi = JailbreakCapability.Api.GetOptional();
         if (jailbreakApi is null)
         {
             command.ReplyToCommand(JailbreakChat.Format("Core API недоступно."));
@@ -117,13 +117,13 @@ public sealed class JBFWarden : BasePlugin
             return false;
         }
 
-        if (SpecialDaysCapability.Api.Get()?.IsActive == true)
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
         {
             command.ReplyToCommand(JailbreakChat.Format("Во время игрового дня выбрать командира нельзя."));
             return false;
         }
 
-        if (LrCapability.Api.Get()?.IsActive == true)
+        if (LrCapability.Api.GetOptional()?.IsActive == true)
         {
             command.ReplyToCommand(JailbreakChat.Format("Во время LR выбрать командира нельзя."));
             return false;
