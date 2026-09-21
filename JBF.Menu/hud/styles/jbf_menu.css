@@ -880,3 +880,323 @@
 {
     color: #eaff9a;
 }
+
+
+/* JBFORSAKEN SIGNATURE LAYOUT */
+.jbf-menu-frame
+{
+    border: 1px solid #5ce8ff44;
+    box-shadow: #000000b5 0px 0px 24px 2px;
+}
+
+.jbf-menu-accent
+{
+    width: 4px;
+    background-color: #caff39;
+    box-shadow: #caff3955 0px 0px 9px 0px;
+}
+
+.jbf-menu-accent-soft
+{
+    width: 2px;
+    background-color: #5ce8ff;
+    opacity: 0.55;
+}
+
+.jbf-menu-brand
+{
+    height: 54px;
+    margin-bottom: 12px;
+    flow-children: right;
+    border-bottom: 1px solid #5ce8ff20;
+}
+
+.jbf-menu-brand-icon
+{
+    width: 42px;
+    height: 42px;
+    vertical-align: center;
+    background-color: #101d18;
+    border: 1px solid #caff3958;
+}
+
+.jbf-menu-brand-icon Label
+{
+    width: 100%;
+    color: #caff39;
+    font-size: 25px;
+    text-align: center;
+    vertical-align: center;
+}
+
+.jbf-menu-brand-copy
+{
+    width: fill-parent-flow(1.0);
+    margin-left: 10px;
+    vertical-align: center;
+    flow-children: down;
+}
+
+.jbf-menu-brand-title-row
+{
+    flow-children: right;
+}
+
+.jbf-menu-brand-mark
+{
+    color: #f4f7f8;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.jbf-menu-brand-name
+{
+    margin-left: 4px;
+    color: #caff39;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.jbf-menu-brand-subtitle
+{
+    margin-top: 2px;
+    color: #6e828b;
+    font-size: 8px;
+    font-weight: bold;
+    letter-spacing: 1.7px;
+}
+
+.jbf-menu-brand-key
+{
+    width: 26px;
+    height: 26px;
+    vertical-align: center;
+    background-color: #0c151b;
+    border: 1px solid #5ce8ff38;
+}
+
+.jbf-menu-brand-key Label
+{
+    width: 100%;
+    color: #8ba2ab;
+    font-size: 9px;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: center;
+}
+
+.jbf-menu-title
+{
+    font-size: 19px;
+    letter-spacing: 0.9px;
+}
+
+.jbf-menu-subtitle
+{
+    color: #5ce8ff;
+    opacity: 0.62;
+    font-size: 8px;
+}
+
+.jbf-menu-row
+{
+    height: 39px;
+    background-color: #0b151cdd;
+    border: 1px solid #5ce8ff18;
+}
+
+.jbf-menu-row.selected
+{
+    background-color: #4f6d171f;
+    border: 1px solid #caff3980;
+    box-shadow: #caff392c 0px 0px 10px 0px;
+    transform: translateX(5px);
+}
+
+.jbf-menu-row.selected .jbf-menu-row-text
+{
+    color: #f8ffe7;
+    font-weight: bold;
+}
+
+.jbf-menu-row.selected .jbf-menu-row-arrow
+{
+    color: #caff39;
+}
+
+.jbf-menu-separator
+{
+    background-color: #5ce8ff20;
+}
+
+.jbf-key
+{
+    background-color: #0b151c;
+    border: 1px solid #5ce8ff2a;
+}
+
+.jbf-question
+{
+    width: 820px;
+    margin-top: 100px;
+}
+
+.jbf-question-frame
+{
+    width: 100%;
+    flow-children: down;
+    padding: 0px 20px 14px 20px;
+    background-color: #071017f2;
+    border: 1px solid #5ce8ff48;
+    box-shadow: #000000a0 0px 0px 24px 1px;
+}
+
+.jbf-question-topline
+{
+    width: 100%;
+    height: 3px;
+    background-color: #caff39;
+    box-shadow: #caff3940 0px 0px 8px 0px;
+}
+
+.jbf-question-header
+{
+    width: 100%;
+    height: 48px;
+    flow-children: right;
+}
+
+.jbf-question-badge
+{
+    width: 30px;
+    height: 30px;
+    vertical-align: center;
+    background-color: #0f2027;
+    border: 1px solid #5ce8ff4c;
+}
+
+.jbf-question-badge Label
+{
+    width: 100%;
+    color: #5ce8ff;
+    font-size: 18px;
+    text-align: center;
+    vertical-align: center;
+}
+
+.jbf-question-caption
+{
+    margin-left: 10px;
+    color: #eef5f7;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 1.2px;
+    vertical-align: center;
+}
+
+.jbf-question-meta
+{
+    horizontal-align: right;
+    vertical-align: center;
+    margin-bottom: 0px;
+    padding: 0px;
+    background-color: #00000000;
+    border: 0px solid #00000000;
+}
+
+.jbf-question-divider
+{
+    width: 100%;
+    height: 1px;
+    background-color: #5ce8ff20;
+}
+
+.jbf-question-text
+{
+    width: 100%;
+    padding: 18px 32px 10px 32px;
+    font-size: 24px;
+    text-shadow: 0px 2px 5px 2 #000000c8;
+}
+
+.jbf-question-underline
+{
+    width: 140px;
+    height: 2px;
+    background-color: #caff39;
+}
+
+.jbf-question-hint
+{
+    horizontal-align: right;
+    margin-top: 8px;
+    color: #52656e;
+    font-size: 8px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+}
+
+.jbf-mapvote
+{
+    width: 380px;
+    border: 1px solid #5ce8ff42;
+    box-shadow: #000000a5 0px 0px 24px 1px;
+    padding: 0px 15px 13px 15px;
+}
+
+.jbf-mapvote-topline
+{
+    width: 100%;
+    height: 3px;
+    background-color: #caff39;
+}
+
+.jbf-mapvote-header
+{
+    height: 52px;
+}
+
+.jbf-mapvote-badge
+{
+    width: 30px;
+    height: 30px;
+    margin-right: 9px;
+    vertical-align: center;
+    background-color: #0f2027;
+    border: 1px solid #5ce8ff40;
+}
+
+.jbf-mapvote-badge Label
+{
+    width: 100%;
+    color: #5ce8ff;
+    font-size: 18px;
+    text-align: center;
+    vertical-align: center;
+}
+
+.jbf-mapvote-row
+{
+    height: 38px;
+    background-color: #0c171ddd;
+    border: 1px solid #5ce8ff14;
+}
+
+.jbf-mapvote-row.leader
+{
+    background-color: #263515cc;
+    border: 1px solid #caff3950;
+    box-shadow: #caff391f 0px 0px 8px 0px;
+}
+
+.jbf-mapvote-bar
+{
+    background-color: #5ce8ff;
+}
+
+.jbf-mapvote-row.leader .jbf-mapvote-bar
+{
+    background-color: #caff39;
+}
