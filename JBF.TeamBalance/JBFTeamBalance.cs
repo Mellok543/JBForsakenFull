@@ -21,7 +21,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private bool _roundActive;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.2.1";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -473,7 +473,9 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             if (!IsUsable(player))
                 return;
 
-            if (player!.Team != CsTeam.Terrorist)
+            // CS2 can initially place a joining player into CT. Correct only that
+            // automatic CT assignment. Do not override a manual T/Spectator choice.
+            if (player!.Team == CsTeam.CounterTerrorist)
                 player.SwitchTeam(CsTeam.Terrorist);
 
             TryRespawnLateJoin(player);
