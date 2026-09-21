@@ -17,7 +17,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
     private const float RedReactionGraceSeconds = 0.45f;
     private const float RedMovementTolerance = 8.0f;
     private const float MinimumGreenTravelDistance = 100.0f;
-    private const int MaxIdleStrikes = 3;
+    private const int MaxIdleWarnings = 2;
     private const float DefaultRoundTimeSeconds = 300.0f;
 
     private static readonly string[] DoorEntityNames =
@@ -31,7 +31,8 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
     private readonly Dictionary<int, Position> _lastPosition = [];
     private readonly Dictionary<int, Position> _redAnchor = [];
     private readonly Dictionary<int, float> _greenTravel = [];
-    private readonly Dictionary<int, int> _idleStrikes = [];
+    private readonly Dictionary<int, int> _idleWarnings = [];
+    private readonly HashSet<int> _eliminatingSlots = [];
 
     private IDisposable? _registration;
     private ISpecialDayContext? _context;
@@ -79,7 +80,8 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
 
         _context = context;
         _phase = Phase.Preparation;
-        _idleStrikes.Clear();
+        _idleWarnings.Clear();
+        _eliminatingSlots.Clear();
         _greenTravel.Clear();
         _lastPosition.Clear();
         _redAnchor.Clear();
@@ -118,7 +120,8 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         _lastPosition.Clear();
         _redAnchor.Clear();
         _greenTravel.Clear();
-        _idleStrikes.Clear();
+        _idleWarnings.Clear();
+        _eliminatingSlots.Clear();
     }
 
     public void OnPlayerSpawn(CCSPlayerController player)
@@ -126,7 +129,8 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         if (_context is null || !IsUsable(player))
             return;
 
-        _idleStrikes.TryAdd(player.Slot, 0);
+        _idleWarnings.TryAdd(player.Slot, 0);
+        _eliminatingSlots.Remove(player.Slot);
 
         Server.NextFrame(() =>
         {
@@ -150,6 +154,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
             _lastPosition.Remove(victim.Slot);
             _redAnchor.Remove(victim.Slot);
             _greenTravel.Remove(victim.Slot);
+            _eliminatingSlots.Remove(victim.Slot);
         }
 
         if (_context is not null)
@@ -209,9 +214,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
             if (Distance(anchor, current) <= RedMovementTolerance)
                 continue;
 
-            Eliminate(
-                player,
-                "Вы двигались на красный свет.");
+            Eliminate(player);
         }
     }
 
@@ -230,7 +233,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         {
             _greenTravel[player.Slot] = 0.0f;
             _lastPosition[player.Slot] = GetPosition(player);
-            _idleStrikes.TryAdd(player.Slot, 0);
+            _idleWarnings.TryAdd(player.Slot, 0);
         }
 
         AnnounceAll(
@@ -281,43 +284,46 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         {
             var traveled = _greenTravel.GetValueOrDefault(player.Slot);
             if (traveled >= MinimumGreenTravelDistance)
+                continue;
+
+            var warnings = _idleWarnings.GetValueOrDefault(player.Slot);
+
+            if (warnings >= MaxIdleWarnings)
             {
-                _idleStrikes[player.Slot] = 0;
+                Eliminate(player);
                 continue;
             }
 
-            var strikes = _idleStrikes.GetValueOrDefault(player.Slot) + 1;
-            _idleStrikes[player.Slot] = strikes;
-
-            if (strikes >= MaxIdleStrikes)
-            {
-                Eliminate(
-                    player,
-                    "Вы несколько зелёных сигналов подряд не двигались.");
-                continue;
-            }
+            warnings++;
+            _idleWarnings[player.Slot] = warnings;
 
             player.PrintToChat(
                 JailbreakChat.Format(
-                    $"Красный свет: вы почти не двигались на зелёный. Предупреждение {strikes}/{MaxIdleStrikes}."));
+                    $"Красный свет: на зелёный нужно двигаться. Предупреждение {warnings}/{MaxIdleWarnings}."));
         }
 
         Server.NextFrame(EvaluateRoundState);
     }
 
-    private void Eliminate(CCSPlayerController player, string reason)
+    private void Eliminate(CCSPlayerController player)
     {
-        if (!IsActiveTerrorist(player))
+        if (!IsActiveTerrorist(player) || !_eliminatingSlots.Add(player.Slot))
             return;
-
-        player.PrintToChat(JailbreakChat.Format(reason));
 
         try
         {
-            player.CommitSuicide(false, true);
+            var pawn = player.PlayerPawn.Value;
+            if (pawn is null || !pawn.IsValid)
+            {
+                _eliminatingSlots.Remove(player.Slot);
+                return;
+            }
+
+            pawn.CommitSuicide(true, true);
         }
         catch (Exception ex)
         {
+            _eliminatingSlots.Remove(player.Slot);
             Logger.LogWarning(
                 ex,
                 "Failed to eliminate {Player} during Red Light.",
@@ -372,7 +378,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
             JailbreakChat.Format("КРАСНЫЙ: остановитесь. После короткого времени реакции движение = смерть."));
         Server.PrintToChatAll(
             JailbreakChat.Format(
-                $"Если {MaxIdleStrikes} зелёных сигнала подряд почти не двигаться — игрок будет убит."));
+                $"Можно получить только {MaxIdleWarnings} предупреждения за бездействие на зелёном. Следующее нарушение = смерть."));
         Server.PrintToChatAll(
             JailbreakChat.Format("Урон между игроками отключён. Сигналы показываются в HUD."));
     }
