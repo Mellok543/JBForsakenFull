@@ -17,9 +17,11 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
     private TeamBalanceDatabase? _database;
     private DateTime _nextCtTestHudUpdate;
+    private DateTime _roundStartedAt;
+    private bool _roundActive;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -313,8 +315,17 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     }
 
     [GameEventHandler]
+    public HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
+    {
+        _roundStartedAt = DateTime.UtcNow;
+        _roundActive = true;
+        return HookResult.Continue;
+    }
+
+    [GameEventHandler]
     public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
+        _roundActive = false;
         Server.NextFrame(BalanceAtRoundEnd);
         return HookResult.Continue;
     }
@@ -464,6 +475,33 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
             if (player!.Team != CsTeam.Terrorist)
                 player.SwitchTeam(CsTeam.Terrorist);
+
+            TryRespawnLateJoin(player);
+        });
+    }
+
+    private void TryRespawnLateJoin(CCSPlayerController player)
+    {
+        if (!_roundActive ||
+            DateTime.UtcNow - _roundStartedAt > TimeSpan.FromSeconds(30))
+        {
+            return;
+        }
+
+        // Give the team switch one more frame to settle before respawning.
+        Server.NextFrame(() =>
+        {
+            if (!IsUsable(player) ||
+                player.Team != CsTeam.Terrorist ||
+                player.PawnIsAlive)
+            {
+                return;
+            }
+
+            player.Respawn();
+            player.PrintToChat(
+                JailbreakChat.Format(
+                    "Ты подключился в первые 30 секунд раунда и был автоматически возрождён."));
         });
     }
 
