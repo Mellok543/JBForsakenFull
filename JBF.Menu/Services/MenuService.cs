@@ -98,6 +98,23 @@ internal sealed class MenuService : IMenuApi, IUiApi
         ScheduleHide(player, "jbf_announce_root", durationSeconds);
     }
 
+    public void SetQuestion(CCSPlayerController player, string progress, string question, string timer = "")
+    {
+        if (!Prepare(player))
+            return;
+
+        _renderer.SetText(player, "jbf_question_progress", progress);
+        _renderer.SetText(player, "jbf_question_text", question);
+        _renderer.SetText(player, "jbf_question_timer", timer);
+        _renderer.ShowPanel(player, "jbf_question_root");
+    }
+
+    public void ClearQuestion(CCSPlayerController player)
+    {
+        if (_renderer.IsReady && player.IsValid)
+            _renderer.HidePanel(player, "jbf_question_root");
+    }
+
     public void SetRoundStatus(CCSPlayerController player, string title, string value = "")
     {
         if (!Prepare(player))
@@ -167,6 +184,16 @@ internal sealed class MenuService : IMenuApi, IUiApi
         else if (pressed.HasFlag(PlayerButtons.Back))
         {
             MoveSelection(state, 1);
+            Render(state);
+        }
+        else if (pressed.HasFlag(PlayerButtons.Moveleft))
+        {
+            MovePage(state, -1);
+            Render(state);
+        }
+        else if (pressed.HasFlag(PlayerButtons.Moveright))
+        {
+            MovePage(state, 1);
             Render(state);
         }
         else if (pressed.HasFlag(PlayerButtons.Use))
@@ -277,6 +304,34 @@ internal sealed class MenuService : IMenuApi, IUiApi
         state.SelectedIndex = start;
     }
 
+    private static void MovePage(ActiveMenuState state, int direction)
+    {
+        if (state.Options.Count == 0)
+            return;
+
+        var current = Math.Max(0, state.SelectedIndex);
+        var target = Math.Clamp(
+            current + direction * VisibleOptionCount,
+            0,
+            state.Options.Count - 1);
+
+        if (!state.Options[target].IsDisabled)
+        {
+            state.SelectedIndex = target;
+            return;
+        }
+
+        var step = direction >= 0 ? 1 : -1;
+        for (var i = target; i >= 0 && i < state.Options.Count; i += step)
+        {
+            if (!state.Options[i].IsDisabled)
+            {
+                state.SelectedIndex = i;
+                return;
+            }
+        }
+    }
+
     private void Render(ActiveMenuState state)
     {
         if (!state.Player.IsValid || !_renderer.IsReady)
@@ -314,7 +369,7 @@ internal sealed class MenuService : IMenuApi, IUiApi
             : string.Empty;
         _renderer.SetText(state.Player, "jbf_menu_page", pageInfo);
 
-        var status = "W/S — выбор   E — открыть   R — закрыть";
+        var status = "W/S — выбор   A/D — страница   E — открыть   R — закрыть";
         if (state.SelectedIndex >= 0 && state.SelectedIndex < state.Options.Count)
         {
             var selected = state.Options[state.SelectedIndex];
