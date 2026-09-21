@@ -5,6 +5,7 @@
 }
 
 .jbf-menu-window,
+.jbf-mapvote,
 .jbf-question,
 .jbf-notify,
 .jbf-announce,
@@ -351,6 +352,152 @@
     font-size: 11px;
 }
 
+
+
+.jbf-mapvote
+{
+    width: 460px;
+    horizontal-align: right;
+    vertical-align: center;
+    margin-right: 34px;
+    padding: 18px 19px 17px 19px;
+    flow-children: down;
+    background-color: #0b0f13f0;
+    border: 1px solid #ffffff18;
+    box-shadow: #000000a8 0px 0px 28px 2px;
+    transform: translateX(42px);
+    transition-property: opacity, transform;
+    transition-duration: 0.22s;
+    transition-timing-function: ease-out;
+}
+
+.jbf-mapvote.shown
+{
+    visibility: visible;
+    opacity: 1;
+    position: 0px 0px 0px;
+    transform: translateX(0px);
+}
+
+.jbf-mapvote-header
+{
+    width: 100%;
+    flow-children: right;
+}
+
+.jbf-mapvote-title-wrap
+{
+    width: fill-parent-flow(1.0);
+    flow-children: down;
+}
+
+.jbf-mapvote-title
+{
+    color: #f4f6f8;
+    font-size: 21px;
+    font-weight: bold;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+}
+
+.jbf-mapvote-subtitle
+{
+    margin-top: 2px;
+    color: #68727b;
+    font-size: 9px;
+    font-weight: bold;
+    letter-spacing: 1.4px;
+}
+
+.jbf-mapvote-timer-pill
+{
+    min-width: 54px;
+    height: 28px;
+    padding: 0px 9px;
+    vertical-align: center;
+    background-color: #202615;
+    border: 1px solid #d7ff3848;
+}
+
+.jbf-mapvote-timer
+{
+    width: 100%;
+    color: #d7ff38;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: center;
+}
+
+.jbf-mapvote-separator
+{
+    width: 100%;
+    height: 1px;
+    margin-top: 12px;
+    margin-bottom: 11px;
+    background-color: #ffffff13;
+}
+
+.jbf-mapvote-rows
+{
+    width: 100%;
+    flow-children: down;
+}
+
+.jbf-mapvote-row
+{
+    width: 100%;
+    height: 40px;
+    margin-bottom: 6px;
+    flow-children: right;
+    padding: 0px 10px;
+    background-color: #141a20db;
+    border: 1px solid #ffffff0d;
+}
+
+.jbf-mapvote-name
+{
+    width: 190px;
+    color: #cdd3d8;
+    font-size: 13px;
+    vertical-align: center;
+    text-overflow: shrink;
+}
+
+.jbf-mapvote-bar-track
+{
+    width: fill-parent-flow(1.0);
+    height: 7px;
+    margin-left: 8px;
+    margin-right: 10px;
+    vertical-align: center;
+    background-color: #ffffff10;
+}
+
+.jbf-mapvote-bar
+{
+    width: 0%;
+    height: 100%;
+    background-color: #d7ff38;
+    transition-property: width;
+    transition-duration: 0.16s;
+    transition-timing-function: ease-out;
+}
+
+.jbf-mapvote-votes
+{
+    width: 34px;
+    color: #f2f5f7;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: right;
+    vertical-align: center;
+}
+
+.jbf-mapvote-row.hidden
+{
+    visibility: collapse;
+}
 
 .jbf-question
 {
