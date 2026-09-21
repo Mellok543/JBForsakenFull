@@ -13,8 +13,11 @@ internal sealed class TTeamMuteService
 
     private readonly BasePlugin _plugin;
     private Timer? _timer;
+    private Timer? _hudTimer;
     private int _manualMuteUses;
     private bool _isMuted;
+    private bool _showRoundStartHud;
+    private DateTime _muteEndsAt;
 
     public TTeamMuteService(BasePlugin plugin)
     {
@@ -31,7 +34,12 @@ internal sealed class TTeamMuteService
 
     public void ApplyRoundStartMute()
     {
-        Mute(TimeSpan.FromSeconds(30), "Команда T замучена на 30 секунд, командир отдаёт приказ.", countManualUse: false);
+        _showRoundStartHud = true;
+        Mute(
+            TimeSpan.FromSeconds(30),
+            "Команда T замучена на 30 секунд, командир отдаёт приказ.",
+            countManualUse: false);
+        StartHudCountdown();
     }
 
     public bool TryApplyManualMute(CCSPlayerController commander)
@@ -51,6 +59,14 @@ internal sealed class TTeamMuteService
     {
         _timer?.Kill();
         _timer = null;
+        _hudTimer?.Kill();
+        _hudTimer = null;
+
+        if (_showRoundStartHud)
+        {
+            _showRoundStartHud = false;
+            ClearHud();
+        }
 
         if (!_isMuted)
         {
@@ -71,10 +87,64 @@ internal sealed class TTeamMuteService
 
         _timer?.Kill();
         _isMuted = true;
+        _muteEndsAt = DateTime.UtcNow.Add(duration);
         SetTTeamMuted(true);
         Server.PrintToChatAll(JailbreakChat.Format(message));
 
         _timer = _plugin.AddTimer((float)duration.TotalSeconds, ClearMute, TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+
+    private void StartHudCountdown()
+    {
+        _hudTimer?.Kill();
+        UpdateHud();
+
+        _hudTimer = _plugin.AddTimer(
+            1.0f,
+            UpdateHud,
+            TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void UpdateHud()
+    {
+        if (!_showRoundStartHud || !_isMuted)
+            return;
+
+        var secondsLeft = Math.Max(
+            0,
+            (int)Math.Ceiling((_muteEndsAt - DateTime.UtcNow).TotalSeconds));
+
+        var text = $"МУТ ЗЕКОВ 0:{secondsLeft:00}";
+        var ui = UiCapability.Api.GetOptional();
+
+        if (ui is not null)
+        {
+            foreach (var player in Utilities.GetPlayers().Where(player =>
+                         player.IsValid && !player.IsBot))
+            {
+                ui.SetMuteStatus(player, text);
+            }
+        }
+
+        if (secondsLeft <= 0)
+        {
+            _hudTimer?.Kill();
+            _hudTimer = null;
+        }
+    }
+
+    private static void ClearHud()
+    {
+        var ui = UiCapability.Api.GetOptional();
+        if (ui is null)
+            return;
+
+        foreach (var player in Utilities.GetPlayers().Where(player =>
+                     player.IsValid && !player.IsBot))
+        {
+            ui.ClearMuteStatus(player);
+        }
     }
 
     private static void SetTTeamMuted(bool muted)
