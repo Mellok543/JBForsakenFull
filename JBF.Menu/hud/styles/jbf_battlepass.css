@@ -147,3 +147,318 @@
 .bp-footer { width: 100%; height: 35px; padding: 0px 40px; background-color: #050d15f0; border-top: 1px solid #ffffff0b; }
 .bp-footer-left { vertical-align: center; color: #426b82; font-size: 10px; font-weight: bold; letter-spacing: 1.5px; }
 .bp-footer-right { horizontal-align: right; vertical-align: center; color: #405767; font-size: 10px; }
+
+/* JBFORSAKEN CONCEPT PASS */
+.bp-backdrop
+{
+    background-color: #02070dcf;
+}
+
+.bp-window
+{
+    width: 74%;
+    height: 70%;
+    background-color: #071017f7;
+    border: 1px solid #5ce8ff40;
+    box-shadow: #000000dd 0px 0px 36px 1px;
+}
+
+.bp-top-accent
+{
+    height: 3px;
+    background-color: #caff39;
+    box-shadow: #caff3950 0px 0px 9px 0px;
+}
+
+.bp-header
+{
+    height: 112px;
+    padding: 17px 24px 15px 26px;
+    background-color: #0a151df0;
+    border-bottom: 1px solid #5ce8ff22;
+}
+
+.bp-kicker
+{
+    color: #caff39;
+    font-size: 11px;
+    letter-spacing: 2.2px;
+}
+
+.bp-season
+{
+    font-size: 28px;
+    color: #f3f7f8;
+}
+
+.bp-subtitle
+{
+    color: #60747d;
+    font-size: 9px;
+}
+
+.bp-profile-card
+{
+    width: 340px;
+    height: 70px;
+    margin-right: 60px;
+    padding: 7px 10px;
+    background-color: #08131ad8;
+    border: 1px solid #5ce8ff2d;
+}
+
+.bp-level-badge
+{
+    width: 64px;
+    height: 54px;
+    background-color: #152217;
+    border: 1px solid #caff3960;
+    box-shadow: #caff3920 0px 0px 10px 0px;
+}
+
+.bp-level
+{
+    color: #f5ffdf;
+    font-size: 21px;
+}
+
+.bp-progress-column
+{
+    height: 54px;
+    margin-left: 10px;
+}
+
+.bp-progress-track
+{
+    height: 8px;
+    background-color: #101c23;
+}
+
+.bp-progress-fill
+{
+    background-color: #caff39;
+    box-shadow: #caff3940 0px 0px 7px 0px;
+}
+
+.bp-progress-value,
+.bp-progress-percent
+{
+    color: #5ce8ff;
+}
+
+.bp-tabs
+{
+    height: 48px;
+    padding-left: 26px;
+    background-color: #060d12ec;
+    border-bottom: 1px solid #5ce8ff16;
+}
+
+.bp-tab
+{
+    height: 48px;
+    padding: 0px 15px;
+    border-bottom: 2px solid #00000000;
+}
+
+.bp-tab Label
+{
+    font-size: 11px;
+}
+
+.bp-tab.active
+{
+    border-bottom: 2px solid #caff39;
+    background-color: #caff390d;
+}
+
+.bp-tab.active .bp-tab-icon
+{
+    color: #5ce8ff;
+}
+
+.bp-body
+{
+    padding: 18px 26px 14px 26px;
+}
+
+.bp-section-head
+{
+    height: 42px;
+}
+
+.bp-eyebrow
+{
+    color: #5ce8ff;
+    font-size: 8px;
+}
+
+.bp-section-title
+{
+    color: #edf4f6;
+    font-size: 18px;
+}
+
+.bp-small-button
+{
+    width: 36px;
+    height: 32px;
+    background-color: #0e1b22;
+    border: 1px solid #5ce8ff2e;
+}
+
+.bp-small-button:hover
+{
+    background-color: #17282f;
+    border: 1px solid #caff3944;
+}
+
+.bp-track-line
+{
+    height: 3px;
+    margin-top: 14px;
+    background-color: #132129;
+}
+
+.bp-track-line-fill
+{
+    background-color: #5ce8ff;
+}
+
+.bp-reward-row
+{
+    height: 292px;
+    margin-top: 11px;
+}
+
+.bp-reward
+{
+    min-width: 92px;
+    height: 264px;
+    margin-right: 9px;
+    padding: 9px 9px;
+    background-color: #0c171ddd;
+    border: 1px solid #5ce8ff1d;
+    border-top: 2px solid #5ce8ff;
+    box-shadow: #00000045 0px 4px 10px 0px;
+}
+
+.bp-reward:hover
+{
+    background-color: #112129ee;
+    border: 1px solid #5ce8ff4a;
+    border-top: 2px solid #caff39;
+}
+
+.bp-reward.available
+{
+    border: 1px solid #caff3958;
+    border-top: 2px solid #caff39;
+    box-shadow: #caff3925 0px 0px 12px 0px;
+}
+
+.bp-reward-top
+{
+    height: 34px;
+}
+
+.bp-reward-symbol
+{
+    color: #5ce8ff;
+    font-size: 17px;
+}
+
+.bp-reward-level
+{
+    color: #caff39;
+    font-size: 10px;
+}
+
+.bp-reward-image-stack
+{
+    width: 82px;
+    height: 82px;
+    margin-top: 2px;
+    margin-bottom: 3px;
+}
+
+.bp-reward-static-image
+{
+    width: 82px;
+    height: 82px;
+}
+
+.bp-reward-name
+{
+    height: 54px;
+    font-size: 12px;
+    padding: 7px 3px;
+}
+
+.bp-reward Button
+{
+    height: 33px;
+    background-color: #102027;
+    border: 1px solid #5ce8ff25;
+}
+
+.bp-reward Button:hover
+{
+    background-color: #1a2d22;
+    border: 1px solid #caff394c;
+}
+
+.bp-reward Button Label
+{
+    font-size: 9px;
+}
+
+.bp-mission
+{
+    height: 58px;
+    margin-bottom: 7px;
+    padding: 8px 14px;
+    background-color: #0c171ddd;
+    border: 1px solid #5ce8ff18;
+}
+
+.bp-mission-name
+{
+    font-size: 13px;
+}
+
+.bp-mission-xp
+{
+    color: #caff39;
+    font-size: 12px;
+}
+
+.bp-item
+{
+    width: 245px;
+    height: 148px;
+    margin-right: 11px;
+    margin-bottom: 11px;
+    padding: 11px;
+    background-color: #0c171ddd;
+    border: 1px solid #5ce8ff1d;
+}
+
+.bp-item:hover
+{
+    border: 1px solid #caff3942;
+    background-color: #112129ee;
+}
+
+.bp-item-count
+{
+    color: #caff39;
+}
+
+.bp-footer
+{
+    height: 26px;
+    padding: 0px 26px;
+    background-color: #050a0ef0;
+    border-top: 1px solid #5ce8ff10;
+}
