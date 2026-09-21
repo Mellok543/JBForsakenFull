@@ -810,3 +810,28 @@
     color: #eef2f4;
     font-size: 13px;
 }
+
+
+.jbf-mapvote-bar.fill-0 { width: 0%; }
+.jbf-mapvote-bar.fill-1 { width: 10%; }
+.jbf-mapvote-bar.fill-2 { width: 20%; }
+.jbf-mapvote-bar.fill-3 { width: 30%; }
+.jbf-mapvote-bar.fill-4 { width: 40%; }
+.jbf-mapvote-bar.fill-5 { width: 50%; }
+.jbf-mapvote-bar.fill-6 { width: 60%; }
+.jbf-mapvote-bar.fill-7 { width: 70%; }
+.jbf-mapvote-bar.fill-8 { width: 80%; }
+.jbf-mapvote-bar.fill-9 { width: 90%; }
+.jbf-mapvote-bar.fill-10 { width: 100%; }
+
+.jbf-mapvote-row.leader
+{
+    background-color: #d7ff3816;
+    border: 1px solid #d7ff3838;
+}
+
+.jbf-mapvote-row.leader .jbf-mapvote-name,
+.jbf-mapvote-row.leader .jbf-mapvote-votes
+{
+    color: #eaff9a;
+}
