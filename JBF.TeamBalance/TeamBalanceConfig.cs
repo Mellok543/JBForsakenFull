@@ -11,6 +11,9 @@ public sealed class TeamBalanceConfig : BasePluginConfig
     [JsonPropertyName("CtBan")]
     public int CtBan { get; set; } = 30;
 
+    [JsonPropertyName("QuestionTimeSeconds")]
+    public int QuestionTimeSeconds { get; set; } = 15;
+
     [JsonPropertyName("TerroristsPerGuard")]
     public int TerroristsPerGuard { get; set; } = 3;
 
