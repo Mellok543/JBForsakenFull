@@ -12,6 +12,9 @@ internal sealed class MapMarkerService
     private const float DrawDistanceStep = 14.0f;
     private const int MaxSegmentsPerSample = 6;
     private const float SurfaceTraceDistance = 16384.0f;
+    private const float PingCircleRadius = 105.0f;
+    private const float PingCircleVerticalTolerance = 120.0f;
+    private static readonly TimeSpan PingCircleDuration = TimeSpan.FromSeconds(12);
     private static readonly TimeSpan DrawInterval = TimeSpan.FromMilliseconds(75);
     private static readonly TraceOptions SurfaceTraceOptions = new()
     {
@@ -21,6 +24,7 @@ internal sealed class MapMarkerService
 
     private readonly Dictionary<int, FreeDrawState> _drawStates = [];
     private readonly MarkerDrawingService _drawingService = new();
+    private ActivePingCircle? _activePingCircle;
 
     public HookResult HandlePlayerPing(EventPlayerPing @event)
     {
@@ -28,14 +32,26 @@ internal sealed class MapMarkerService
         if (player is null || !player.IsValid || WardenCapability.Api.Get()?.IsWarden(player) != true)
             return HookResult.Continue;
 
+        FinalizeActivePingCircle();
+
         var position = new Vector(@event.X, @event.Y, @event.Z + 1.0f);
         _drawingService.DrawRedCircle(position);
+        _activePingCircle = new ActivePingCircle(
+            position,
+            DateTime.UtcNow + PingCircleDuration);
+
         Server.PrintToChatAll(JailbreakChat.Format("Командир установил красную метку."));
         return HookResult.Handled;
     }
 
     public void Tick()
     {
+        if (_activePingCircle is not null &&
+            DateTime.UtcNow >= _activePingCircle.ExpiresAt)
+        {
+            FinalizeActivePingCircle();
+        }
+
         _drawingService.CleanupExpired();
 
         var warden = WardenCapability.Api.Get()?.Warden;
@@ -67,8 +83,46 @@ internal sealed class MapMarkerService
     public void Reset()
     {
         _drawStates.Clear();
+        _activePingCircle = null;
         _drawingService.Clear();
     }
+
+
+    private void FinalizeActivePingCircle()
+    {
+        var circle = _activePingCircle;
+        if (circle is null)
+            return;
+
+        _activePingCircle = null;
+
+        var inmates = Utilities.GetPlayers().Count(player =>
+        {
+            if (player is not { IsValid: true, IsBot: false } ||
+                !player.PawnIsAlive ||
+                player.Team != CsTeam.Terrorist)
+            {
+                return false;
+            }
+
+            var origin = player.PlayerPawn.Value?.AbsOrigin;
+            if (origin is null ||
+                MathF.Abs(origin.Z - circle.Center.Z) > PingCircleVerticalTolerance)
+            {
+                return false;
+            }
+
+            var dx = origin.X - circle.Center.X;
+            var dy = origin.Y - circle.Center.Y;
+            return dx * dx + dy * dy <= PingCircleRadius * PingCircleRadius;
+        });
+
+        Server.PrintToChatAll(
+            JailbreakChat.Format(
+                $"Красная метка исчезла. В круге зеков: {inmates}."));
+    }
+
+    private sealed record ActivePingCircle(Vector Center, DateTime ExpiresAt);
 
     private FreeDrawState GetOrCreateState(int playerSlot)
     {
