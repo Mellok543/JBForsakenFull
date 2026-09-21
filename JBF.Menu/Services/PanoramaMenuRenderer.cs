@@ -93,6 +93,7 @@ internal sealed class PanoramaMenuRenderer
                      "jbf_menu_root",
                      "jbf_question_root",
                      "jbf_mapvote_root",
+                     "jbf_mute_root",
                      "jbf_notify_root",
                      "jbf_announce_root",
                      "jbf_round_root",
