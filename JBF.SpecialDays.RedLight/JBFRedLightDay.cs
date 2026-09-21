@@ -14,7 +14,7 @@ namespace JBF.SpecialDays.RedLight;
 public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
 {
     private const float PreparationSeconds = 30.0f;
-    private const float RedReactionGraceSeconds = 0.45f;
+    private const float RedReactionGraceSeconds = 1.0f;
     private const float RedMovementTolerance = 8.0f;
     private const float RedDamageIntervalSeconds = 0.5f;
     private const int BaseRedMovementDamage = 10;
