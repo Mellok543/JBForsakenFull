@@ -62,6 +62,10 @@ public sealed class JBFFloorIsLava : BasePlugin
                 ListPoints(command, config);
                 break;
 
+            case "sample":
+                SamplePoints(command, config);
+                break;
+
             case "clear":
                 ClearPoints(command, config);
                 break;
@@ -69,7 +73,7 @@ public sealed class JBFFloorIsLava : BasePlugin
             default:
                 command.ReplyToCommand(
                     JailbreakChat.Format(
-                        "Использование: !lavapoint [add [радиус] | undo | list | clear]"));
+                        "Использование: !lavapoint [add [радиус] | undo | list | sample | clear]"));
                 break;
         }
     }
@@ -166,6 +170,30 @@ public sealed class JBFFloorIsLava : BasePlugin
             command.ReplyToCommand(
                 JailbreakChat.Format(
                     $"#{point.Id}: X={point.X:F1} Y={point.Y:F1} Z={point.Z:F1} R={point.Radius:F0}"));
+        }
+    }
+
+
+    private static void SamplePoints(CommandInfo command, LavaMapConfig config)
+    {
+        var alivePrisoners = Utilities.GetPlayers().Count(player =>
+            player is { IsValid: true, IsBot: false } &&
+            player.PawnIsAlive &&
+            player.Team == CounterStrikeSharp.API.Modules.Utils.CsTeam.Terrorist);
+
+        var selected = LavaSafeZoneSelector.SelectRandom(
+            config.Points,
+            alivePrisoners);
+
+        command.ReplyToCommand(
+            JailbreakChat.Format(
+                $"Живых T: {alivePrisoners}. Выбрано случайных островков: {selected.Count}/{config.Points.Count}."));
+
+        if (selected.Count > 0)
+        {
+            command.ReplyToCommand(
+                JailbreakChat.Format(
+                    $"Точки: {string.Join(", ", selected.Select(x => $"#{x.Id}"))}"));
         }
     }
 
