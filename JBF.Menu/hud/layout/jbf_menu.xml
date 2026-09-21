@@ -11,9 +11,17 @@
 
                 <Panel class="jbf-menu-content" hittest="false">
                     <Panel class="jbf-menu-brand" hittest="false">
-                        <Label class="jbf-menu-brand-mark" text="JBF" />
-                        <Panel class="jbf-menu-brand-line" hittest="false" />
-                        <Label class="jbf-menu-brand-name" text="FORSAKEN" />
+                        <Panel class="jbf-menu-brand-icon" hittest="false">
+                            <Label text="♛" />
+                        </Panel>
+                        <Panel class="jbf-menu-brand-copy" hittest="false">
+                            <Panel class="jbf-menu-brand-title-row" hittest="false">
+                                <Label class="jbf-menu-brand-mark" text="JB" />
+                                <Label class="jbf-menu-brand-name" text="FORSAKEN" />
+                            </Panel>
+                            <Label class="jbf-menu-brand-subtitle" text="CS2 • JAILBREAK SERVER" />
+                        </Panel>
+                        <Panel class="jbf-menu-brand-key" hittest="false"><Label text="R" /></Panel>
                     </Panel>
 
                     <Panel class="jbf-menu-header" hittest="false">
@@ -86,18 +94,29 @@
 
 
         <Panel id="jbf_question_root" class="jbf-question" hittest="false">
-            <Panel class="jbf-question-meta" hittest="false">
-                <Label id="jbf_question_progress" class="jbf-question-progress" text="{s:text}" />
-                <Panel class="jbf-question-meta-dot" hittest="false" />
-                <Label id="jbf_question_timer" class="jbf-question-timer" text="{s:text}" />
+            <Panel class="jbf-question-frame" hittest="false">
+                <Panel class="jbf-question-topline" hittest="false" />
+                <Panel class="jbf-question-header" hittest="false">
+                    <Panel class="jbf-question-badge" hittest="false"><Label text="◇" /></Panel>
+                    <Label class="jbf-question-caption" text="CT TEST" />
+                    <Panel class="jbf-question-meta" hittest="false">
+                        <Label id="jbf_question_progress" class="jbf-question-progress" text="{s:text}" />
+                        <Panel class="jbf-question-meta-dot" hittest="false" />
+                        <Label id="jbf_question_timer" class="jbf-question-timer" text="{s:text}" />
+                    </Panel>
+                </Panel>
+                <Panel class="jbf-question-divider" hittest="false" />
+                <Label id="jbf_question_text" class="jbf-question-text" text="{s:text}" />
+                <Panel class="jbf-question-underline" hittest="false" />
+                <Label class="jbf-question-hint" text="ДУМАЙ • ИГРАЙ • ПОБЕЖДАЙ" />
             </Panel>
-            <Label id="jbf_question_text" class="jbf-question-text" text="{s:text}" />
-            <Panel class="jbf-question-underline" hittest="false" />
         </Panel>
 
 
         <Panel id="jbf_mapvote_root" class="jbf-mapvote" hittest="false">
+            <Panel class="jbf-mapvote-topline" hittest="false" />
             <Panel class="jbf-mapvote-header" hittest="false">
+                <Panel class="jbf-mapvote-badge" hittest="false"><Label text="◇" /></Panel>
                 <Panel class="jbf-mapvote-title-wrap" hittest="false">
                     <Label id="jbf_mapvote_title" class="jbf-mapvote-title" text="{s:text}" />
                     <Label class="jbf-mapvote-subtitle" text="ГОЛОСА В РЕАЛЬНОМ ВРЕМЕНИ" />
