@@ -91,6 +91,7 @@ internal sealed class PanoramaMenuRenderer
         foreach (var panelId in new[]
                  {
                      "jbf_menu_root",
+                     "jbf_question_root",
                      "jbf_notify_root",
                      "jbf_announce_root",
                      "jbf_round_root",
