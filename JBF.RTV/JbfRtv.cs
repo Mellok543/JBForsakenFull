@@ -13,6 +13,8 @@ public sealed class JbfRtv : BasePlugin
     private const int VoteDurationSeconds = 15;
     private const int VoteMapCount = 5;
     private const double RtvRequiredFraction = 0.60;
+    private const string StartupMapName = "jb_spy_vs_spy";
+    private const ulong StartupMapWorkshopId = 3659814949;
 
     private readonly HashSet<ulong> _rtvVotes = [];
     private readonly Dictionary<string, int> _mapVotes =
@@ -23,15 +25,19 @@ public sealed class JbfRtv : BasePlugin
     private List<MapInfo> _currentVoteMaps = [];
     private bool _voteActive;
     private bool _endVoteStarted;
+    private bool _startupMapHandled;
     private DateTime _voteEndsAt;
     private DateTime _nextHudUpdate;
 
     public override string ModuleName => "JBF RTV";
-    public override string ModuleVersion => "2.0.0";
+    public override string ModuleVersion => "2.1.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
+        // A hot reload during a live map must never force a map change.
+        _startupMapHandled = hotReload;
+
         AddCommand("css_rtv", "Проголосовать за досрочную смену карты", OnRtvCommand);
         AddCommand("css_nominate", "Номинировать карту", OnNominateCommand);
         AddCommand("css_timeleft", "Показать оставшееся время карты", OnTimeleftCommand);
@@ -41,6 +47,7 @@ public sealed class JbfRtv : BasePlugin
             CheckMapTime,
             TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
 
+        RegisterListener<Listeners.OnMapStart>(OnMapStart);
         RegisterListener<Listeners.OnTick>(Tick);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
     }
@@ -53,6 +60,44 @@ public sealed class JbfRtv : BasePlugin
         _mapVoters.Clear();
         _nominations.Clear();
         _currentVoteMaps.Clear();
+    }
+
+
+    private void OnMapStart(string mapName)
+    {
+        if (_startupMapHandled)
+            return;
+
+        _startupMapHandled = true;
+
+        if (string.Equals(
+                mapName,
+                StartupMapName,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            Logger.LogInformation(
+                "RTV: startup map is already {Map} ({WorkshopId}).",
+                StartupMapName,
+                StartupMapWorkshopId);
+            return;
+        }
+
+        Logger.LogInformation(
+            "RTV: initial map {CurrentMap} detected. Switching startup map to {StartupMap} ({WorkshopId}).",
+            mapName,
+            StartupMapName,
+            StartupMapWorkshopId);
+
+        AddTimer(
+            2.0f,
+            () =>
+            {
+                Server.PrintToConsole(
+                    $"[JBF] Startup map -> {StartupMapName} ({StartupMapWorkshopId}).");
+                Server.ExecuteCommand(
+                    $"ds_workshop_changelevel {StartupMapName}");
+            },
+            TimerFlags.STOP_ON_MAPCHANGE);
     }
 
     private void CheckMapTime()
