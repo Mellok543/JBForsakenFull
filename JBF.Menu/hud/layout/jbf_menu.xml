@@ -5,22 +5,82 @@
 
     <Panel class="jbf-ui-screen" hittest="false">
         <Panel id="jbf_menu_root" class="jbf-menu-window" hittest="false">
-            <Panel class="jbf-menu-accent" hittest="false" />
-            <Panel class="jbf-menu-content" hittest="false">
-                <Panel class="jbf-menu-header" hittest="false">
-                    <Label id="jbf_menu_title" class="jbf-menu-title" text="{s:text}" />
-                    <Label id="jbf_menu_page" class="jbf-menu-page" text="{s:text}" />
+            <Panel class="jbf-menu-frame" hittest="false">
+                <Panel class="jbf-menu-accent" hittest="false" />
+                <Panel class="jbf-menu-accent-soft" hittest="false" />
+
+                <Panel class="jbf-menu-content" hittest="false">
+                    <Panel class="jbf-menu-brand" hittest="false">
+                        <Label class="jbf-menu-brand-mark" text="JBF" />
+                        <Panel class="jbf-menu-brand-line" hittest="false" />
+                        <Label class="jbf-menu-brand-name" text="FORSAKEN" />
+                    </Panel>
+
+                    <Panel class="jbf-menu-header" hittest="false">
+                        <Panel class="jbf-menu-title-wrap" hittest="false">
+                            <Label id="jbf_menu_title" class="jbf-menu-title" text="{s:text}" />
+                            <Label class="jbf-menu-subtitle" text="ВЫБЕРИТЕ ДЕЙСТВИЕ" />
+                        </Panel>
+                        <Panel class="jbf-menu-page-pill" hittest="false">
+                            <Label id="jbf_menu_page" class="jbf-menu-page" text="{s:text}" />
+                        </Panel>
+                    </Panel>
+
+                    <Panel class="jbf-menu-separator" hittest="false" />
+
+                    <Panel class="jbf-menu-rows" hittest="false">
+                        <Panel id="jbf_menu_row_0" class="jbf-menu-row">
+                            <Panel class="jbf-menu-row-accent" hittest="false" />
+                            <Label id="jbf_menu_row_0_text" class="jbf-menu-row-text" text="{s:text}" />
+                            <Label class="jbf-menu-row-arrow" text="›" />
+                        </Panel>
+                        <Panel id="jbf_menu_row_1" class="jbf-menu-row">
+                            <Panel class="jbf-menu-row-accent" hittest="false" />
+                            <Label id="jbf_menu_row_1_text" class="jbf-menu-row-text" text="{s:text}" />
+                            <Label class="jbf-menu-row-arrow" text="›" />
+                        </Panel>
+                        <Panel id="jbf_menu_row_2" class="jbf-menu-row">
+                            <Panel class="jbf-menu-row-accent" hittest="false" />
+                            <Label id="jbf_menu_row_2_text" class="jbf-menu-row-text" text="{s:text}" />
+                            <Label class="jbf-menu-row-arrow" text="›" />
+                        </Panel>
+                        <Panel id="jbf_menu_row_3" class="jbf-menu-row">
+                            <Panel class="jbf-menu-row-accent" hittest="false" />
+                            <Label id="jbf_menu_row_3_text" class="jbf-menu-row-text" text="{s:text}" />
+                            <Label class="jbf-menu-row-arrow" text="›" />
+                        </Panel>
+                        <Panel id="jbf_menu_row_4" class="jbf-menu-row">
+                            <Panel class="jbf-menu-row-accent" hittest="false" />
+                            <Label id="jbf_menu_row_4_text" class="jbf-menu-row-text" text="{s:text}" />
+                            <Label class="jbf-menu-row-arrow" text="›" />
+                        </Panel>
+                        <Panel id="jbf_menu_row_5" class="jbf-menu-row">
+                            <Panel class="jbf-menu-row-accent" hittest="false" />
+                            <Label id="jbf_menu_row_5_text" class="jbf-menu-row-text" text="{s:text}" />
+                            <Label class="jbf-menu-row-arrow" text="›" />
+                        </Panel>
+                        <Panel id="jbf_menu_row_6" class="jbf-menu-row">
+                            <Panel class="jbf-menu-row-accent" hittest="false" />
+                            <Label id="jbf_menu_row_6_text" class="jbf-menu-row-text" text="{s:text}" />
+                            <Label class="jbf-menu-row-arrow" text="›" />
+                        </Panel>
+                    </Panel>
+
+                    <Panel class="jbf-menu-separator footer" hittest="false" />
+
+                    <Panel class="jbf-menu-footer" hittest="false">
+                        <Panel class="jbf-menu-controls" hittest="false">
+                            <Panel class="jbf-key"><Label text="W" /></Panel>
+                            <Panel class="jbf-key"><Label text="S" /></Panel>
+                            <Label class="jbf-key-caption" text="ВЫБОР" />
+                            <Panel class="jbf-key action"><Label text="E" /></Panel>
+                            <Label class="jbf-key-caption" text="ОТКРЫТЬ" />
+                            <Panel class="jbf-key close"><Label text="R" /></Panel>
+                            <Label class="jbf-key-caption" text="ЗАКРЫТЬ" />
+                        </Panel>
+                        <Label id="jbf_menu_status" class="jbf-menu-status" text="{s:text}" />
+                    </Panel>
                 </Panel>
-                <Panel class="jbf-menu-rows" hittest="false">
-                    <Panel id="jbf_menu_row_0" class="jbf-menu-row"><Label id="jbf_menu_row_0_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
-                    <Panel id="jbf_menu_row_1" class="jbf-menu-row"><Label id="jbf_menu_row_1_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
-                    <Panel id="jbf_menu_row_2" class="jbf-menu-row"><Label id="jbf_menu_row_2_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
-                    <Panel id="jbf_menu_row_3" class="jbf-menu-row"><Label id="jbf_menu_row_3_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
-                    <Panel id="jbf_menu_row_4" class="jbf-menu-row"><Label id="jbf_menu_row_4_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
-                    <Panel id="jbf_menu_row_5" class="jbf-menu-row"><Label id="jbf_menu_row_5_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
-                    <Panel id="jbf_menu_row_6" class="jbf-menu-row"><Label id="jbf_menu_row_6_text" class="jbf-menu-row-text" text="{s:text}" /></Panel>
-                </Panel>
-                <Label id="jbf_menu_status" class="jbf-menu-status" text="{s:text}" />
             </Panel>
         </Panel>
 
@@ -30,12 +90,14 @@
         </Panel>
 
         <Panel id="jbf_announce_root" class="jbf-announce" hittest="false">
+            <Panel class="jbf-announce-line" hittest="false" />
             <Label id="jbf_announce_title" class="jbf-announce-title" text="{s:text}" />
             <Label id="jbf_announce_subtitle" class="jbf-announce-subtitle" text="{s:text}" />
         </Panel>
 
         <Panel id="jbf_round_root" class="jbf-round-status" hittest="false">
             <Label id="jbf_round_title" class="jbf-round-title" text="{s:text}" />
+            <Panel class="jbf-round-dot" hittest="false" />
             <Label id="jbf_round_value" class="jbf-round-value" text="{s:text}" />
         </Panel>
 
