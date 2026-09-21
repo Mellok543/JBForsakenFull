@@ -138,6 +138,13 @@
             </Panel>
         </Panel>
 
+
+        <Panel id="jbf_mute_root" class="jbf-mute-status" hittest="false">
+            <Panel class="jbf-mute-accent left" hittest="false" />
+            <Label id="jbf_mute_text" class="jbf-mute-text" text="{s:text}" />
+            <Panel class="jbf-mute-accent right" hittest="false" />
+        </Panel>
+
         <Panel id="jbf_notify_root" class="jbf-notify" hittest="false">
             <Panel class="jbf-notify-accent" hittest="false" />
             <Label id="jbf_notify_text" class="jbf-notify-text" text="{s:text}" />
