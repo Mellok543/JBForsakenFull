@@ -170,6 +170,21 @@ internal sealed class MenuService : IMenuApi, IUiApi
             _renderer.HidePanel(player, "jbf_mapvote_root");
     }
 
+    public void SetMuteStatus(CCSPlayerController player, string text)
+    {
+        if (!Prepare(player))
+            return;
+
+        _renderer.SetText(player, "jbf_mute_text", text);
+        _renderer.ShowPanel(player, "jbf_mute_root");
+    }
+
+    public void ClearMuteStatus(CCSPlayerController player)
+    {
+        if (_renderer.IsReady && player.IsValid)
+            _renderer.HidePanel(player, "jbf_mute_root");
+    }
+
     public void SetRoundStatus(CCSPlayerController player, string title, string value = "")
     {
         if (!Prepare(player))
