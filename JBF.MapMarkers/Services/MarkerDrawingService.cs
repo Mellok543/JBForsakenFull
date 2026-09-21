@@ -41,7 +41,7 @@ internal sealed class MarkerDrawingService
     public void DrawRedCircle(Vector center)
     {
         const int pointCount = 16;
-        const int radius = 70;
+        const int radius = 105;
         const float durationSeconds = 12.0f;
         ClearRedCircle();
 
