@@ -16,6 +16,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private readonly HashSet<ulong> _approvedCtSwitches = [];
 
     private TeamBalanceDatabase? _database;
+    private DateTime _nextCtTestHudUpdate;
 
     public override string ModuleName => "JBF Team Balance";
     public override string ModuleVersion => "1.0.1";
@@ -29,6 +30,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         Config.TerroristsPerGuard = Math.Max(1, Config.TerroristsPerGuard);
         Config.QuestionNumber = Math.Max(1, Config.QuestionNumber);
         Config.CtBan = Math.Max(1, Config.CtBan);
+        Config.QuestionTimeSeconds = Math.Clamp(Config.QuestionTimeSeconds, 5, 120);
 
         _database = new TeamBalanceDatabase(Config.Connection);
         _ = InitializeDatabaseAsync();
@@ -39,11 +41,15 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         AddCommandListener("jointeam", OnJoinTeam, HookMode.Pre);
         AddCommand("css_ct", "Пройти тест / встать в очередь за CT", OnCtCommand);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
+        RegisterListener<Listeners.OnTick>(UpdateCtTestHud);
     }
 
     public override void Unload(bool hotReload)
     {
         RemoveCommandListener("jointeam", OnJoinTeam, HookMode.Pre);
+        foreach (var player in Utilities.GetPlayers().Where(IsUsable))
+            UiCapability.Api.GetOptional()?.ClearQuestion(player!);
+
         _sessions.Clear();
         _queue.Clear();
         _guardJoinedAt.Clear();
@@ -166,23 +172,34 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             session.CurrentQuestion >= session.Questions.Count)
             return;
 
-        var menu = MenuCapability.Api.Get();
-        if (menu is null)
+        var menu = MenuCapability.Api.GetOptional();
+        var ui = UiCapability.Api.GetOptional();
+
+        if (menu is null || ui is null)
         {
-            player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
+            player.PrintToChat(JailbreakChat.Format("Menu/UI API недоступно."));
             _sessions.Remove(player.SteamID);
             return;
         }
 
         var question = session.Questions[session.CurrentQuestion];
+        session.QuestionDeadline = DateTime.UtcNow.AddSeconds(Config.QuestionTimeSeconds);
+        session.LastDisplayedSeconds = -1;
+
         var options = question.Answers
             .OrderBy(_ => Random.Shared.Next())
             .Select(answer => new JailbreakMenuOption(answer, p => HandleAnswer(p, answer)))
             .ToArray();
 
+        ui.SetQuestion(
+            player,
+            $"ВОПРОС {session.CurrentQuestion + 1}/{session.Questions.Count}",
+            question.Question,
+            $"{Config.QuestionTimeSeconds} СЕК.");
+
         menu.Open(
             player,
-            $"CT {session.CurrentQuestion + 1}/{session.Questions.Count}: {question.Question}",
+            "ВАРИАНТЫ ОТВЕТА",
             options);
     }
 
@@ -194,18 +211,15 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
         var question = session.Questions[session.CurrentQuestion];
 
+        if (DateTime.UtcNow >= session.QuestionDeadline)
+        {
+            FailCtTest(player, "Время на ответ истекло.");
+            return;
+        }
+
         if (!string.Equals(answer, question.CorrectAnswer, StringComparison.Ordinal))
         {
-            _sessions.Remove(player.SteamID);
-            MenuCapability.Api.Get()?.Close(player);
-
-            var until = DateTime.UtcNow.AddMinutes(Config.CtBan);
-            _bans[player.SteamID] = until;
-
-            if (_database is not null)
-                _ = SafeDb(() => _database.SetBanAsync(player.SteamID, until));
-
-            player.PrintToChat(JailbreakChat.Format($"Неверный ответ. CT заблокированы на {Config.CtBan} мин."));
+            FailCtTest(player, "Неверный ответ.");
             return;
         }
 
@@ -219,9 +233,70 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
         _sessions.Remove(player.SteamID);
 
-        MenuCapability.Api.Get()?.Close(player);
+        MenuCapability.Api.GetOptional()?.Close(player);
+        UiCapability.Api.GetOptional()?.ClearQuestion(player);
         player.PrintToChat(JailbreakChat.Format("Тест CT пройден. Ты добавлен в очередь."));
         AddToQueue(player);
+    }
+
+    private void UpdateCtTestHud()
+    {
+        var now = DateTime.UtcNow;
+        if (now < _nextCtTestHudUpdate)
+            return;
+
+        _nextCtTestHudUpdate = now.AddMilliseconds(200);
+
+        foreach (var pair in _sessions.ToArray())
+        {
+            var player = Utilities.GetPlayers()
+                .FirstOrDefault(candidate =>
+                    IsUsable(candidate) &&
+                    candidate!.SteamID == pair.Key);
+
+            if (player is null)
+                continue;
+
+            var session = pair.Value;
+            var secondsLeft = Math.Max(
+                0,
+                (int)Math.Ceiling((session.QuestionDeadline - now).TotalSeconds));
+
+            if (secondsLeft <= 0)
+            {
+                FailCtTest(player, "Время на ответ истекло.");
+                continue;
+            }
+
+            if (session.LastDisplayedSeconds == secondsLeft)
+                continue;
+
+            session.LastDisplayedSeconds = secondsLeft;
+
+            var question = session.Questions[session.CurrentQuestion];
+            UiCapability.Api.GetOptional()?.SetQuestion(
+                player,
+                $"ВОПРОС {session.CurrentQuestion + 1}/{session.Questions.Count}",
+                question.Question,
+                $"{secondsLeft} СЕК.");
+        }
+    }
+
+    private void FailCtTest(CCSPlayerController player, string reason)
+    {
+        _sessions.Remove(player.SteamID);
+        MenuCapability.Api.GetOptional()?.Close(player);
+        UiCapability.Api.GetOptional()?.ClearQuestion(player);
+
+        var until = DateTime.UtcNow.AddMinutes(Config.CtBan);
+        _bans[player.SteamID] = until;
+
+        if (_database is not null)
+            _ = SafeDb(() => _database.SetBanAsync(player.SteamID, until));
+
+        player.PrintToChat(
+            JailbreakChat.Format(
+                $"{reason} CT заблокированы на {Config.CtBan} мин."));
     }
 
     private void AddToQueue(CCSPlayerController player)
@@ -270,6 +345,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             _guardJoinedAt[player.SteamID] = DateTime.UtcNow;
             RemoveFromQueue(player.SteamID);
             _sessions.Remove(player.SteamID);
+            UiCapability.Api.GetOptional()?.ClearQuestion(player);
         }
         else
         {
@@ -381,6 +457,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         if (player is null || player.SteamID == 0)
             return;
 
+        UiCapability.Api.GetOptional()?.ClearQuestion(player);
         _sessions.Remove(player.SteamID);
         _guardJoinedAt.Remove(player.SteamID);
         _approvedCtSwitches.Remove(player.SteamID);
@@ -409,5 +486,9 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         public List<CtQuestion> Questions { get; }
 
         public int CurrentQuestion { get; set; }
+
+        public DateTime QuestionDeadline { get; set; }
+
+        public int LastDisplayedSeconds { get; set; } = -1;
     }
 }
