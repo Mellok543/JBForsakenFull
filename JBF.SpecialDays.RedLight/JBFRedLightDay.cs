@@ -166,12 +166,30 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         if (_context is null || entity.DesignerName != "player")
             return HookResult.Continue;
 
+        var victim = entity
+            .As<CCSPlayerPawn>()
+            .Controller.Value?
+            .As<CCSPlayerController>();
+
         var attackerEntity = damageInfo.Attacker.Value;
         if (attackerEntity?.DesignerName != "player")
             return HookResult.Continue;
 
-        // This mode is controlled entirely by the traffic-light rules.
-        // Players cannot damage one another during preparation or gameplay.
+        var attacker = attackerEntity
+            .As<CCSPlayerPawn>()
+            .Controller.Value?
+            .As<CCSPlayerController>();
+
+        // Allow self-damage/suicide. CommitSuicide and admin slay can pass through
+        // the damage hook with the player as both attacker and victim.
+        if (IsUsable(victim) &&
+            IsUsable(attacker) &&
+            victim.Slot == attacker.Slot)
+        {
+            return HookResult.Continue;
+        }
+
+        // Block only damage from one player to another.
         return HookResult.Handled;
     }
 
