@@ -1,1 +1,292 @@
 .cos-host{width:100%;height:100%;}.cos-screen{width:100%;height:100%;visibility:collapse;opacity:0;}.cos-screen.shown{visibility:visible;opacity:1;}.cos-backdrop{width:100%;height:100%;background-color:#05080dee;}.cos-window{width:84%;height:80%;horizontal-align:center;vertical-align:center;background-color:#071017;border:1px solid #5ce8ff38;flow-children:down;box-shadow:0 0 40px #000000cc;}.cos-header{width:100%;height:104px;padding:22px 30px;flow-children:right;background-color:#0a161f;border-bottom:1px solid #1e334f;}.cos-kicker{color:#caff39;font-size:14px;letter-spacing:2px;}.cos-title{color:white;font-size:34px;font-weight:bold;}.cos-subtitle{color:#74869f;font-size:13px;}.cos-counter{horizontal-align:right;margin-right:70px;vertical-align:center;color:#5ce8ff;font-size:16px;}.cos-close{horizontal-align:right;vertical-align:top;width:48px;height:48px;background-color:#16243a;}.cos-close Label{horizontal-align:center;vertical-align:center;color:white;font-size:30px;}.cos-body{width:100%;height:fill-parent-flow(1);flow-children:right;padding:24px;}.cos-sidebar{width:185px;height:100%;flow-children:down;padding-right:18px;border-right:1px solid #1c2a3d;}.cos-category{width:100%;height:42px;margin-bottom:8px;background-color:#101a28;border:1px solid #1b2a3f;}.cos-category Label{vertical-align:center;margin-left:16px;color:#8190a5;font-size:14px;}.cos-category:hover,.cos-category.active{background-color:#132129;border:1px solid #5ce8ff55;}.cos-category.active Label{color:#efffd0;}.cos-content{width:fill-parent-flow(1);height:100%;flow-children:down;margin-left:22px;margin-right:22px;}.cos-grid{width:100%;height:fill-parent-flow(1);flow-children:right-wrap;}.cos-item{width:31%;height:205px;margin:0 2% 18px 0;background-color:#0d1724;border:1px solid #20324a;flow-children:down;padding:16px;visibility:collapse;}.cos-item.visible{visibility:visible;}.cos-item.selected{border:2px solid #caff39;}.cos-item.equipped{box-shadow:inset 0 0 18px #194d7aaa;}.cos-item-icon{font-size:54px;color:#5f7188;horizontal-align:center;margin-top:12px;}.cos-item-name{font-size:17px;color:white;font-weight:bold;margin-top:8px;}.cos-item-type{font-size:11px;color:#6f839e;letter-spacing:1px;margin-top:5px;}.cos-item-state{font-size:12px;color:#caff39;margin-top:6px;}.cos-select{width:100%;height:38px;vertical-align:bottom;background-color:#182a42;margin-top:12px;}.cos-select Label{horizontal-align:center;vertical-align:center;color:#a9c9ec;font-size:12px;}.cos-pager{horizontal-align:center;flow-children:right;height:48px;}.cos-pager Button{width:48px;height:38px;background-color:#16243a;}.cos-pager Button Label{horizontal-align:center;vertical-align:center;color:white;font-size:24px;}.cos-pager>Label{width:150px;text-align:center;vertical-align:center;color:#7f94ad;font-size:12px;}.cos-details{width:285px;height:100%;background-color:#0d1724;border:1px solid #20324a;padding:18px;flow-children:down;}.cos-preview{width:100%;height:235px;background-color:#08101a;border:1px solid #20334c;}.cos-preview Label{horizontal-align:center;vertical-align:center;font-size:120px;color:#5ce8ff;text-shadow:0 0 20px #3d93d9;}.cos-detail-name{font-size:24px;color:white;font-weight:bold;margin-top:18px;}.cos-detail-meta{font-size:11px;color:#62aef2;letter-spacing:1px;margin-top:6px;}.cos-detail-desc{font-size:14px;color:#94a4b8;margin-top:14px;white-space:normal;}.cos-action{width:100%;height:42px;background-color:#1b2b19;margin-top:26px;}.cos-action:hover{background-color:#263d22;}.cos-action.disabled{background-color:#1b222c;opacity:.55;}.cos-action Label{horizontal-align:center;vertical-align:center;color:white;font-weight:bold;}.cos-source-hint{horizontal-align:center;color:#56667b;font-size:11px;margin-top:12px;}.rarity-rare{border-color:#287fd0;}.rarity-epic{border-color:#834dcc;}.rarity-legendary{border-color:#d39b32;}.rarity-legendary .cos-item-icon{color:#f0bf59;}.cos-details.rarity-legendary .cos-preview Label{color:#f0bf59;}
+
+
+/* JBFORSAKEN CONCEPT COSMETICS */
+.cos-backdrop
+{
+    background-color: #02070dcf;
+}
+
+.cos-window
+{
+    width: 72%;
+    height: 68%;
+    background-color: #071017f7;
+    border: 1px solid #5ce8ff40;
+    box-shadow: #000000dd 0px 0px 36px 1px;
+}
+
+.cos-header
+{
+    height: 96px;
+    padding: 16px 22px;
+    background-color: #0a151df0;
+    border-bottom: 1px solid #5ce8ff20;
+    border-top: 3px solid #caff39;
+}
+
+.cos-kicker
+{
+    color: #caff39;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.cos-title
+{
+    color: #f4f8fa;
+    font-size: 27px;
+}
+
+.cos-subtitle
+{
+    color: #60747d;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.cos-counter
+{
+    margin-right: 56px;
+    color: #5ce8ff;
+    font-size: 12px;
+}
+
+.cos-close
+{
+    width: 36px;
+    height: 36px;
+    background-color: #0d181f;
+    border: 1px solid #5ce8ff24;
+}
+
+.cos-close Label
+{
+    color: #b8c8ce;
+    font-size: 22px;
+}
+
+.cos-body
+{
+    padding: 16px;
+}
+
+.cos-sidebar
+{
+    width: 168px;
+    padding-right: 12px;
+    border-right: 1px solid #5ce8ff16;
+}
+
+.cos-category
+{
+    height: 37px;
+    margin-bottom: 5px;
+    background-color: #0c171d;
+    border: 1px solid #5ce8ff14;
+}
+
+.cos-category Label
+{
+    margin-left: 11px;
+    color: #7f9097;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.cos-category:hover,
+.cos-category.active
+{
+    background-color: #122129;
+    border: 1px solid #5ce8ff42;
+}
+
+.cos-category.active
+{
+    border-left: 3px solid #caff39;
+}
+
+.cos-category.active Label
+{
+    color: #efffd5;
+}
+
+.cos-content
+{
+    margin-left: 14px;
+    margin-right: 14px;
+}
+
+.cos-item
+{
+    height: 168px;
+    margin: 0px 2% 10px 0px;
+    padding: 10px;
+    background-color: #0c171ddd;
+    border: 1px solid #5ce8ff1b;
+}
+
+.cos-item:hover
+{
+    background-color: #112129ee;
+    border: 1px solid #5ce8ff48;
+}
+
+.cos-item.selected
+{
+    border: 1px solid #caff3968;
+    box-shadow: #caff3924 0px 0px 10px 0px;
+}
+
+.cos-item.equipped
+{
+    background-color: #172519ee;
+    border-left: 3px solid #caff39;
+    box-shadow: #caff3918 0px 0px 10px 0px;
+}
+
+.cos-item-icon
+{
+    font-size: 30px;
+    color: #5ce8ff;
+    margin-top: 5px;
+}
+
+.cos-item-name
+{
+    font-size: 13px;
+    color: #f2f7f8;
+    margin-top: 5px;
+}
+
+.cos-item-type
+{
+    font-size: 8px;
+    color: #6b7d85;
+    margin-top: 3px;
+}
+
+.cos-item-state
+{
+    font-size: 9px;
+    color: #caff39;
+    margin-top: 4px;
+    font-weight: bold;
+}
+
+.cos-select
+{
+    height: 29px;
+    margin-top: 6px;
+    background-color: #102027;
+    border: 1px solid #5ce8ff25;
+}
+
+.cos-select:hover
+{
+    background-color: #1a2d22;
+    border: 1px solid #caff3948;
+}
+
+.cos-select Label
+{
+    color: #eaf4f6;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.cos-pager
+{
+    height: 36px;
+}
+
+.cos-pager Button
+{
+    width: 34px;
+    height: 28px;
+    background-color: #0e1b22;
+    border: 1px solid #5ce8ff24;
+}
+
+.cos-pager Button Label
+{
+    font-size: 18px;
+}
+
+.cos-pager>Label
+{
+    width: 105px;
+    color: #75878e;
+    font-size: 9px;
+}
+
+.cos-details
+{
+    width: 250px;
+    background-color: #0c171ddd;
+    border: 1px solid #5ce8ff20;
+    padding: 12px;
+}
+
+.cos-preview
+{
+    height: 190px;
+    background-color: #071017;
+    border: 1px solid #5ce8ff28;
+}
+
+.cos-preview Label
+{
+    font-size: 76px;
+    color: #5ce8ff;
+    text-shadow: 0px 0px 14px 1 #5ce8ff30;
+}
+
+.cos-detail-name
+{
+    font-size: 18px;
+    color: #f4f8fa;
+    margin-top: 12px;
+}
+
+.cos-detail-meta
+{
+    font-size: 9px;
+    color: #caff39;
+    margin-top: 4px;
+}
+
+.cos-detail-desc
+{
+    font-size: 10px;
+    color: #8e9ea5;
+    margin-top: 9px;
+}
+
+.cos-action
+{
+    height: 36px;
+    margin-top: 14px;
+    background-color: #1a2d22;
+    border: 1px solid #caff394c;
+}
+
+.cos-action:hover
+{
+    background-color: #243b2b;
+    border: 1px solid #caff3970;
+}
+
+.cos-action Label
+{
+    color: #f4ffe2;
+    font-size: 10px;
+}
+
+.cos-source-hint
+{
+    color: #52636a;
+    font-size: 8px;
+    margin-top: 8px;
+}
