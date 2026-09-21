@@ -84,6 +84,17 @@
             </Panel>
         </Panel>
 
+
+        <Panel id="jbf_question_root" class="jbf-question" hittest="false">
+            <Panel class="jbf-question-meta" hittest="false">
+                <Label id="jbf_question_progress" class="jbf-question-progress" text="{s:text}" />
+                <Panel class="jbf-question-meta-dot" hittest="false" />
+                <Label id="jbf_question_timer" class="jbf-question-timer" text="{s:text}" />
+            </Panel>
+            <Label id="jbf_question_text" class="jbf-question-text" text="{s:text}" />
+            <Panel class="jbf-question-underline" hittest="false" />
+        </Panel>
+
         <Panel id="jbf_notify_root" class="jbf-notify" hittest="false">
             <Panel class="jbf-notify-accent" hittest="false" />
             <Label id="jbf_notify_text" class="jbf-notify-text" text="{s:text}" />
