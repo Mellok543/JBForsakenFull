@@ -19,7 +19,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private DateTime _nextCtTestHudUpdate;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.1.0";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -40,6 +40,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     {
         AddCommandListener("jointeam", OnJoinTeam, HookMode.Pre);
         AddCommand("css_ct", "Пройти тест / встать в очередь за CT", OnCtCommand);
+        RegisterListener<Listeners.OnClientPutInServer>(OnClientPutInServer);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
         RegisterListener<Listeners.OnTick>(UpdateCtTestHud);
     }
@@ -415,7 +416,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private int GetMaxCt(int totalPlayers)
     {
         var ratio = Math.Max(1, Config.TerroristsPerGuard);
-        return totalPlayers <= 1
+        return totalPlayers <= 0
             ? 0
             : Math.Max(1, totalPlayers / (ratio + 1));
     }
@@ -448,6 +449,22 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
         foreach (var id in remaining)
             _queue.Enqueue(id);
+    }
+
+    private void OnClientPutInServer(int slot)
+    {
+        var player = Utilities.GetPlayerFromSlot(slot);
+        if (!IsUsable(player))
+            return;
+
+        Server.NextFrame(() =>
+        {
+            if (!IsUsable(player))
+                return;
+
+            if (player!.Team != CsTeam.Terrorist)
+                player.SwitchTeam(CsTeam.Terrorist);
+        });
     }
 
     private void OnClientDisconnect(int slot)
