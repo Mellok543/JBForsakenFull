@@ -95,6 +95,49 @@
             <Panel class="jbf-question-underline" hittest="false" />
         </Panel>
 
+
+        <Panel id="jbf_mapvote_root" class="jbf-mapvote" hittest="false">
+            <Panel class="jbf-mapvote-header" hittest="false">
+                <Panel class="jbf-mapvote-title-wrap" hittest="false">
+                    <Label id="jbf_mapvote_title" class="jbf-mapvote-title" text="{s:text}" />
+                    <Label class="jbf-mapvote-subtitle" text="ГОЛОСА В РЕАЛЬНОМ ВРЕМЕНИ" />
+                </Panel>
+                <Panel class="jbf-mapvote-timer-pill" hittest="false">
+                    <Label id="jbf_mapvote_timer" class="jbf-mapvote-timer" text="{s:text}" />
+                </Panel>
+            </Panel>
+
+            <Panel class="jbf-mapvote-separator" hittest="false" />
+
+            <Panel class="jbf-mapvote-rows" hittest="false">
+                <Panel id="jbf_mapvote_row_0" class="jbf-mapvote-row">
+                    <Label id="jbf_mapvote_row_0_name" class="jbf-mapvote-name" text="{s:text}" />
+                    <Panel class="jbf-mapvote-bar-track"><Panel id="jbf_mapvote_row_0_bar" class="jbf-mapvote-bar" /></Panel>
+                    <Label id="jbf_mapvote_row_0_votes" class="jbf-mapvote-votes" text="{s:text}" />
+                </Panel>
+                <Panel id="jbf_mapvote_row_1" class="jbf-mapvote-row">
+                    <Label id="jbf_mapvote_row_1_name" class="jbf-mapvote-name" text="{s:text}" />
+                    <Panel class="jbf-mapvote-bar-track"><Panel id="jbf_mapvote_row_1_bar" class="jbf-mapvote-bar" /></Panel>
+                    <Label id="jbf_mapvote_row_1_votes" class="jbf-mapvote-votes" text="{s:text}" />
+                </Panel>
+                <Panel id="jbf_mapvote_row_2" class="jbf-mapvote-row">
+                    <Label id="jbf_mapvote_row_2_name" class="jbf-mapvote-name" text="{s:text}" />
+                    <Panel class="jbf-mapvote-bar-track"><Panel id="jbf_mapvote_row_2_bar" class="jbf-mapvote-bar" /></Panel>
+                    <Label id="jbf_mapvote_row_2_votes" class="jbf-mapvote-votes" text="{s:text}" />
+                </Panel>
+                <Panel id="jbf_mapvote_row_3" class="jbf-mapvote-row">
+                    <Label id="jbf_mapvote_row_3_name" class="jbf-mapvote-name" text="{s:text}" />
+                    <Panel class="jbf-mapvote-bar-track"><Panel id="jbf_mapvote_row_3_bar" class="jbf-mapvote-bar" /></Panel>
+                    <Label id="jbf_mapvote_row_3_votes" class="jbf-mapvote-votes" text="{s:text}" />
+                </Panel>
+                <Panel id="jbf_mapvote_row_4" class="jbf-mapvote-row">
+                    <Label id="jbf_mapvote_row_4_name" class="jbf-mapvote-name" text="{s:text}" />
+                    <Panel class="jbf-mapvote-bar-track"><Panel id="jbf_mapvote_row_4_bar" class="jbf-mapvote-bar" /></Panel>
+                    <Label id="jbf_mapvote_row_4_votes" class="jbf-mapvote-votes" text="{s:text}" />
+                </Panel>
+            </Panel>
+        </Panel>
+
         <Panel id="jbf_notify_root" class="jbf-notify" hittest="false">
             <Panel class="jbf-notify-accent" hittest="false" />
             <Label id="jbf_notify_text" class="jbf-notify-text" text="{s:text}" />
