@@ -10,6 +10,8 @@ public interface IUiApi
     void ClearQuestion(CCSPlayerController player);
     void SetMapVote(CCSPlayerController player, string title, IReadOnlyList<MapVoteHudEntry> entries, string timer = "");
     void ClearMapVote(CCSPlayerController player);
+    void SetMuteStatus(CCSPlayerController player, string text);
+    void ClearMuteStatus(CCSPlayerController player);
     void SetRoundStatus(CCSPlayerController player, string title, string value = "");
     void ClearRoundStatus(CCSPlayerController player);
     void SetPlayerStatus(CCSPlayerController player, string primary, string secondary = "");
