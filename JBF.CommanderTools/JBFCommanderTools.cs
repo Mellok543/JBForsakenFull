@@ -40,7 +40,7 @@ public sealed class JBFCommanderTools : BasePlugin
     }
 
     public override string ModuleName => "JBF Commander Tools";
-    public override string ModuleVersion => "1.1.0";
+    public override string ModuleVersion => "1.2.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -101,6 +101,49 @@ public sealed class JBFCommanderTools : BasePlugin
     public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
         _muteService.ClearMute();
+        return HookResult.Continue;
+    }
+
+    [GameEventHandler]
+    public HookResult OnBulletImpact(EventBulletImpact @event, GameEventInfo info)
+    {
+        var shooter = @event.Userid;
+        if (!shooter.IsUsable() || shooter.Team != CsTeam.CounterTerrorist)
+            return HookResult.Continue;
+
+        var impact = new Vector(@event.X, @event.Y, @event.Z);
+        const float maxDistance = 56.0f;
+        CBasePlayerWeapon? nearest = null;
+        var nearestDistanceSquared = maxDistance * maxDistance;
+
+        foreach (var weapon in Utilities.FindAllEntitiesByDesignerName<CBasePlayerWeapon>("weapon_"))
+        {
+            if (weapon is null || !weapon.IsValid)
+                continue;
+
+            var owner = weapon.OwnerEntity.Value;
+            if (owner is { IsValid: true })
+                continue;
+
+            var origin = weapon.AbsOrigin;
+            if (origin is null)
+                continue;
+
+            var dx = origin.X - impact.X;
+            var dy = origin.Y - impact.Y;
+            var dz = origin.Z - impact.Z;
+            var distanceSquared = dx * dx + dy * dy + dz * dz;
+
+            if (distanceSquared > nearestDistanceSquared)
+                continue;
+
+            nearest = weapon;
+            nearestDistanceSquared = distanceSquared;
+        }
+
+        if (nearest is { IsValid: true })
+            nearest.Remove();
+
         return HookResult.Continue;
     }
 
