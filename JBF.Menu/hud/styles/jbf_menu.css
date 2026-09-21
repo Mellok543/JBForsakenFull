@@ -5,6 +5,7 @@
 }
 
 .jbf-menu-window,
+.jbf-mute-status,
 .jbf-mapvote,
 .jbf-question,
 .jbf-notify,
@@ -353,6 +354,50 @@
 }
 
 
+
+
+.jbf-mute-status
+{
+    width: 500px;
+    height: 62px;
+    horizontal-align: center;
+    vertical-align: top;
+    margin-top: 180px;
+    flow-children: right;
+    background-color: #0b0f13e9;
+    border: 1px solid #ffffff14;
+    box-shadow: #00000088 0px 0px 18px 1px;
+    transform: translateY(-14px);
+    transition-property: opacity, transform;
+    transition-duration: 0.18s;
+    transition-timing-function: ease-out;
+}
+
+.jbf-mute-status.shown
+{
+    visibility: visible;
+    opacity: 1;
+    position: 0px 0px 0px;
+    transform: translateY(0px);
+}
+
+.jbf-mute-accent
+{
+    width: 5px;
+    height: 100%;
+    background-color: #d7ff38;
+}
+
+.jbf-mute-text
+{
+    width: fill-parent-flow(1.0);
+    color: #f2f4f6;
+    font-size: 18px;
+    font-weight: bold;
+    letter-spacing: 1.0px;
+    text-align: center;
+    vertical-align: center;
+}
 
 .jbf-mapvote
 {
