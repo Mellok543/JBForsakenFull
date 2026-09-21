@@ -115,6 +115,61 @@ internal sealed class MenuService : IMenuApi, IUiApi
             _renderer.HidePanel(player, "jbf_question_root");
     }
 
+    public void SetMapVote(
+        CCSPlayerController player,
+        string title,
+        IReadOnlyList<MapVoteHudEntry> entries,
+        string timer = "")
+    {
+        if (!Prepare(player))
+            return;
+
+        _renderer.SetText(player, "jbf_mapvote_title", title);
+        _renderer.SetText(player, "jbf_mapvote_timer", timer);
+
+        var maxVotes = Math.Max(1, entries.Count == 0 ? 1 : entries.Max(entry => entry.Votes));
+        var leaderVotes = entries.Count == 0 ? 0 : entries.Max(entry => entry.Votes);
+
+        for (var row = 0; row < 5; row++)
+        {
+            var rowId = $"jbf_mapvote_row_{row}";
+            var nameId = $"jbf_mapvote_row_{row}_name";
+            var votesId = $"jbf_mapvote_row_{row}_votes";
+            var barId = $"jbf_mapvote_row_{row}_bar";
+
+            for (var level = 0; level <= 10; level++)
+                _renderer.SetClass(player, barId, $"fill-{level}", false);
+
+            if (row >= entries.Count)
+            {
+                _renderer.SetText(player, nameId, string.Empty);
+                _renderer.SetText(player, votesId, string.Empty);
+                _renderer.SetClass(player, rowId, "hidden", true);
+                _renderer.SetClass(player, rowId, "leader", false);
+                continue;
+            }
+
+            var entry = entries[row];
+            var fill = entry.Votes <= 0
+                ? 0
+                : Math.Clamp((int)Math.Ceiling(entry.Votes * 10.0 / maxVotes), 1, 10);
+
+            _renderer.SetText(player, nameId, entry.MapName);
+            _renderer.SetText(player, votesId, entry.Votes.ToString());
+            _renderer.SetClass(player, rowId, "hidden", false);
+            _renderer.SetClass(player, rowId, "leader", leaderVotes > 0 && entry.Votes == leaderVotes);
+            _renderer.SetClass(player, barId, $"fill-{fill}", true);
+        }
+
+        _renderer.ShowPanel(player, "jbf_mapvote_root");
+    }
+
+    public void ClearMapVote(CCSPlayerController player)
+    {
+        if (_renderer.IsReady && player.IsValid)
+            _renderer.HidePanel(player, "jbf_mapvote_root");
+    }
+
     public void SetRoundStatus(CCSPlayerController player, string title, string value = "")
     {
         if (!Prepare(player))
