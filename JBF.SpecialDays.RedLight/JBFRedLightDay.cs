@@ -16,6 +16,10 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
     private const float PreparationSeconds = 30.0f;
     private const float RedReactionGraceSeconds = 0.45f;
     private const float RedMovementTolerance = 8.0f;
+    private const float RedDamageIntervalSeconds = 0.5f;
+    private const int BaseRedMovementDamage = 10;
+    private const int RedMovementDamageIncreasePerRound = 5;
+    private const int MaxRedMovementDamage = 50;
     private const float MinimumGreenTravelDistance = 100.0f;
     private const int MaxIdleWarnings = 2;
     private const float DefaultRoundTimeSeconds = 300.0f;
@@ -32,6 +36,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
     private readonly Dictionary<int, Position> _redAnchor = [];
     private readonly Dictionary<int, float> _greenTravel = [];
     private readonly Dictionary<int, int> _idleWarnings = [];
+    private readonly Dictionary<int, DateTime> _nextRedDamageAt = [];
     private readonly HashSet<int> _eliminatingSlots = [];
 
     private IDisposable? _registration;
@@ -40,6 +45,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
     private Timer? _roundTimer;
     private Phase _phase = Phase.Stopped;
     private DateTime _redGraceUntil;
+    private int _redRound;
 
     public override string ModuleName => "JBF Special Day: Red Light";
     public override string ModuleVersion => "1.0.0";
@@ -81,8 +87,10 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         _context = context;
         _phase = Phase.Preparation;
         _idleWarnings.Clear();
+        _nextRedDamageAt.Clear();
         _eliminatingSlots.Clear();
         _greenTravel.Clear();
+        _redRound = 0;
         _lastPosition.Clear();
         _redAnchor.Clear();
 
@@ -121,7 +129,9 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         _redAnchor.Clear();
         _greenTravel.Clear();
         _idleWarnings.Clear();
+        _nextRedDamageAt.Clear();
         _eliminatingSlots.Clear();
+        _redRound = 0;
     }
 
     public void OnPlayerSpawn(CCSPlayerController player)
@@ -154,6 +164,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
             _lastPosition.Remove(victim.Slot);
             _redAnchor.Remove(victim.Slot);
             _greenTravel.Remove(victim.Slot);
+            _nextRedDamageAt.Remove(victim.Slot);
             _eliminatingSlots.Remove(victim.Slot);
         }
 
@@ -232,7 +243,20 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
             if (Distance(anchor, current) <= RedMovementTolerance)
                 continue;
 
-            Eliminate(player);
+            var now = DateTime.UtcNow;
+            if (_nextRedDamageAt.TryGetValue(player.Slot, out var nextDamageAt) &&
+                now < nextDamageAt)
+            {
+                continue;
+            }
+
+            ApplyRedMovementDamage(player);
+            _nextRedDamageAt[player.Slot] =
+                now.AddSeconds(RedDamageIntervalSeconds);
+
+            // Reset the anchor after each damage tick. A player who keeps moving
+            // will continue taking damage, while a player who stops will not.
+            _redAnchor[player.Slot] = current;
         }
     }
 
@@ -246,6 +270,7 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         _greenTravel.Clear();
         _lastPosition.Clear();
         _redAnchor.Clear();
+        _nextRedDamageAt.Clear();
 
         foreach (var player in ActiveTerrorists())
         {
@@ -278,8 +303,10 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
             return;
 
         _phase = Phase.Red;
+        _redRound++;
         _redGraceUntil = DateTime.UtcNow.AddSeconds(RedReactionGraceSeconds);
         _redAnchor.Clear();
+        _nextRedDamageAt.Clear();
 
         foreach (var player in ActiveTerrorists())
             _redAnchor[player.Slot] = GetPosition(player);
@@ -321,6 +348,35 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         }
 
         Server.NextFrame(EvaluateRoundState);
+    }
+
+    private void ApplyRedMovementDamage(CCSPlayerController player)
+    {
+        if (!IsActiveTerrorist(player))
+            return;
+
+        var pawn = player.PlayerPawn.Value;
+        if (pawn is null || !pawn.IsValid)
+            return;
+
+        var damage = Math.Min(
+            MaxRedMovementDamage,
+            BaseRedMovementDamage +
+            Math.Max(0, _redRound - 1) * RedMovementDamageIncreasePerRound);
+
+        var newHealth = pawn.Health - damage;
+
+        if (newHealth <= 0)
+        {
+            Eliminate(player);
+            return;
+        }
+
+        pawn.Health = newHealth;
+        Utilities.SetStateChanged(
+            pawn,
+            "CBaseEntity",
+            "m_iHealth");
     }
 
     private void Eliminate(CCSPlayerController player)
@@ -393,12 +449,12 @@ public sealed class JBFRedLightDay : BasePlugin, ISpecialDay
         Server.PrintToChatAll(
             JailbreakChat.Format("ЗЕЛЁНЫЙ: заключённые должны двигаться."));
         Server.PrintToChatAll(
-            JailbreakChat.Format("КРАСНЫЙ: остановитесь. После короткого времени реакции движение = смерть."));
+            JailbreakChat.Format("КРАСНЫЙ: остановитесь. После короткого времени реакции движение наносит урон."));
         Server.PrintToChatAll(
             JailbreakChat.Format(
                 $"Можно получить только {MaxIdleWarnings} предупреждения за бездействие на зелёном. Следующее нарушение = смерть."));
         Server.PrintToChatAll(
-            JailbreakChat.Format("Урон между игроками отключён. Сигналы показываются в HUD."));
+            JailbreakChat.Format("Чем дальше идёт игра, тем больше урон за движение на красный. Урон между игроками отключён."));
     }
 
     private static float RandomSeconds(float minimum, float maximum) =>
