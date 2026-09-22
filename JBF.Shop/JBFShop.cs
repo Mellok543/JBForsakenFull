@@ -17,13 +17,14 @@ public sealed class JBFShop : BasePlugin
     private IPlayerStateApi? _playerStateApi;
 
     public override string ModuleName => "JBF Shop";
-    public override string ModuleVersion => "1.3.1";
+    public override string ModuleVersion => "1.4.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
     {
         _shop = new ShopService(this);
         Capabilities.RegisterPluginCapability(ShopCapability.Api, () => _shop!);
+        RegisterListener<Listeners.OnTick>(OnTick);
         AddTimer(2.0f, RefreshSubscriptions, TimerFlags.REPEAT | TimerFlags.STOP_ON_MAPCHANGE);
     }
 
@@ -110,6 +111,11 @@ public sealed class JBFShop : BasePlugin
     {
         _shop?.RewardKill(@event.Userid, @event.Attacker);
         return HookResult.Continue;
+    }
+
+    private void OnTick()
+    {
+        _shop?.Tick();
     }
 
     private void RefreshSubscriptions()
