@@ -13,7 +13,11 @@ internal sealed class ShopService : IShopApi
 {
     private const float SpeedMultiplier = 1.25f;
     private const float GravityMultiplier = 0.65f;
+    private const float SmallModelScale = 0.65f;
+    private const float DoubleJumpVelocity = 300.0f;
+    private const float BhopVelocity = 300.0f;
     private const float FloatTolerance = 0.001f;
+    private const string GuardModel = "characters/models/ctm_sas/ctm_sas.vmdl";
 
     private readonly BasePlugin _plugin;
     private readonly string _configPath;
@@ -22,6 +26,12 @@ internal sealed class ShopService : IShopApi
     private readonly Dictionary<ulong, Dictionary<string, int>> _roundPurchases = [];
     private readonly Dictionary<ulong, TimedEffectState> _speedEffects = [];
     private readonly Dictionary<ulong, TimedEffectState> _gravityEffects = [];
+    private readonly Dictionary<ulong, DateTime> _doubleJumpEffects = [];
+    private readonly Dictionary<ulong, DateTime> _bhopEffects = [];
+    private readonly Dictionary<ulong, bool> _doubleJumpUsed = [];
+    private readonly Dictionary<ulong, bool> _jumpWasPressed = [];
+    private readonly Dictionary<ulong, ModelScaleEffectState> _smallModelEffects = [];
+    private readonly Dictionary<ulong, ModelEffectState> _guardDisguiseEffects = [];
     private readonly HashSet<ulong> _rebelsThisRound = [];
 
     private ShopConfig _config;
@@ -308,13 +318,92 @@ internal sealed class ShopService : IShopApi
         // unique version. Clearing here prevents effects from leaking into a new round.
         _speedEffects.Clear();
         _gravityEffects.Clear();
+        _doubleJumpEffects.Clear();
+        _bhopEffects.Clear();
+        _doubleJumpUsed.Clear();
+        _jumpWasPressed.Clear();
+        RestoreAllSmallModels();
+        RestoreAllGuardDisguises();
+        _smallModelEffects.Clear();
+        _guardDisguiseEffects.Clear();
     }
 
     public void Shutdown()
     {
+        RestoreAllSmallModels();
+        RestoreAllGuardDisguises();
         _speedEffects.Clear();
         _gravityEffects.Clear();
+        _doubleJumpEffects.Clear();
+        _bhopEffects.Clear();
+        _doubleJumpUsed.Clear();
+        _jumpWasPressed.Clear();
+        _smallModelEffects.Clear();
+        _guardDisguiseEffects.Clear();
         _storage.Dispose();
+    }
+
+    public void Tick()
+    {
+        var now = DateTime.UtcNow;
+
+        foreach (var player in Utilities.GetPlayers().Where(player =>
+                     player.IsUsable() && !player.IsBot && player.PawnIsAlive))
+        {
+            var steamId = player.GetSteamId64();
+            if (steamId is null)
+                continue;
+
+            var pawn = player.PlayerPawn.Value!;
+            var flags = (PlayerFlags)pawn.Flags;
+            var onGround = flags.HasFlag(PlayerFlags.FL_ONGROUND);
+            var jumpPressed = player.Buttons.HasFlag(PlayerButtons.Jump);
+
+            if (_bhopEffects.TryGetValue(steamId.Value, out var bhopUntil))
+            {
+                if (now >= bhopUntil)
+                {
+                    _bhopEffects.Remove(steamId.Value);
+                }
+                else if (jumpPressed &&
+                         onGround &&
+                         !pawn.MoveType.HasFlag(MoveType_t.MOVETYPE_LADDER))
+                {
+                    pawn.AbsVelocity.Z = BhopVelocity;
+                }
+            }
+
+            if (_doubleJumpEffects.TryGetValue(steamId.Value, out var doubleJumpUntil))
+            {
+                if (now >= doubleJumpUntil)
+                {
+                    _doubleJumpEffects.Remove(steamId.Value);
+                    _doubleJumpUsed.Remove(steamId.Value);
+                    _jumpWasPressed.Remove(steamId.Value);
+                }
+                else
+                {
+                    if (onGround)
+                        _doubleJumpUsed[steamId.Value] = false;
+
+                    var wasPressed = _jumpWasPressed.GetValueOrDefault(steamId.Value);
+                    var canDoubleJump =
+                        !onGround &&
+                        jumpPressed &&
+                        !wasPressed &&
+                        !_doubleJumpUsed.GetValueOrDefault(steamId.Value) &&
+                        !pawn.MoveType.HasFlag(MoveType_t.MOVETYPE_LADDER);
+
+                    if (canDoubleJump)
+                    {
+                        pawn.AbsVelocity.Z = DoubleJumpVelocity;
+                        _doubleJumpUsed[steamId.Value] = true;
+                    }
+
+                    _jumpWasPressed[steamId.Value] = jumpPressed;
+                }
+            }
+        }
     }
 
     private IReadOnlyList<ShopItem> BuildItems(ShopItemsConfig config)
@@ -344,7 +433,11 @@ internal sealed class ShopService : IShopApi
             CreateItem("smoke", "Дымовая граната", config.Smoke, CsTeam.Terrorist, player => player.GiveNamedItem(CsItem.SmokeGrenade)),
             CreateItem("flash", "Флешка", config.Flash, CsTeam.Terrorist, player => player.GiveNamedItem(CsItem.Flashbang)),
             CreateItem("speed", "Скорость на 10 секунд", config.Speed, CsTeam.Terrorist, ApplySpeed),
-            CreateItem("gravity", "Гравитация на 10 секунд", config.Gravity, CsTeam.Terrorist, ApplyGravity)
+            CreateItem("gravity", "Гравитация на 10 секунд", config.Gravity, CsTeam.Terrorist, ApplyGravity),
+            CreateItem("double-jump", "Двойной прыжок на 7 секунд", config.DoubleJump, CsTeam.Terrorist, ApplyDoubleJump),
+            CreateItem("bhop-7s", "Bhop на 7 секунд", config.Bhop, CsTeam.Terrorist, ApplyBhop),
+            CreateItem("small-model", "Уменьшенная модель на 5 секунд", config.SmallModel, CsTeam.Terrorist, ApplySmallModel),
+            CreateItem("guard-disguise", "Костюм охранника на 15 секунд", config.GuardDisguise, CsTeam.Terrorist, ApplyGuardDisguise)
         ];
 
         return items.OfType<ShopItem>().ToArray();
@@ -642,6 +735,164 @@ internal sealed class ShopService : IShopApi
         Utilities.SetStateChanged(pawn, "CBaseEntity", "m_flGravityScale");
     }
 
+    private void ApplyDoubleJump(CCSPlayerController player)
+    {
+        EnsureAlive(player);
+        var steamId = player.GetSteamId64() ?? throw new InvalidOperationException("SteamID is unavailable.");
+        _doubleJumpEffects[steamId] = DateTime.UtcNow.AddSeconds(7);
+        _doubleJumpUsed[steamId] = false;
+        _jumpWasPressed[steamId] = player.Buttons.HasFlag(PlayerButtons.Jump);
+    }
+
+    private void ApplyBhop(CCSPlayerController player)
+    {
+        EnsureAlive(player);
+        var steamId = player.GetSteamId64() ?? throw new InvalidOperationException("SteamID is unavailable.");
+        _bhopEffects[steamId] = DateTime.UtcNow.AddSeconds(7);
+    }
+
+    private void ApplySmallModel(CCSPlayerController player)
+    {
+        EnsureAlive(player);
+        var steamId = player.GetSteamId64() ?? throw new InvalidOperationException("SteamID is unavailable.");
+        var pawn = player.PlayerPawn.Value!;
+        var node = pawn.CBodyComponent?.SceneNode
+                   ?? throw new InvalidOperationException("Player scene node is unavailable.");
+
+        var version = Interlocked.Increment(ref _effectVersion);
+        var originalScale = _smallModelEffects.TryGetValue(steamId, out var previous)
+            ? previous.OriginalScale
+            : node.Scale;
+
+        _smallModelEffects[steamId] = new ModelScaleEffectState(version, originalScale, SmallModelScale);
+        node.Scale = SmallModelScale;
+        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_CBodyComponent");
+
+        _plugin.AddTimer(
+            5.0f,
+            () => FinishSmallModel(player, steamId, version),
+            TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void FinishSmallModel(CCSPlayerController player, ulong steamId, long version)
+    {
+        if (!_smallModelEffects.TryGetValue(steamId, out var effect) || effect.Version != version)
+            return;
+
+        _smallModelEffects.Remove(steamId);
+
+        if (!player.IsUsable() ||
+            !player.PawnIsAlive ||
+            player.GetSteamId64() != steamId ||
+            player.PlayerPawn.Value is not { IsValid: true } pawn ||
+            pawn.CBodyComponent?.SceneNode is not { } node)
+        {
+            return;
+        }
+
+        if (Math.Abs(node.Scale - effect.AppliedScale) > FloatTolerance)
+            return;
+
+        node.Scale = effect.OriginalScale;
+        Utilities.SetStateChanged(pawn, "CBaseEntity", "m_CBodyComponent");
+    }
+
+    private void ApplyGuardDisguise(CCSPlayerController player)
+    {
+        EnsureAlive(player);
+        var steamId = player.GetSteamId64() ?? throw new InvalidOperationException("SteamID is unavailable.");
+        var pawn = player.PlayerPawn.Value!;
+
+        var originalModel =
+            _guardDisguiseEffects.TryGetValue(steamId, out var previous)
+                ? previous.OriginalModel
+                : pawn.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState?.ModelName;
+
+        if (string.IsNullOrWhiteSpace(originalModel))
+            throw new InvalidOperationException("Current player model is unavailable.");
+
+        var version = Interlocked.Increment(ref _effectVersion);
+        _guardDisguiseEffects[steamId] = new ModelEffectState(version, originalModel, GuardModel);
+
+        pawn.SetModel(GuardModel);
+
+        _plugin.AddTimer(
+            15.0f,
+            () => FinishGuardDisguise(player, steamId, version),
+            TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void FinishGuardDisguise(CCSPlayerController player, ulong steamId, long version)
+    {
+        if (!_guardDisguiseEffects.TryGetValue(steamId, out var effect) || effect.Version != version)
+            return;
+
+        _guardDisguiseEffects.Remove(steamId);
+
+        if (!player.IsUsable() ||
+            !player.PawnIsAlive ||
+            player.GetSteamId64() != steamId ||
+            player.PlayerPawn.Value is not { IsValid: true } pawn)
+        {
+            return;
+        }
+
+        var currentModel =
+            pawn.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState?.ModelName;
+
+        if (!string.Equals(currentModel, effect.AppliedModel, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        pawn.SetModel(effect.OriginalModel);
+    }
+
+    private void RestoreAllSmallModels()
+    {
+        foreach (var player in Utilities.GetPlayers().Where(player => player.IsUsable() && !player.IsBot))
+        {
+            var steamId = player.GetSteamId64();
+            if (steamId is null ||
+                !_smallModelEffects.TryGetValue(steamId.Value, out var effect) ||
+                player.PlayerPawn.Value is not { IsValid: true } pawn ||
+                pawn.CBodyComponent?.SceneNode is not { } node)
+            {
+                continue;
+            }
+
+            if (Math.Abs(node.Scale - effect.AppliedScale) <= FloatTolerance)
+            {
+                node.Scale = effect.OriginalScale;
+                Utilities.SetStateChanged(pawn, "CBaseEntity", "m_CBodyComponent");
+            }
+        }
+    }
+
+    private void RestoreAllGuardDisguises()
+    {
+        foreach (var player in Utilities.GetPlayers().Where(player => player.IsUsable() && !player.IsBot))
+        {
+            var steamId = player.GetSteamId64();
+            if (steamId is null ||
+                !_guardDisguiseEffects.TryGetValue(steamId.Value, out var effect) ||
+                player.PlayerPawn.Value is not { IsValid: true } pawn)
+            {
+                continue;
+            }
+
+            var currentModel =
+                pawn.CBodyComponent?.SceneNode?.GetSkeletonInstance()?.ModelState?.ModelName;
+
+            if (string.Equals(currentModel, effect.AppliedModel, StringComparison.OrdinalIgnoreCase))
+                pawn.SetModel(effect.OriginalModel);
+        }
+    }
+
+    private static void EnsureAlive(CCSPlayerController player)
+    {
+        if (!player.IsUsable() || !player.PawnIsAlive)
+            throw new InvalidOperationException("Player is not alive.");
+    }
+
     private ShopConfig LoadConfig()
     {
         return ShopConfig.LoadOrCreate(
@@ -668,4 +919,6 @@ internal sealed class ShopService : IShopApi
     }
 
     private sealed record TimedEffectState(long Version, float OriginalValue, float AppliedValue);
+    private sealed record ModelScaleEffectState(long Version, float OriginalScale, float AppliedScale);
+    private sealed record ModelEffectState(long Version, string OriginalModel, string AppliedModel);
 }
