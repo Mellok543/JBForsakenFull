@@ -49,4 +49,28 @@ internal sealed class ShopItemsConfig
         Cost = 45,
         RoundLimit = 1
     };
+
+    public ShopItemConfig DoubleJump { get; set; } = new()
+    {
+        Cost = 55,
+        RoundLimit = 1
+    };
+
+    public ShopItemConfig Bhop { get; set; } = new()
+    {
+        Cost = 60,
+        RoundLimit = 1
+    };
+
+    public ShopItemConfig SmallModel { get; set; } = new()
+    {
+        Cost = 50,
+        RoundLimit = 1
+    };
+
+    public ShopItemConfig GuardDisguise { get; set; } = new()
+    {
+        Cost = 65,
+        RoundLimit = 1
+    };
 }
