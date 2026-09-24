@@ -2,6 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
 using JBF.Warden.Api;
@@ -11,8 +12,12 @@ namespace JBF.Warden;
 
 public sealed class JBFWarden : BasePlugin
 {
+    private const float CommanderSelectionSeconds = 15.0f;
+
     private readonly WardenService _wardenService = new();
     private readonly IWardenApi _api;
+    private readonly HashSet<int> _commanderPromptSlots = [];
+    private int _roundSelectionGeneration;
 
     public JBFWarden()
     {
@@ -20,7 +25,7 @@ public sealed class JBFWarden : BasePlugin
     }
 
     public override string ModuleName => "JBF Warden";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.4.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -44,6 +49,7 @@ public sealed class JBFWarden : BasePlugin
         }
 
         command.ReplyToCommand(JailbreakChat.Format("Вы командир."));
+        FinishCommanderSelection();
 
         var commanderMenu = CommanderMenuCapability.Api.GetOptional();
         if (commanderMenu is null)
@@ -72,12 +78,29 @@ public sealed class JBFWarden : BasePlugin
     public HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
     {
         _wardenService.Reset();
+
+        var generation = ++_roundSelectionGeneration;
+        _commanderPromptSlots.Clear();
+
+        // Give CS2 a short moment to finish spawning players before opening the prompt.
+        AddTimer(
+            0.5f,
+            () => ShowCommanderPrompt(generation),
+            TimerFlags.STOP_ON_MAPCHANGE);
+
+        AddTimer(
+            CommanderSelectionSeconds,
+            () => AutoSelectCommander(generation),
+            TimerFlags.STOP_ON_MAPCHANGE);
+
         return HookResult.Continue;
     }
 
     [GameEventHandler]
     public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
+        _roundSelectionGeneration++;
+        CloseCommanderPrompts();
         _wardenService.Reset();
         return HookResult.Continue;
     }
@@ -94,6 +117,145 @@ public sealed class JBFWarden : BasePlugin
         }
 
         return HookResult.Continue;
+    }
+
+    private void ShowCommanderPrompt(int generation)
+    {
+        if (generation != _roundSelectionGeneration || _wardenService.Warden is not null)
+            return;
+
+        var jailbreakApi = JailbreakCapability.Api.GetOptional();
+        if (jailbreakApi?.IsRoundActive != true)
+            return;
+
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true ||
+            LrCapability.Api.GetOptional()?.IsActive == true)
+            return;
+
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null)
+            return;
+
+        foreach (var player in CounterStrikeSharp.API.Utilities.GetPlayers())
+        {
+            if (!IsEligibleCommander(player))
+                continue;
+
+            _commanderPromptSlots.Add(player.Slot);
+
+            menu.Open(
+                player,
+                "ЖЕЛАЕТЕ СТАТЬ КМД?",
+                new[]
+                {
+                    new JailbreakMenuOption("Да", selected => TryTakeCommanderFromPrompt(selected, generation)),
+                    new JailbreakMenuOption("Нет", selected =>
+                    {
+                        _commanderPromptSlots.Remove(selected.Slot);
+                        MenuCapability.Api.GetOptional()?.Close(selected);
+                    })
+                });
+        }
+    }
+
+    private void TryTakeCommanderFromPrompt(CCSPlayerController player, int generation)
+    {
+        _commanderPromptSlots.Remove(player.Slot);
+
+        if (generation != _roundSelectionGeneration || !IsEligibleCommander(player))
+            return;
+
+        if (_wardenService.Warden is not null)
+        {
+            MenuCapability.Api.GetOptional()?.Close(player);
+            UiCapability.Api.GetOptional()?.Notify(
+                player,
+                "Командир уже выбран.",
+                UiNotificationType.Warning,
+                3.0f);
+            return;
+        }
+
+        if (!_wardenService.TryClaim(player))
+            return;
+
+        FinishCommanderSelection();
+        CommanderMenuCapability.Api.GetOptional()?.Open(player);
+    }
+
+    private void AutoSelectCommander(int generation)
+    {
+        if (generation != _roundSelectionGeneration)
+            return;
+
+        if (_wardenService.Warden is not null)
+        {
+            CloseCommanderPrompts();
+            return;
+        }
+
+        var jailbreakApi = JailbreakCapability.Api.GetOptional();
+        if (jailbreakApi?.IsRoundActive != true ||
+            SpecialDaysCapability.Api.GetOptional()?.IsActive == true ||
+            LrCapability.Api.GetOptional()?.IsActive == true)
+        {
+            CloseCommanderPrompts();
+            return;
+        }
+
+        var candidates = CounterStrikeSharp.API.Utilities.GetPlayers()
+            .Where(IsEligibleCommander)
+            .ToArray();
+
+        CloseCommanderPrompts();
+
+        if (candidates.Length == 0)
+            return;
+
+        var selected = candidates[Random.Shared.Next(candidates.Length)];
+        if (!_wardenService.TryClaim(selected))
+            return;
+
+        UiCapability.Api.GetOptional()?.Notify(
+            selected,
+            "Вы автоматически выбраны командиром.",
+            UiNotificationType.Important,
+            4.0f);
+
+        CommanderMenuCapability.Api.GetOptional()?.Open(selected);
+    }
+
+    private void FinishCommanderSelection()
+    {
+        _roundSelectionGeneration++;
+        CloseCommanderPrompts();
+    }
+
+    private void CloseCommanderPrompts()
+    {
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is not null)
+        {
+            foreach (var slot in _commanderPromptSlots.ToArray())
+            {
+                var player = CounterStrikeSharp.API.Utilities.GetPlayerFromSlot(slot);
+                if (player is { IsValid: true } && menu.IsOpen(player))
+                    menu.Close(player);
+            }
+        }
+
+        _commanderPromptSlots.Clear();
+    }
+
+    private static bool IsEligibleCommander(CCSPlayerController? player)
+    {
+        return player is
+        {
+            IsValid: true,
+            IsBot: false,
+            PawnIsAlive: true,
+            Team: CsTeam.CounterTerrorist
+        };
     }
 
     private bool CanBecomeWarden(CCSPlayerController? player, CommandInfo command)
@@ -134,9 +296,9 @@ public sealed class JBFWarden : BasePlugin
 
     private void OnClientDisconnect(int playerSlot)
     {
+        _commanderPromptSlots.Remove(playerSlot);
+
         if (_wardenService.Warden?.Slot == playerSlot)
-        {
             _wardenService.Reset();
-        }
     }
 }
