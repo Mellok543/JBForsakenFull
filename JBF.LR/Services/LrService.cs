@@ -10,7 +10,7 @@ namespace JBF.LR.Services;
 internal sealed class LrService : ILrApi
 {
     private static readonly TimeSpan MaintenanceInterval = TimeSpan.FromMilliseconds(250);
-    private static readonly TimeSpan MatchStartProtection = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan MatchStartCountdown = TimeSpan.FromSeconds(10);
     private readonly Dictionary<string, RegisteredLrGame> _games = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _preLrProtectedSlots = [];
     private readonly LrVipSuppressionService _vipSuppression = new();
@@ -18,6 +18,9 @@ internal sealed class LrService : ILrApi
     private CBeam? _opponentLink;
     private DateTime _preLrProtectionUntil;
     private DateTime _nextMaintenance;
+    private DateTime _matchCountdownUntil;
+    private int _lastCountdownSecond = -1;
+    private bool _activeMatchStarted;
     private bool _twoInmatesPhaseAnnounced;
     private bool _lastInmateMenuOpened;
 
@@ -113,10 +116,14 @@ internal sealed class LrService : ILrApi
     }
 
     public HookResult HandleBulletImpact(EventBulletImpact @event, GameEventInfo info) =>
-        _activeMatch?.Game.OnBulletImpact(@event, info) ?? HookResult.Continue;
+        _activeMatch is not null && _activeMatchStarted
+            ? _activeMatch.Game.OnBulletImpact(@event, info)
+            : HookResult.Continue;
 
     public HookResult HandleWeaponZoom(EventWeaponZoom @event, GameEventInfo info) =>
-        _activeMatch?.Game.OnWeaponZoom(@event, info) ?? HookResult.Continue;
+        _activeMatch is not null && _activeMatchStarted
+            ? _activeMatch.Game.OnWeaponZoom(@event, info)
+            : HookResult.Continue;
 
     public void HandlePlayerDeath(CCSPlayerController? victim)
     {
@@ -154,11 +161,19 @@ internal sealed class LrService : ILrApi
         EvaluateLrPhase();
 
         if (_activeMatch is null) return;
+
         UpdateOpponentLink();
-        EnforceLrInventory(_activeMatch.Inmate);
-        EnforceLrInventory(_activeMatch.Guardian);
         PlayerEffectsCapability.Api.GetOptional()?.Clear(_activeMatch.Inmate);
         PlayerEffectsCapability.Api.GetOptional()?.Clear(_activeMatch.Guardian);
+
+        if (!_activeMatchStarted)
+        {
+            TickMatchCountdown(now);
+            return;
+        }
+
+        EnforceLrInventory(_activeMatch.Inmate);
+        EnforceLrInventory(_activeMatch.Guardian);
     }
 
     public void ResetRound()
@@ -168,6 +183,9 @@ internal sealed class LrService : ILrApi
         _twoInmatesPhaseAnnounced = false;
         _lastInmateMenuOpened = false;
         _preLrProtectionUntil = default;
+        _matchCountdownUntil = default;
+        _lastCountdownSecond = -1;
+        _activeMatchStarted = false;
         RemoveOpponentLink();
     }
 
@@ -312,10 +330,15 @@ internal sealed class LrService : ILrApi
         if (!CanStartMatch(inmate, guardian)) return;
 
         _activeMatch = new ActiveLrMatch(game, inmate, guardian);
+        _activeMatchStarted = false;
+        _matchCountdownUntil = DateTime.UtcNow + MatchStartCountdown;
+        _lastCountdownSecond = -1;
+
         _preLrProtectedSlots.Clear();
         _preLrProtectedSlots.Add(inmate.Slot);
         _preLrProtectedSlots.Add(guardian.Slot);
-        _preLrProtectionUntil = DateTime.UtcNow + MatchStartProtection;
+        _preLrProtectionUntil = _matchCountdownUntil;
+
         MenuCapability.Api.GetOptional()?.Close(inmate);
 
         var wardenApi = WardenCapability.Api.GetOptional();
@@ -330,10 +353,87 @@ internal sealed class LrService : ILrApi
         CreateOpponentLink();
 
         foreach (var player in Utilities.GetPlayers().Where(p => p.IsUsable() && !p.IsBot))
-            UiCapability.Api.GetOptional()?.Announce(player, game.Name, $"{inmate.PlayerName}  VS  {guardian.PlayerName}", UiNotificationType.Important, 4.0f);
+            UiCapability.Api.GetOptional()?.Announce(
+                player,
+                game.Name,
+                $"{inmate.PlayerName}  VS  {guardian.PlayerName} • старт через 10 сек.",
+                UiNotificationType.Important,
+                2.0f);
 
-        Server.PrintToChatAll(JailbreakChat.Format($"LR начался: {game.Name} | T: {inmate.PlayerName} vs CT: {guardian.PlayerName}. Защита обоих игроков: 3 сек."));
-        game.Start(new LrMatchContext(inmate, guardian, winner => EndActive(winner, announce: true)));
+        Server.PrintToChatAll(JailbreakChat.Format(
+            $"LR выбран: {game.Name} | T: {inmate.PlayerName} vs CT: {guardian.PlayerName}. Старт через 10 секунд — разбегитесь."));
+    }
+
+    private void TickMatchCountdown(DateTime now)
+    {
+        if (_activeMatch is null || _activeMatchStarted)
+            return;
+
+        if (!_activeMatch.Inmate.IsUsable() || !_activeMatch.Inmate.PawnIsAlive ||
+            !_activeMatch.Guardian.IsUsable() || !_activeMatch.Guardian.PawnIsAlive)
+        {
+            EndActive(winner: null, announce: false);
+            return;
+        }
+
+        var remaining = (int)Math.Ceiling((_matchCountdownUntil - now).TotalSeconds);
+        if (remaining <= 0)
+        {
+            BeginActiveMatch();
+            return;
+        }
+
+        if (remaining == _lastCountdownSecond)
+            return;
+
+        _lastCountdownSecond = remaining;
+
+        foreach (var player in Utilities.GetPlayers().Where(p => p.IsUsable() && !p.IsBot))
+        {
+            UiCapability.Api.GetOptional()?.Announce(
+                player,
+                _activeMatch.Game.Name,
+                $"СТАРТ ЧЕРЕЗ {remaining}",
+                remaining <= 3 ? UiNotificationType.Warning : UiNotificationType.Important,
+                1.1f);
+        }
+    }
+
+    private void BeginActiveMatch()
+    {
+        if (_activeMatch is null || _activeMatchStarted)
+            return;
+
+        if (!_activeMatch.Inmate.IsUsable() || !_activeMatch.Inmate.PawnIsAlive ||
+            !_activeMatch.Guardian.IsUsable() || !_activeMatch.Guardian.PawnIsAlive)
+        {
+            EndActive(winner: null, announce: false);
+            return;
+        }
+
+        _activeMatchStarted = true;
+        _matchCountdownUntil = default;
+        _lastCountdownSecond = -1;
+        _preLrProtectedSlots.Clear();
+        _preLrProtectionUntil = default;
+
+        var match = _activeMatch;
+
+        foreach (var player in Utilities.GetPlayers().Where(p => p.IsUsable() && !p.IsBot))
+            UiCapability.Api.GetOptional()?.Announce(
+                player,
+                match.Game.Name,
+                "НАЧАЛИ!",
+                UiNotificationType.Success,
+                2.0f);
+
+        Server.PrintToChatAll(JailbreakChat.Format(
+            $"LR начался: {match.Game.Name} | T: {match.Inmate.PlayerName} vs CT: {match.Guardian.PlayerName}."));
+
+        match.Game.Start(new LrMatchContext(
+            match.Inmate,
+            match.Guardian,
+            winner => EndActive(winner, announce: true)));
     }
 
     private bool CanStartMatch(CCSPlayerController inmate, CCSPlayerController guardian)
@@ -423,9 +523,17 @@ internal sealed class LrService : ILrApi
         if (_activeMatch is null) return;
 
         var match = _activeMatch;
+        var wasStarted = _activeMatchStarted;
         _activeMatch = null;
+        _activeMatchStarted = false;
+        _matchCountdownUntil = default;
+        _lastCountdownSecond = -1;
+        _preLrProtectedSlots.Clear();
+        _preLrProtectionUntil = default;
         RemoveOpponentLink();
-        match.Game.Stop();
+
+        if (wasStarted)
+            match.Game.Stop();
         _vipSuppression.Restore(match.Inmate);
         _vipSuppression.Restore(match.Guardian);
 
