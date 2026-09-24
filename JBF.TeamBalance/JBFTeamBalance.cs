@@ -23,7 +23,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private bool _roundActive;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.3.1";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -388,9 +388,24 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             return;
 
         var maxCt = GetMaxCt(active.Length);
+        var guards = active
+            .Where(p => p.Team == CsTeam.CounterTerrorist)
+            .ToList();
 
-        // Existing CTs are never demoted by the plugin. The ratio is used only
-        // to decide whether a queued T may be promoted to CT.
+        if (guards.Count > maxCt)
+        {
+            var excess = guards.Count - maxCt;
+
+            foreach (var guard in guards
+                         .OrderByDescending(p => _guardJoinedAt.GetValueOrDefault(p.SteamID, DateTime.MinValue))
+                         .Take(excess))
+            {
+                guard.SwitchTeam(CsTeam.Terrorist);
+                _guardJoinedAt.Remove(guard.SteamID);
+                guard.PrintToChat(JailbreakChat.Format($"Баланс команд: ты переведён за T. Лимит CT: {maxCt}."));
+            }
+        }
+
         while (_queue.Count > 0)
         {
             active = Utilities.GetPlayers()
