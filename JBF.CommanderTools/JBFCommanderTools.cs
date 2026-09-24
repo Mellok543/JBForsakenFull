@@ -34,13 +34,13 @@ public sealed class JBFCommanderTools : BasePlugin
             new RespawnTool(playerSelection),
             new ColorDivisionTool(_state),
             new FreeDayTool(_state),
-            new InmateCountTool(),
+            new InmateCountTool(this),
             new TTeamMuteTool(_muteService)
         ];
     }
 
     public override string ModuleName => "JBF Commander Tools";
-    public override string ModuleVersion => "1.2.0";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
