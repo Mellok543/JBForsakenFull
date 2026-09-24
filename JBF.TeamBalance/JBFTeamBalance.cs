@@ -2,6 +2,7 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
 
@@ -21,7 +22,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private bool _roundActive;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.2.1";
+    public override string ModuleVersion => "1.2.2";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -464,22 +465,39 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
     private void OnClientPutInServer(int slot)
     {
+        // With Casual mode CS2 may assign the team a few frames after
+        // OnClientPutInServer. A single NextFrame check can therefore run too early.
+        // Re-check only the automatic CT assignment; manual T/Spectator choices are
+        // left untouched.
+        Server.NextFrame(() => EnsureJoiningPlayerNotCt(slot, tryRespawn: false));
+
+        AddTimer(
+            0.5f,
+            () => EnsureJoiningPlayerNotCt(slot, tryRespawn: false),
+            TimerFlags.STOP_ON_MAPCHANGE);
+
+        AddTimer(
+            1.5f,
+            () => EnsureJoiningPlayerNotCt(slot, tryRespawn: true),
+            TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void EnsureJoiningPlayerNotCt(int slot, bool tryRespawn)
+    {
         var player = Utilities.GetPlayerFromSlot(slot);
         if (!IsUsable(player))
             return;
 
-        Server.NextFrame(() =>
+        if (player!.Team == CsTeam.CounterTerrorist)
         {
-            if (!IsUsable(player))
-                return;
+            // This is not an approved queue transfer, so never allow the
+            // Casual auto-assignment to leave a newly connected player in CT.
+            _approvedCtSwitches.Remove(player.SteamID);
+            player.SwitchTeam(CsTeam.Terrorist);
+        }
 
-            // CS2 can initially place a joining player into CT. Correct only that
-            // automatic CT assignment. Do not override a manual T/Spectator choice.
-            if (player!.Team == CsTeam.CounterTerrorist)
-                player.SwitchTeam(CsTeam.Terrorist);
-
+        if (tryRespawn)
             TryRespawnLateJoin(player);
-        });
     }
 
     private void TryRespawnLateJoin(CCSPlayerController player)
