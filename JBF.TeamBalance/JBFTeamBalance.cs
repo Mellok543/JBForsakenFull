@@ -15,6 +15,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private readonly Queue<ulong> _queue = new();
     private readonly Dictionary<ulong, DateTime> _guardJoinedAt = [];
     private readonly HashSet<ulong> _approvedCtSwitches = [];
+    private readonly Dictionary<int, DateTime> _joiningPlayers = [];
 
     private TeamBalanceDatabase? _database;
     private DateTime _nextCtTestHudUpdate;
@@ -22,7 +23,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private bool _roundActive;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.2.2";
+    public override string ModuleVersion => "1.3.0";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -45,7 +46,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         AddCommand("css_ct", "Пройти тест / встать в очередь за CT", OnCtCommand);
         RegisterListener<Listeners.OnClientPutInServer>(OnClientPutInServer);
         RegisterListener<Listeners.OnClientDisconnect>(OnClientDisconnect);
-        RegisterListener<Listeners.OnTick>(UpdateCtTestHud);
+        RegisterListener<Listeners.OnTick>(OnTick);
     }
 
     public override void Unload(bool hotReload)
@@ -58,6 +59,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         _queue.Clear();
         _guardJoinedAt.Clear();
         _approvedCtSwitches.Clear();
+        _joiningPlayers.Clear();
     }
 
     private async Task InitializeDatabaseAsync()
@@ -243,6 +245,12 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         AddToQueue(player);
     }
 
+    private void OnTick()
+    {
+        UpdateCtTestHud();
+        EnforceJoiningPlayersTeam();
+    }
+
     private void UpdateCtTestHud()
     {
         var now = DateTime.UtcNow;
@@ -380,24 +388,9 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             return;
 
         var maxCt = GetMaxCt(active.Length);
-        var guards = active
-            .Where(p => p.Team == CsTeam.CounterTerrorist)
-            .ToList();
 
-        if (guards.Count > maxCt)
-        {
-            var excess = guards.Count - maxCt;
-
-            foreach (var guard in guards
-                         .OrderByDescending(p => _guardJoinedAt.GetValueOrDefault(p.SteamID, DateTime.MinValue))
-                         .Take(excess))
-            {
-                guard.SwitchTeam(CsTeam.Terrorist);
-                _guardJoinedAt.Remove(guard.SteamID);
-                guard.PrintToChat(JailbreakChat.Format($"Баланс команд: ты переведён за T. Лимит CT: {maxCt}."));
-            }
-        }
-
+        // Existing CTs are never demoted by the plugin. The ratio is used only
+        // to decide whether a queued T may be promoted to CT.
         while (_queue.Count > 0)
         {
             active = Utilities.GetPlayers()
@@ -465,21 +458,33 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
 
     private void OnClientPutInServer(int slot)
     {
-        // With Casual mode CS2 may assign the team a few frames after
-        // OnClientPutInServer. A single NextFrame check can therefore run too early.
-        // Re-check only the automatic CT assignment; manual T/Spectator choices are
-        // left untouched.
-        Server.NextFrame(() => EnsureJoiningPlayerNotCt(slot, tryRespawn: false));
+        // Casual can auto-assign a player after the initial connection callbacks.
+        // Keep a short protection window and force only unauthorized CT placement
+        // back to T during that window.
+        _joiningPlayers[slot] = DateTime.UtcNow.AddSeconds(10);
 
-        AddTimer(
-            0.5f,
-            () => EnsureJoiningPlayerNotCt(slot, tryRespawn: false),
-            TimerFlags.STOP_ON_MAPCHANGE);
+        Server.NextFrame(() => EnsureJoiningPlayerNotCt(slot, tryRespawn: false));
 
         AddTimer(
             1.5f,
             () => EnsureJoiningPlayerNotCt(slot, tryRespawn: true),
             TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void EnforceJoiningPlayersTeam()
+    {
+        var now = DateTime.UtcNow;
+
+        foreach (var pair in _joiningPlayers.ToArray())
+        {
+            if (now >= pair.Value)
+            {
+                _joiningPlayers.Remove(pair.Key);
+                continue;
+            }
+
+            EnsureJoiningPlayerNotCt(pair.Key, tryRespawn: false);
+        }
     }
 
     private void EnsureJoiningPlayerNotCt(int slot, bool tryRespawn)
@@ -532,6 +537,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
         if (player is null || player.SteamID == 0)
             return;
 
+        _joiningPlayers.Remove(slot);
         UiCapability.Api.GetOptional()?.ClearQuestion(player);
         _sessions.Remove(player.SteamID);
         _guardJoinedAt.Remove(player.SteamID);
