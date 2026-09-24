@@ -96,30 +96,53 @@ internal sealed class MapMarkerService
 
         _activePingCircle = null;
 
-        var inmates = Utilities.GetPlayers().Count(player =>
+        var aliveInmates = Utilities.GetPlayers()
+            .Where(player =>
+                player is { IsValid: true, IsBot: false } &&
+                player.PawnIsAlive &&
+                player.Team == CsTeam.Terrorist)
+            .ToArray();
+
+        var inside = new List<CCSPlayerController>();
+        var outside = new List<CCSPlayerController>();
+
+        foreach (var player in aliveInmates)
         {
-            if (player is not { IsValid: true, IsBot: false } ||
-                !player.PawnIsAlive ||
-                player.Team != CsTeam.Terrorist)
+            var origin = player.PlayerPawn.Value?.AbsOrigin;
+            if (origin is null)
             {
-                return false;
+                outside.Add(player);
+                continue;
             }
 
-            var origin = player.PlayerPawn.Value?.AbsOrigin;
-            if (origin is null ||
-                MathF.Abs(origin.Z - circle.Center.Z) > PingCircleVerticalTolerance)
-            {
-                return false;
-            }
+            var withinHeight =
+                MathF.Abs(origin.Z - circle.Center.Z) <= PingCircleVerticalTolerance;
 
             var dx = origin.X - circle.Center.X;
             var dy = origin.Y - circle.Center.Y;
-            return dx * dx + dy * dy <= PingCircleRadius * PingCircleRadius;
-        });
+            var withinRadius =
+                dx * dx + dy * dy <= PingCircleRadius * PingCircleRadius;
+
+            if (withinHeight && withinRadius)
+                inside.Add(player);
+            else
+                outside.Add(player);
+        }
 
         Server.PrintToChatAll(
             JailbreakChat.Format(
-                $"Красная метка исчезла. В круге зеков: {inmates}."));
+                $"Красная метка исчезла. В круге зеков: {inside.Count}/{aliveInmates.Length}."));
+
+        if (outside.Count == 0)
+        {
+            Server.PrintToChatAll(
+                JailbreakChat.Format("Все живые заключённые были внутри круга."));
+            return;
+        }
+
+        Server.PrintToChatAll(
+            JailbreakChat.Format(
+                $"Вне круга: {string.Join(", ", outside.Select(player => player.PlayerName))}."));
     }
 
     private sealed record ActivePingCircle(Vector Center, DateTime ExpiresAt);
