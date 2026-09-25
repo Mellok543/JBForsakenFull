@@ -14,7 +14,7 @@ public static class PlayersUtils
         ClearHtmlMessage(player);
         if (message == "") return;
         HtmlMessages.Add(player, message);
-        HtmlMessagesTimer.Add(player, AdminUtils.CoreInstance.AddTimer(time, () =>
+        HtmlMessagesTimer.Add(player, AdminModule.Api.Plugin.AddTimer(time, () =>
         {
             ClearHtmlMessage(player);
         }));
@@ -30,7 +30,7 @@ public static class PlayersUtils
     }
     public static void CloseMenu(this CCSPlayerController player)
     {
-        AdminUtils.CoreApi.CloseMenu(player);
+        AdminModule.Api.CloseMenu(player);
     }
     /// <summary>
     /// may cause errors
@@ -64,7 +64,21 @@ public static class PlayersUtils
     }
     public static CCSPlayerController? GetControllerByIp(string ip)
     {
-        return Utilities.GetPlayers().FirstOrDefault(x => x != null && x.IsValid && x.AuthorizedSteamID != null && x.Connected == PlayerConnectedState.Connected && x.GetIp() == ip);
+        return Utilities.GetPlayers().FirstOrDefault(x =>
+        {
+            if (x == null || !x.IsValid || x.AuthorizedSteamID == null || x.Connected != PlayerConnectedState.Connected)
+                return false;
+
+            var rawIp = x.IpAddress;
+            if (string.IsNullOrWhiteSpace(rawIp))
+                return false;
+
+            var playerIp = rawIp.Split(':')[0];
+            if (AdminModule.Api.Config.MirrorsIp.Contains(playerIp))
+                return false;
+
+            return string.Equals(playerIp, ip, StringComparison.OrdinalIgnoreCase);
+        });
     }
     public static List<CCSPlayerController> GetOnlinePlayers(bool includeBots = false)
     {
