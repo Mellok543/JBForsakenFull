@@ -10,13 +10,20 @@ namespace JBF.Shop.Services;
 
 internal sealed class ShopSocialService
 {
+    private const int GameCommissionPercent = 5;
+    private const int MinimumCustomStake = 10;
+    private const int MinimumRaffleAmount = 2500;
+    private const int MinimumPlayersForRaffle = 5;
+    private const float RaffleDurationSeconds = 600.0f;
+
     private static readonly int[] StakeOptions = [10, 25, 50, 100, 250, 500];
     private static readonly int[] TransferOptions = [10, 25, 50, 100, 250, 500, 1000];
-    private static readonly int[] RaffleOptions = [25, 50, 100, 250, 500, 1000];
+    private static readonly int[] RaffleOptions = [2500, 5000, 10000, 25000];
 
     private readonly BasePlugin _plugin;
     private readonly ShopService _shop;
     private readonly Dictionary<Guid, PendingChallenge> _challenges = [];
+    private readonly Dictionary<ulong, PendingCustomStake> _pendingCustomStakes = [];
     private ActiveRaffle? _raffle;
 
     public ShopSocialService(BasePlugin plugin, ShopService shop)
@@ -67,7 +74,7 @@ internal sealed class ShopSocialService
             $"Передать → {target.PlayerName}",
             TransferOptions.Select(amount =>
                 new JailbreakMenuOption(
-                    $"{amount} кредитов",
+                    $"{amount} кредитов + 5% комиссия",
                     player =>
                     {
                         if (!_shop.TryTransferCredits(player, target, amount, out var balance, out var error))
@@ -77,8 +84,9 @@ internal sealed class ShopSocialService
                             return;
                         }
 
+                        var fee = _shop.GetTransferFee(amount);
                         player.PrintToChat(JailbreakChat.Format(
-                            $"Вы передали {target.PlayerName} {amount} кредитов. Баланс: {balance}."));
+                            $"Вы передали {target.PlayerName} {amount} кредитов. Комиссия: {fee}. Баланс: {balance}."));
                         target.PrintToChat(JailbreakChat.Format(
                             $"{player.PlayerName} передал вам {amount} кредитов."));
                     }))
@@ -147,8 +155,62 @@ internal sealed class ShopSocialService
                     new JailbreakMenuOption(
                         $"{stake} кредитов",
                         p => CreateChallenge(p, target, game, stake)))
+                .Append(new JailbreakMenuOption(
+                    "Своя сумма",
+                    p => BeginCustomStakeInput(p, target, game)))
                 .Append(new JailbreakMenuOption("Назад", p => OpenGameTargets(p, game)))
                 .ToArray());
+    }
+
+    private void BeginCustomStakeInput(
+        CCSPlayerController challenger,
+        CCSPlayerController target,
+        CreditGameType game)
+    {
+        if (!challenger.IsUsable() || !target.IsUsable())
+            return;
+
+        _pendingCustomStakes[challenger.SteamID] = new PendingCustomStake(
+            target.SteamID,
+            target.PlayerName,
+            game,
+            DateTime.UtcNow.AddSeconds(30));
+
+        MenuCapability.Api.GetOptional()?.Close(challenger);
+        challenger.PrintToChat(JailbreakChat.Format(
+            $"Введите !ставка <сумма>. Минимум {MinimumCustomStake}. Комиссия игры: {GameCommissionPercent}%."));
+    }
+
+    public void HandleCustomStakeInput(CCSPlayerController player, int amount)
+    {
+        if (!_pendingCustomStakes.Remove(player.SteamID, out var pending))
+        {
+            player.PrintToChat(JailbreakChat.Format(
+                "Сначала выберите «Своя сумма» в меню игры."));
+            return;
+        }
+
+        if (pending.ExpiresAt <= DateTime.UtcNow)
+        {
+            player.PrintToChat(JailbreakChat.Format("Время ввода ставки истекло."));
+            return;
+        }
+
+        if (amount < MinimumCustomStake)
+        {
+            player.PrintToChat(JailbreakChat.Format(
+                $"Минимальная ставка: {MinimumCustomStake} кредитов."));
+            return;
+        }
+
+        var target = FindPlayer(pending.TargetSteamId);
+        if (!target.IsUsable())
+        {
+            player.PrintToChat(JailbreakChat.Format("Соперник уже недоступен."));
+            return;
+        }
+
+        CreateChallenge(player, target, pending.Game, amount);
     }
 
     private void CreateChallenge(
@@ -282,10 +344,12 @@ internal sealed class ShopSocialService
         var loser = winner.Slot == first.Slot ? second : first;
         var side = Random.Shared.Next(2) == 0 ? "ОРЁЛ" : "РЕШКА";
 
-        _shop.TryGiveCredits(winner, checked(stake * 2), out var winnerBalance);
+        var payout = CalculateGamePayout(stake);
+        var commission = checked(stake * 2) - payout;
+        _shop.TryGiveCredits(winner, payout, out var winnerBalance);
 
         Server.PrintToChatAll(JailbreakChat.Format(
-            $"Монетка: {side}. {winner.PlayerName} выиграл у {loser.PlayerName} {stake} кредитов."));
+            $"Монетка: {side}. {winner.PlayerName} победил {loser.PlayerName}. Выплата: {payout}, комиссия: {commission}."));
         winner.PrintToChat(JailbreakChat.Format($"Баланс после игры: {winnerBalance}."));
     }
 
@@ -376,11 +440,13 @@ internal sealed class ShopSocialService
 
         var winner = firstWins ? first : second;
         var loser = firstWins ? second : first;
-        _shop.TryGiveCredits(winner, checked(match.Stake * 2), out _);
+        var payout = CalculateGamePayout(match.Stake);
+        var commission = checked(match.Stake * 2) - payout;
+        _shop.TryGiveCredits(winner, payout, out _);
 
         Server.PrintToChatAll(JailbreakChat.Format(
             $"КМН: {winner.PlayerName} ({RpsName(firstWins ? match.FirstMove.Value : match.SecondMove.Value)}) " +
-            $"победил {loser.PlayerName} и выиграл {match.Stake} кредитов."));
+            $"победил {loser.PlayerName}. Выплата: {payout}, комиссия: {commission}."));
     }
 
     private void ResolvePoker(CCSPlayerController first, CCSPlayerController second, int stake)
@@ -409,9 +475,12 @@ internal sealed class ShopSocialService
         var loser = comparison > 0 ? second : first;
         var winningScore = comparison > 0 ? firstScore : secondScore;
 
-        _shop.TryGiveCredits(winner, checked(stake * 2), out _);
+        var payout = CalculateGamePayout(stake);
+        var commission = checked(stake * 2) - payout;
+        _shop.TryGiveCredits(winner, payout, out _);
         Server.PrintToChatAll(JailbreakChat.Format(
-            $"Покер: {winner.PlayerName} победил {loser.PlayerName} ({winningScore.Name}) и выиграл {stake} кредитов."));
+            $"Покер: {winner.PlayerName} победил {loser.PlayerName} ({winningScore.Name}). " +
+            $"Выплата: {payout}, комиссия: {commission}."));
     }
 
     public void OpenRaffle(CCSPlayerController player)
@@ -422,13 +491,15 @@ internal sealed class ShopSocialService
         if (_raffle is { } raffle)
         {
             var remaining = Math.Max(0, (int)Math.Ceiling((raffle.EndsAt - DateTime.UtcNow).TotalSeconds));
+            var remainingMinutes = remaining / 60;
+            var remainingSeconds = remaining % 60;
             menu.Open(
                 player,
                 $"Розыгрыш | {raffle.Amount} кредитов",
                 [
                     new JailbreakMenuOption($"Создатель: {raffle.CreatorName}", _ => { }, true),
                     new JailbreakMenuOption($"Участников: {raffle.Participants.Count}", _ => { }, true),
-                    new JailbreakMenuOption($"До итогов: {remaining} сек.", _ => { }, true),
+                    new JailbreakMenuOption($"До итогов: {remainingMinutes}:{remainingSeconds:00}", _ => { }, true),
                     new JailbreakMenuOption(
                         player.SteamID == raffle.CreatorSteamId
                             ? "Вы создатель розыгрыша"
@@ -449,8 +520,23 @@ internal sealed class ShopSocialService
                     new JailbreakMenuOption(
                         $"Разыграть {amount} кредитов",
                         p => CreateRaffle(p, amount)))
+                .Append(new JailbreakMenuOption(
+                    "Своя сумма",
+                    BeginCustomRaffleInput))
                 .Append(new JailbreakMenuOption("Назад", _shop.OpenMainMenu))
                 .ToArray());
+    }
+
+    private void BeginCustomRaffleInput(CCSPlayerController creator)
+    {
+        MenuCapability.Api.GetOptional()?.Close(creator);
+        creator.PrintToChat(JailbreakChat.Format(
+            $"Введите !розыгрыш <сумма>. Минимальная сумма: {MinimumRaffleAmount} кредитов."));
+    }
+
+    public void HandleCustomRaffleInput(CCSPlayerController creator, int amount)
+    {
+        CreateRaffle(creator, amount);
     }
 
     private void CreateRaffle(CCSPlayerController creator, int amount)
@@ -458,6 +544,23 @@ internal sealed class ShopSocialService
         if (_raffle is not null)
         {
             OpenRaffle(creator);
+            return;
+        }
+
+        if (amount < MinimumRaffleAmount)
+        {
+            creator.PrintToChat(JailbreakChat.Format(
+                $"Минимальная сумма розыгрыша: {MinimumRaffleAmount} кредитов."));
+            return;
+        }
+
+        var onlinePlayers = Utilities.GetPlayers()
+            .Count(p => p.IsValid && !p.IsBot);
+
+        if (onlinePlayers < MinimumPlayersForRaffle)
+        {
+            creator.PrintToChat(JailbreakChat.Format(
+                $"Для розыгрыша нужно минимум {MinimumPlayersForRaffle} игроков на сервере. Сейчас: {onlinePlayers}."));
             return;
         }
 
@@ -471,7 +574,7 @@ internal sealed class ShopSocialService
             creator.SteamID,
             creator.PlayerName,
             amount,
-            DateTime.UtcNow.AddSeconds(30),
+            DateTime.UtcNow.AddSeconds(RaffleDurationSeconds),
             new HashSet<ulong>());
 
         _raffle = raffle;
@@ -481,7 +584,7 @@ internal sealed class ShopSocialService
 
         creator.PrintToChat(JailbreakChat.Format($"Баланс после создания: {balance}."));
 
-        _plugin.AddTimer(30.0f, FinishRaffle, TimerFlags.STOP_ON_MAPCHANGE);
+        _plugin.AddTimer(RaffleDurationSeconds, FinishRaffle);
     }
 
     private void JoinRaffle(CCSPlayerController player)
@@ -555,6 +658,8 @@ internal sealed class ShopSocialService
 
     public void ResetRound()
     {
+        _pendingCustomStakes.Clear();
+
         foreach (var challenge in _challenges.Values.ToArray())
         {
             _challenges.Remove(challenge.Id);
@@ -572,6 +677,7 @@ internal sealed class ShopSocialService
 
         _raffle = null;
         _challenges.Clear();
+        _pendingCustomStakes.Clear();
 
         foreach (var match in _rpsMatches.Values)
         {
@@ -582,6 +688,12 @@ internal sealed class ShopSocialService
         }
 
         _rpsMatches.Clear();
+    }
+
+    private static int CalculateGamePayout(int stake)
+    {
+        var pot = checked(stake * 2);
+        return (int)Math.Floor(pot * 0.95m);
     }
 
     private static CCSPlayerController? FindPlayer(ulong steamId) =>
@@ -608,6 +720,12 @@ internal sealed class ShopSocialService
 
     private enum CreditGameType { RockPaperScissors, CoinFlip, Poker }
     private enum RpsMove { Rock, Scissors, Paper }
+
+    private sealed record PendingCustomStake(
+        ulong TargetSteamId,
+        string TargetName,
+        CreditGameType Game,
+        DateTime ExpiresAt);
 
     private sealed record PendingChallenge(
         Guid Id,
