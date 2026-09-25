@@ -275,8 +275,8 @@ internal sealed class ShopService : IShopApi
     internal void HandleCustomStakeInput(CCSPlayerController player, int amount)
         => _social.HandleCustomStakeInput(player, amount);
 
-    internal void HandleCustomRaffleInput(CCSPlayerController player, int amount)
-        => _social.HandleCustomRaffleInput(player, amount);
+    internal bool TryHandleBangAmount(CCSPlayerController player, int amount)
+        => _social.TryHandleBangAmount(player, amount);
 
     internal bool TryTakeCredits(CCSPlayerController player, int amount, out int newBalance)
     {
