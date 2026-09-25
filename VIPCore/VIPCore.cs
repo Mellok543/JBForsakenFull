@@ -9,6 +9,7 @@ using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Timers;
 using Microsoft.Extensions.Logging;
+using JBF.Api;
 using MySqlConnector;
 using VipCoreApi;
 using static VipCoreApi.IVipCoreApi;
@@ -19,7 +20,7 @@ public class VipCore : BasePlugin
 {
     public override string ModuleAuthor => "thesamefabius";
     public override string ModuleName => "[VIP] Core";
-    public override string ModuleVersion => "v1.3.3";
+    public override string ModuleVersion => "v1.4.0-jbf";
 
     public Config Config { get; set; } = null!;
     public CoreConfig CoreConfig { get; set; } = null!;
@@ -384,77 +385,114 @@ public class VipCore : BasePlugin
             return;
         }
 
-        if (!Users.TryGetValue(player.SteamID, out var user)) return;
+        if (!Users.TryGetValue(player.SteamID, out var user))
+            return;
 
-        var menu = VipApi.CreateMenu(Localizer["menu.Title", user.group]);
-        if (Config.Groups.TryGetValue(user.group, out var vipGroup))
+        var menuApi = MenuCapability.Api.GetOptional();
+        if (menuApi is null)
         {
-            var sortedFeatures = Features.Where(setting => setting.Value.FeatureType is not FeatureType.Hide)
-                .OrderBy(setting => Array.IndexOf(_sortedItems, setting.Key))
-                .ThenBy(setting => setting.Key);
-
-            foreach (var (key, feature) in sortedFeatures)
-            {
-                if (!vipGroup.Values.TryGetValue(key, out var featureValue)) continue;
-                if (string.IsNullOrEmpty(featureValue.ToString())) continue;
-                if (!user.FeatureState.TryGetValue(key, out var featureState)) continue;
-
-                var value = string.Empty;
-                if (feature.FeatureType is FeatureType.Toggle)
-                {
-                    value = featureState switch
-                    {
-                        FeatureState.Enabled => $"{Localizer["chat.Enabled"]}",
-                        FeatureState.Disabled => $"{Localizer["chat.Disabled"]}",
-                        FeatureState.NoAccess => $"{Localizer["chat.NoAccess"]}",
-                        _ => throw new ArgumentOutOfRangeException()
-                    };
-                }
-
-                var featureType = feature.FeatureType;
-
-                menu.AddMenuOption(
-                    Localizer[key] + (featureType == FeatureType.Selectable
-                        ? string.Empty
-                        : $" [{value}]"),
-                    (controller, _) =>
-                    {
-                        var result = VipApi.PlayerUseFeature(player, key, featureState, featureType);
-
-                        if (result == HookResult.Handled || result == HookResult.Stop)
-                        {
-                            CreateMenu(player);
-                            return;
-                        }
-
-                        var returnState = featureState;
-                        if (featureType != FeatureType.Selectable)
-                        {
-                            returnState = featureState switch
-                            {
-                                FeatureState.Enabled => FeatureState.Disabled,
-                                FeatureState.Disabled => FeatureState.Enabled,
-                                _ => returnState
-                            };
-
-                            VipApi.PrintToChat(player,
-                                $"{Localizer[key]}: {(returnState == FeatureState.Enabled ? $"{Localizer["chat.Enabled"]}" : $"{Localizer["chat.Disabled"]}")}");
-                        }
-
-                        user.FeatureState[key] = returnState;
-                        feature.OnSelectItem?.Invoke(controller, returnState);
-
-                        if (CoreConfig.ReOpenMenuAfterItemClick && featureType != FeatureType.Selectable)
-                        {
-                            CreateMenu(controller);
-                        }
-                    }, featureState == FeatureState.NoAccess || ForcedDisabledFeatures.Contains(key));
-            }
+            PrintToChat(player, "JBF Menu API недоступно.");
+            return;
         }
 
-        menu.Open(player);
-    }
+        if (!Config.Groups.TryGetValue(user.group, out var vipGroup))
+            return;
 
+        var options = new List<JailbreakMenuOption>();
+
+        var sortedFeatures = Features
+            .Where(setting => setting.Value.FeatureType is not FeatureType.Hide)
+            .OrderBy(setting => Array.IndexOf(_sortedItems, setting.Key))
+            .ThenBy(setting => setting.Key);
+
+        foreach (var (key, feature) in sortedFeatures)
+        {
+            if (!vipGroup.Values.TryGetValue(key, out var featureValue))
+                continue;
+
+            if (string.IsNullOrEmpty(featureValue?.ToString()))
+                continue;
+
+            if (!user.FeatureState.TryGetValue(key, out var featureState))
+                continue;
+
+            var featureType = feature.FeatureType;
+            var text = Localizer[key].Value;
+
+            if (featureType == FeatureType.Toggle)
+            {
+                var stateText = featureState switch
+                {
+                    FeatureState.Enabled => "ВКЛ",
+                    FeatureState.Disabled => "ВЫКЛ",
+                    FeatureState.NoAccess => "НЕДОСТУПНО",
+                    _ => string.Empty
+                };
+
+                text = $"{text}  •  {stateText}";
+            }
+
+            var disabled =
+                featureState == FeatureState.NoAccess ||
+                ForcedDisabledFeatures.Contains(key);
+
+            var capturedKey = key;
+            var capturedFeature = feature;
+            var capturedState = featureState;
+            var capturedType = featureType;
+
+            options.Add(new JailbreakMenuOption(
+                text,
+                controller =>
+                {
+                    var result = VipApi.PlayerUseFeature(
+                        controller,
+                        capturedKey,
+                        capturedState,
+                        capturedType);
+
+                    if (result is HookResult.Handled or HookResult.Stop)
+                    {
+                        CreateMenu(controller);
+                        return;
+                    }
+
+                    var returnState = capturedState;
+
+                    if (capturedType != FeatureType.Selectable)
+                    {
+                        returnState = capturedState switch
+                        {
+                            FeatureState.Enabled => FeatureState.Disabled,
+                            FeatureState.Disabled => FeatureState.Enabled,
+                            _ => returnState
+                        };
+
+                        VipApi.PrintToChat(
+                            controller,
+                            $"{Localizer[capturedKey]}: {(returnState == FeatureState.Enabled ? Localizer["chat.Enabled"] : Localizer["chat.Disabled"])}");
+                    }
+
+                    if (Users.TryGetValue(controller.SteamID, out var currentUser))
+                        currentUser.FeatureState[capturedKey] = returnState;
+
+                    capturedFeature.OnSelectItem?.Invoke(controller, returnState);
+
+                    if (CoreConfig.ReOpenMenuAfterItemClick &&
+                        capturedType != FeatureType.Selectable)
+                    {
+                        CreateMenu(controller);
+                    }
+                },
+                disabled,
+                disabled ? "Функция сейчас недоступна" : null));
+        }
+
+        menuApi.Open(
+            player,
+            $"VIP {user.group}",
+            options);
+    }
 
     private string BuildConnectionString()
     {
