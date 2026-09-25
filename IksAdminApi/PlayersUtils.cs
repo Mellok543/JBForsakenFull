@@ -6,10 +6,6 @@ namespace IksAdminApi;
 
 public static class PlayersUtils
 {
-    public static Func<float, Action, Timer> TimerFactory { get; set; } = null!;
-    public static Action<CCSPlayerController> MenuCloser { get; set; } = null!;
-    public static Func<string[]> MirrorsIpProvider { get; set; } = () => [];
-
     // HTML MESSAGES
     public static Dictionary<CCSPlayerController, string> HtmlMessages = new();
     public static Dictionary<CCSPlayerController, Timer> HtmlMessagesTimer = new();
@@ -18,10 +14,7 @@ public static class PlayersUtils
         ClearHtmlMessage(player);
         if (message == "") return;
         HtmlMessages.Add(player, message);
-        if (TimerFactory is null)
-            return;
-
-        HtmlMessagesTimer.Add(player, TimerFactory(time, () =>
+        HtmlMessagesTimer.Add(player, AdminUtils.CoreInstance.AddTimer(time, () =>
         {
             ClearHtmlMessage(player);
         }));
@@ -37,7 +30,7 @@ public static class PlayersUtils
     }
     public static void CloseMenu(this CCSPlayerController player)
     {
-        MenuCloser?.Invoke(player);
+        AdminUtils.CoreApi.CloseMenu(player);
     }
     /// <summary>
     /// may cause errors
@@ -63,34 +56,20 @@ public static class PlayersUtils
     }
     public static CCSPlayerController? GetControllerByUid(uint userId)
     {
-        return Utilities.GetPlayers().FirstOrDefault(x => x != null && x.IsValid && x.Connected == PlayerConnectedState.Connected && x.UserId == userId);
+        return Utilities.GetPlayers().FirstOrDefault(x => x != null && x.IsValid && x.Connected == PlayerConnectedState.PlayerConnected && x.UserId == userId);
     }
     public static CCSPlayerController? GetControllerByName(string name, bool ignoreRegistry = false)
     {
-        return Utilities.GetPlayers().FirstOrDefault(x => x != null && x.IsValid && x.Connected == PlayerConnectedState.Connected && (ignoreRegistry ? x.PlayerName.ToLower().Contains(name) : x.PlayerName.Contains(name)));
+        return Utilities.GetPlayers().FirstOrDefault(x => x != null && x.IsValid && x.Connected == PlayerConnectedState.PlayerConnected && (ignoreRegistry ? x.PlayerName.ToLower().Contains(name) : x.PlayerName.Contains(name)));
     }
     public static CCSPlayerController? GetControllerByIp(string ip)
     {
-        return Utilities.GetPlayers().FirstOrDefault(x =>
-        {
-            if (x == null || !x.IsValid || x.AuthorizedSteamID == null || x.Connected != PlayerConnectedState.Connected)
-                return false;
-
-            var rawIp = x.IpAddress;
-            if (string.IsNullOrWhiteSpace(rawIp))
-                return false;
-
-            var playerIp = rawIp.Split(':')[0];
-            if (MirrorsIpProvider().Contains(playerIp))
-                return false;
-
-            return string.Equals(playerIp, ip, StringComparison.OrdinalIgnoreCase);
-        });
+        return Utilities.GetPlayers().FirstOrDefault(x => x != null && x.IsValid && x.AuthorizedSteamID != null && x.Connected == PlayerConnectedState.PlayerConnected && x.GetIp() == ip);
     }
     public static List<CCSPlayerController> GetOnlinePlayers(bool includeBots = false)
     {
         if (includeBots)
-            return Utilities.GetPlayers().Where(x => x != null && x.IsValid && x.Connected == PlayerConnectedState.Connected).ToList();
-        return Utilities.GetPlayers().Where(x => x != null && x.IsValid && !x.IsBot && x.AuthorizedSteamID != null && x.Connected == PlayerConnectedState.Connected).ToList();
+            return Utilities.GetPlayers().Where(x => x != null && x.IsValid && x.Connected == PlayerConnectedState.PlayerConnected).ToList();
+        return Utilities.GetPlayers().Where(x => x != null && x.IsValid && !x.IsBot && x.AuthorizedSteamID != null && x.Connected == PlayerConnectedState.PlayerConnected).ToList();
     }
 }
