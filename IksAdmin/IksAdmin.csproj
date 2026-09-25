@@ -33,7 +33,6 @@
       <SelectedDlls Include="$(OutputPath)\Newtonsoft.Json.dll"/>
       <SelectedDlls Include="$(OutputPath)\Steam.Models.dll"/>
       <SelectedDlls Include="$(OutputPath)\SteamWebAPI2.dll"/>
-      <SelectedDlls Include="$(OutputPath)\System.IO.Pipelines.dll"/>
     </ItemGroup>
 
     <ItemGroup>
