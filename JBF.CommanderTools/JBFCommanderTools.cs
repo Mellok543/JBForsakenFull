@@ -3,6 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Timers;
 using CounterStrikeSharp.API.Modules.Utils;
 using JBF.Api;
 using JBF.CommanderTools.Extensions;
@@ -40,7 +41,7 @@ public sealed class JBFCommanderTools : BasePlugin
     }
 
     public override string ModuleName => "JBF Commander Tools";
-    public override string ModuleVersion => "1.3.0";
+    public override string ModuleVersion => "1.4.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -57,7 +58,9 @@ public sealed class JBFCommanderTools : BasePlugin
                     tool.Text,
                     commander =>
                     {
-                        Server.PrintToChatAll(JailbreakChat.Format($"Командир {commander.PlayerName}: {tool.Text}."));
+                        if (tool.Id is not ("heal" or "kill" or "respawn"))
+                            Server.PrintToChatAll(JailbreakChat.Format($"КМД {commander.PlayerName}: {tool.Text}."));
+
                         tool.Execute(commander);
                     },
                     tool.Order)));
@@ -93,7 +96,10 @@ public sealed class JBFCommanderTools : BasePlugin
     {
         _state.ResetRound();
         _muteService.ResetRound();
-        _muteService.ApplyRoundStartMute();
+        AddTimer(
+            0.75f,
+            _muteService.ApplyRoundStartMute,
+            TimerFlags.STOP_ON_MAPCHANGE);
         return HookResult.Continue;
     }
 
@@ -149,6 +155,8 @@ public sealed class JBFCommanderTools : BasePlugin
 
     private void OnTick()
     {
+        _muteService.Tick();
+
         if (!_state.BhopEnabled)
         {
             return;
