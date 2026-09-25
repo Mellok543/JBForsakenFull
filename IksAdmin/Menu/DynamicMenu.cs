@@ -55,14 +55,18 @@ public class DynamicMenu : IDynamicMenu
 
         var pAdmin = player.Admin();
         var adminFlags = pAdmin?.CurrentFlags.ToCharArray() ?? [];
+
+        // Preserve the menu's permanent options. Third-party modules may inject
+        // temporary options from MenuOpenPre for this specific opening.
         var oldOptions = Options.ToList();
 
-        // Keep the IksAdmin menu lifecycle/events intact for third-party admin modules.
         IMenu gameMenu = this;
         if (!Main.AdminApi.OnMenuOpenPre(player, this, gameMenu))
             return;
 
-        var options = oldOptions.ToList();
+        // Important: take the render snapshot AFTER MenuOpenPre so options added
+        // by external IksAdmin modules are actually visible in the JBF menu.
+        var options = Options.ToList();
         if (BackAction is not null)
         {
             options.Insert(
