@@ -105,12 +105,133 @@ internal sealed class ShopSocialService
         [
             new("Камень, ножницы, бумага", p => OpenGameTargets(p, CreditGameType.RockPaperScissors)),
             new("Монетка", p => OpenGameTargets(p, CreditGameType.CoinFlip)),
-            new("Покер — 5 карт", p => OpenGameTargets(p, CreditGameType.Poker)),
+            new("Покер — Texas Hold'em", p => OpenGameTargets(p, CreditGameType.Poker)),
+            new("Правила покера", OpenPokerRules),
             new("Назад", _shop.OpenMainMenu)
         ];
 
         menu.Open(player, $"Игры | {_shop.GetCredits(player)} кредитов", options);
     }
+
+    private void OpenPokerRules(CCSPlayerController player)
+    {
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null) return;
+
+        JailbreakMenuOption[] options =
+        [
+            new("Как начать игру", p => OpenPokerRulesBasics(p)),
+            new("Как проходит раздача", p => OpenPokerRulesStreets(p)),
+            new("Чек / Колл / Повысить / Пас", p => OpenPokerRulesActions(p)),
+            new("Комбинации карт", p => OpenPokerRulesHands(p)),
+            new("Банк и комиссия", p => OpenPokerRulesPot(p)),
+            new("Назад", OpenGames)
+        ];
+
+        menu.Open(player, "Правила покера", options);
+    }
+
+    private void OpenPokerRulesBasics(CCSPlayerController player)
+    {
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null) return;
+
+        JailbreakMenuOption[] options =
+        [
+            Info("1. Выберите соперника в меню покера."),
+            Info("2. Выберите начальную ставку."),
+            Info("3. Соперник должен принять вызов."),
+            Info("4. Оба вносят одинаковую начальную ставку."),
+            Info("5. Каждый получает 2 личные карты."),
+            Info("Цель: собрать лучшую комбинацию из 5 карт."),
+            new("Назад", OpenPokerRules)
+        ];
+
+        menu.Open(player, "Покер | Как начать", options);
+    }
+
+    private void OpenPokerRulesStreets(CCSPlayerController player)
+    {
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null) return;
+
+        JailbreakMenuOption[] options =
+        [
+            Info("Префлоп — видите только свои 2 карты."),
+            Info("Флоп — на стол открываются 3 общие карты."),
+            Info("Тёрн — открывается 4-я общая карта."),
+            Info("Ривер — открывается 5-я общая карта."),
+            Info("После ривера — вскрытие карт."),
+            Info("Используются любые 5 из ваших 2 + 5 общих."),
+            new("Назад", OpenPokerRules)
+        ];
+
+        menu.Open(player, "Покер | Раздача", options);
+    }
+
+    private void OpenPokerRulesActions(CCSPlayerController player)
+    {
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null) return;
+
+        JailbreakMenuOption[] options =
+        [
+            Info("Чек — ничего не ставить, если ставки ещё нет."),
+            Info("Колл — уравнять ставку соперника."),
+            Info("Повысить — уравнять и добавить сверху."),
+            Info("Пас — отказаться от раздачи и отдать банк."),
+            Info("После повышения соперник должен ответить."),
+            Info("На ход даётся 30 секунд."),
+            Info("Если время вышло — автоматически Пас."),
+            new("Назад", OpenPokerRules)
+        ];
+
+        menu.Open(player, "Покер | Действия", options);
+    }
+
+    private void OpenPokerRulesHands(CCSPlayerController player)
+    {
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null) return;
+
+        JailbreakMenuOption[] options =
+        [
+            Info("1. Стрит-флеш — 5 подряд одной масти."),
+            Info("2. Каре — 4 одинаковые карты."),
+            Info("3. Фулл-хаус — тройка + пара."),
+            Info("4. Флеш — 5 карт одной масти."),
+            Info("5. Стрит — 5 карт подряд."),
+            Info("6. Сет — 3 одинаковые карты."),
+            Info("7. Две пары."),
+            Info("8. Пара."),
+            Info("9. Старшая карта."),
+            new("Назад", OpenPokerRules)
+        ];
+
+        menu.Open(player, "Покер | Комбинации", options);
+    }
+
+    private void OpenPokerRulesPot(CCSPlayerController player)
+    {
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null) return;
+
+        JailbreakMenuOption[] options =
+        [
+            Info("Все ставки игроков складываются в общий банк."),
+            Info("Победитель получает банк за вычетом 5%."),
+            Info("Комиссия сервера: 5% от итогового банка."),
+            Info("При пасе соперник забирает банк."),
+            Info("При ничьей оставшийся банк делится пополам."),
+            Info("Чем выше повышения — тем больше итоговый банк."),
+            new("Назад", OpenPokerRules)
+        ];
+
+        menu.Open(player, "Покер | Банк", options);
+    }
+
+    private static JailbreakMenuOption Info(string text)
+        => new(text, _ => { }, true);
 
     private void OpenGameTargets(CCSPlayerController player, CreditGameType game)
     {
