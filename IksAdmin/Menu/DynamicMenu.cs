@@ -1,6 +1,5 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Menu;
-using MenuManager;
 using IksAdminApi;
 using JBF.Api;
 using CounterStrikeSharp.API.Modules.Utils;
