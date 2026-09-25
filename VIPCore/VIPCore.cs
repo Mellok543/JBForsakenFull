@@ -138,7 +138,7 @@ public class VipCore : BasePlugin
 
         AddTimer(Config.Delay, () =>
         {
-            if (player.Connected != PlayerConnectedState.PlayerConnected) return;
+            if (player.Connected != PlayerConnectedState.Connected) return;
 
             try
             {
