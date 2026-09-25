@@ -430,9 +430,13 @@ internal sealed class ShopSocialService
                     new JailbreakMenuOption($"Участников: {raffle.Participants.Count}", _ => { }, true),
                     new JailbreakMenuOption($"До итогов: {remaining} сек.", _ => { }, true),
                     new JailbreakMenuOption(
-                        raffle.Participants.Contains(player.SteamID) ? "Вы уже участвуете" : "Участвовать",
+                        player.SteamID == raffle.CreatorSteamId
+                            ? "Вы создатель розыгрыша"
+                            : raffle.Participants.Contains(player.SteamID)
+                                ? "Вы уже участвуете"
+                                : "Участвовать",
                         p => JoinRaffle(p),
-                        raffle.Participants.Contains(player.SteamID)),
+                        player.SteamID == raffle.CreatorSteamId || raffle.Participants.Contains(player.SteamID)),
                     new JailbreakMenuOption("Назад", _shop.OpenMainMenu)
                 ]);
             return;
@@ -485,6 +489,12 @@ internal sealed class ShopSocialService
         if (_raffle is null)
             return;
 
+        if (player.SteamID == _raffle.CreatorSteamId)
+        {
+            player.PrintToChat(JailbreakChat.Format("Создатель не может участвовать в собственном розыгрыше."));
+            return;
+        }
+
         if (!_raffle.Participants.Add(player.SteamID))
         {
             player.PrintToChat(JailbreakChat.Format("Вы уже участвуете."));
@@ -536,8 +546,7 @@ internal sealed class ShopSocialService
             .Select((entry, index) =>
                 new JailbreakMenuOption(
                     $"#{index + 1} {entry.Name} — {entry.Credits}",
-                    _ => { },
-                    true))
+                    _ => { }))
             .Append(new JailbreakMenuOption("Назад", _shop.OpenMainMenu))
             .ToArray();
 
