@@ -1,0 +1,95 @@
+<root>
+    <styles>
+        <include src="s2r://panorama/styles/custom_game/vipcore_menu.vcss_c" />
+    </styles>
+
+    <Panel class="vipcore-ui-screen" hittest="false">
+        <Panel id="vipcore_menu_root" class="vipcore-menu-window" hittest="false">
+            <Panel class="vipcore-menu-frame" hittest="false">
+                <Panel class="vipcore-menu-accent" hittest="false" />
+                <Panel class="vipcore-menu-accent-soft" hittest="false" />
+
+                <Panel class="vipcore-menu-content" hittest="false">
+                    <Panel class="vipcore-menu-brand" hittest="false">
+                        <Panel class="vipcore-menu-brand-icon" hittest="false">
+                            <Label text="V" />
+                        </Panel>
+                        <Panel class="vipcore-menu-brand-copy" hittest="false">
+                            <Panel class="vipcore-menu-brand-title-row" hittest="false">
+                                <Label class="vipcore-menu-brand-mark" text="VIP" />
+                                <Label class="vipcore-menu-brand-name" text="CORE" />
+                            </Panel>
+                            <Label class="vipcore-menu-brand-subtitle" text="PREMIUM PRIVILEGES" />
+                        </Panel>
+                        <Panel class="vipcore-menu-brand-key" hittest="false"><Label text="R" /></Panel>
+                    </Panel>
+
+                    <Panel class="vipcore-menu-header" hittest="false">
+                        <Panel class="vipcore-menu-title-wrap" hittest="false">
+                            <Label id="vipcore_menu_title" class="vipcore-menu-title" text="{s:text}" />
+                            <Label id="vipcore_menu_subtitle" class="vipcore-menu-subtitle" text="{s:text}" />
+                        </Panel>
+                        <Panel class="vipcore-menu-page-pill" hittest="false">
+                            <Label id="vipcore_menu_page" class="vipcore-menu-page" text="{s:text}" />
+                        </Panel>
+                    </Panel>
+
+                    <Panel class="vipcore-menu-separator" hittest="false" />
+
+                    <Panel class="vipcore-menu-rows" hittest="false">
+                    <Panel id="vipcore_menu_row_0" class="vipcore-menu-row">
+                        <Panel class="vipcore-menu-row-accent" hittest="false" />
+                        <Label id="vipcore_menu_row_0_text" class="vipcore-menu-row-text" text="{s:text}" />
+                        <Label class="vipcore-menu-row-arrow" text="›" />
+                    </Panel>
+                    <Panel id="vipcore_menu_row_1" class="vipcore-menu-row">
+                        <Panel class="vipcore-menu-row-accent" hittest="false" />
+                        <Label id="vipcore_menu_row_1_text" class="vipcore-menu-row-text" text="{s:text}" />
+                        <Label class="vipcore-menu-row-arrow" text="›" />
+                    </Panel>
+                    <Panel id="vipcore_menu_row_2" class="vipcore-menu-row">
+                        <Panel class="vipcore-menu-row-accent" hittest="false" />
+                        <Label id="vipcore_menu_row_2_text" class="vipcore-menu-row-text" text="{s:text}" />
+                        <Label class="vipcore-menu-row-arrow" text="›" />
+                    </Panel>
+                    <Panel id="vipcore_menu_row_3" class="vipcore-menu-row">
+                        <Panel class="vipcore-menu-row-accent" hittest="false" />
+                        <Label id="vipcore_menu_row_3_text" class="vipcore-menu-row-text" text="{s:text}" />
+                        <Label class="vipcore-menu-row-arrow" text="›" />
+                    </Panel>
+                    <Panel id="vipcore_menu_row_4" class="vipcore-menu-row">
+                        <Panel class="vipcore-menu-row-accent" hittest="false" />
+                        <Label id="vipcore_menu_row_4_text" class="vipcore-menu-row-text" text="{s:text}" />
+                        <Label class="vipcore-menu-row-arrow" text="›" />
+                    </Panel>
+                    <Panel id="vipcore_menu_row_5" class="vipcore-menu-row">
+                        <Panel class="vipcore-menu-row-accent" hittest="false" />
+                        <Label id="vipcore_menu_row_5_text" class="vipcore-menu-row-text" text="{s:text}" />
+                        <Label class="vipcore-menu-row-arrow" text="›" />
+                    </Panel>
+                    <Panel id="vipcore_menu_row_6" class="vipcore-menu-row">
+                        <Panel class="vipcore-menu-row-accent" hittest="false" />
+                        <Label id="vipcore_menu_row_6_text" class="vipcore-menu-row-text" text="{s:text}" />
+                        <Label class="vipcore-menu-row-arrow" text="›" />
+                    </Panel>
+                    </Panel>
+
+                    <Panel class="vipcore-menu-separator footer" hittest="false" />
+
+                    <Panel class="vipcore-menu-footer" hittest="false">
+                        <Panel class="vipcore-menu-controls" hittest="false">
+                            <Panel class="vipcore-key"><Label text="W" /></Panel>
+                            <Panel class="vipcore-key"><Label text="S" /></Panel>
+                            <Label class="vipcore-key-caption" text="ВЫБОР" />
+                            <Panel class="vipcore-key action"><Label text="E" /></Panel>
+                            <Label class="vipcore-key-caption" text="ОТКРЫТЬ" />
+                            <Panel class="vipcore-key close"><Label text="R" /></Panel>
+                            <Label class="vipcore-key-caption" text="ЗАКРЫТЬ" />
+                        </Panel>
+                        <Label id="vipcore_menu_status" class="vipcore-menu-status" text="{s:text}" />
+                    </Panel>
+                </Panel>
+            </Panel>
+        </Panel>
+    </Panel>
+</root>
