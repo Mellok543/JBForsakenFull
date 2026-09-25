@@ -36,6 +36,7 @@ internal sealed class ShopService : IShopApi
 
     private ShopConfig _config;
     private IReadOnlyList<ShopItem> _items;
+    private readonly ShopSocialService _social;
     private long _effectVersion;
 
     public ShopService(BasePlugin plugin)
@@ -46,6 +47,7 @@ internal sealed class ShopService : IShopApi
         _storage = new ShopStorage(_config.Database);
         _players = _storage.Load();
         _items = BuildItems(_config.Items);
+        _social = new ShopSocialService(plugin, this);
     }
 
     public void ReloadConfig()
@@ -160,12 +162,35 @@ internal sealed class ShopService : IShopApi
         return true;
     }
 
-    public void OpenShop(CCSPlayerController player)
+    public void OpenShop(CCSPlayerController player) => OpenMainMenu(player);
+
+    public void OpenMainMenu(CCSPlayerController player)
     {
-        if (!CanUseShop(player))
+        if (!player.IsValid || player.IsBot)
+            return;
+
+        var menuApi = MenuCapability.Api.GetOptional();
+        if (menuApi is null)
         {
+            player.PrintToChat(JailbreakChat.Format("Menu API недоступно."));
             return;
         }
+
+        JailbreakMenuOption[] options =
+        [
+            new("Магазин", OpenItemsMenu),
+            new("Игры", _social.OpenGames),
+            new("Розыгрыш кредитов", _social.OpenRaffle),
+            new("Топ богачей", _social.OpenTop)
+        ];
+
+        menuApi.Open(player, $"Кредиты | {GetCredits(player)}", options);
+    }
+
+    private void OpenItemsMenu(CCSPlayerController player)
+    {
+        if (!CanUseShop(player))
+            return;
 
         var menuApi = MenuCapability.Api.GetOptional();
         if (menuApi is null)
@@ -175,21 +200,108 @@ internal sealed class ShopService : IShopApi
         }
 
         var credits = GetCredits(player);
-        var options = _items
+        var itemOptions = _items
             .Where(item => item.Team is null || item.Team == player.Team)
             .Select(item =>
             {
                 var used = GetRoundUses(player, item.Id);
-                var disabled = credits < item.Cost || used >= item.RoundLimit;
+                var limitReached = used >= item.RoundLimit;
                 var suffix = $" [{used}/{item.RoundLimit}]";
+                var affordability = credits < item.Cost ? " • не хватает кредитов" : string.Empty;
+
                 return new JailbreakMenuOption(
-                    $"{item.Text} - {item.Cost} кредитов{suffix}",
+                    $"{item.Text} - {item.Cost} кредитов{suffix}{affordability}",
                     buyer => Buy(buyer, item),
-                    disabled);
-            })
+                    limitReached,
+                    limitReached ? "Лимит покупки на этот раунд исчерпан" : null);
+            });
+
+        var options = new[]
+            {
+                new JailbreakMenuOption("Передать кредиты", _social.OpenTransfer)
+            }
+            .Concat(itemOptions)
+            .Append(new JailbreakMenuOption("Назад", OpenMainMenu))
             .ToArray();
 
-        menuApi.Open(player, $"Shop | {credits} кредитов", options);
+        menuApi.Open(player, $"Магазин | {credits} кредитов", options);
+    }
+
+    internal bool TryTransferCredits(
+        CCSPlayerController sender,
+        CCSPlayerController target,
+        int amount,
+        out int senderBalance,
+        out string error)
+    {
+        senderBalance = 0;
+        error = string.Empty;
+
+        if (amount <= 0 || !sender.IsUsable() || !target.IsUsable() || sender.Slot == target.Slot)
+        {
+            error = "Передача недоступна.";
+            return false;
+        }
+
+        var senderState = GetState(sender);
+        var targetState = GetState(target);
+        if (senderState is null || targetState is null)
+        {
+            error = "Не удалось определить данные игрока.";
+            return false;
+        }
+
+        if (senderState.Credits < amount)
+        {
+            senderBalance = senderState.Credits;
+            error = "Недостаточно кредитов.";
+            return false;
+        }
+
+        senderState.Credits -= amount;
+        targetState.Credits = ClampCredits((long)targetState.Credits + amount);
+        senderBalance = senderState.Credits;
+
+        _storage.QueueSave(senderState);
+        _storage.QueueSave(targetState);
+        return true;
+    }
+
+    internal bool TryTakeCredits(CCSPlayerController player, int amount, out int newBalance)
+    {
+        var state = GetState(player);
+        if (state is null || amount <= 0 || state.Credits < amount)
+        {
+            newBalance = state?.Credits ?? 0;
+            return false;
+        }
+
+        state.Credits -= amount;
+        newBalance = state.Credits;
+        _storage.QueueSave(state);
+        return true;
+    }
+
+    internal bool TryGiveCredits(CCSPlayerController player, int amount, out int newBalance)
+    {
+        if (amount <= 0)
+        {
+            newBalance = GetCredits(player);
+            return false;
+        }
+
+        return TryAddCredits(player, amount, out newBalance);
+    }
+
+    internal IReadOnlyList<(string Name, int Credits)> GetTopBalances(int limit)
+    {
+        return _players.Values
+            .Where(state => !string.IsNullOrWhiteSpace(state.PlayerName))
+            .OrderByDescending(state => state.Credits)
+            .ThenBy(state => state.PlayerName, StringComparer.OrdinalIgnoreCase)
+            .Take(Math.Max(1, limit))
+            .Select(state => (state.PlayerName, state.Credits))
+            .ToArray();
     }
 
     public void RewardRoundPlayers(CsTeam winner)
@@ -311,6 +423,7 @@ internal sealed class ShopService : IShopApi
 
     public void ResetRound()
     {
+        _social.ResetRound();
         _roundPurchases.Clear();
         _rebelsThisRound.Clear();
 
@@ -330,6 +443,7 @@ internal sealed class ShopService : IShopApi
 
     public void Shutdown()
     {
+        _social.Shutdown();
         RestoreAllSmallModels();
         RestoreAllGuardDisguises();
         _speedEffects.Clear();
@@ -516,7 +630,7 @@ internal sealed class ShopService : IShopApi
         _storage.QueueSave(state);
 
         player.PrintToChat(JailbreakChat.Format($"Куплено: {item.Text}. Баланс: {state.Credits}."));
-        OpenShop(player);
+        OpenItemsMenu(player);
     }
 
     private bool CanUseShop(CCSPlayerController player)
