@@ -24,6 +24,7 @@ internal sealed class ShopSocialService
     private readonly ShopService _shop;
     private readonly Dictionary<Guid, PendingChallenge> _challenges = [];
     private readonly Dictionary<ulong, PendingCustomStake> _pendingCustomStakes = [];
+    private readonly Dictionary<ulong, DateTime> _pendingCustomRaffles = [];
     private ActiveRaffle? _raffle;
 
     public ShopSocialService(BasePlugin plugin, ShopService shop)
@@ -178,7 +179,7 @@ internal sealed class ShopSocialService
 
         MenuCapability.Api.GetOptional()?.Close(challenger);
         challenger.PrintToChat(JailbreakChat.Format(
-            $"Введите !ставка <сумма>. Минимум {MinimumCustomStake}. Комиссия игры: {GameCommissionPercent}%."));
+            $"Напишите в чат !<сумма>, например !500. Минимум {MinimumCustomStake}. Комиссия игры: {GameCommissionPercent}%."));
     }
 
     public void HandleCustomStakeInput(CCSPlayerController player, int amount)
@@ -529,14 +530,33 @@ internal sealed class ShopSocialService
 
     private void BeginCustomRaffleInput(CCSPlayerController creator)
     {
+        _pendingCustomRaffles[creator.SteamID] = DateTime.UtcNow.AddSeconds(30);
         MenuCapability.Api.GetOptional()?.Close(creator);
         creator.PrintToChat(JailbreakChat.Format(
-            $"Введите !розыгрыш <сумма>. Минимальная сумма: {MinimumRaffleAmount} кредитов."));
+            $"Напишите в чат !<сумма>, например !5000. Минимальная сумма: {MinimumRaffleAmount} кредитов."));
     }
 
-    public void HandleCustomRaffleInput(CCSPlayerController creator, int amount)
+    public bool TryHandleBangAmount(CCSPlayerController player, int amount)
     {
-        CreateRaffle(creator, amount);
+        if (_pendingCustomStakes.ContainsKey(player.SteamID))
+        {
+            HandleCustomStakeInput(player, amount);
+            return true;
+        }
+
+        if (_pendingCustomRaffles.Remove(player.SteamID, out var expiresAt))
+        {
+            if (expiresAt <= DateTime.UtcNow)
+            {
+                player.PrintToChat(JailbreakChat.Format("Время ввода суммы розыгрыша истекло."));
+                return true;
+            }
+
+            CreateRaffle(player, amount);
+            return true;
+        }
+
+        return false;
     }
 
     private void CreateRaffle(CCSPlayerController creator, int amount)
@@ -659,6 +679,7 @@ internal sealed class ShopSocialService
     public void ResetRound()
     {
         _pendingCustomStakes.Clear();
+        _pendingCustomRaffles.Clear();
 
         foreach (var challenge in _challenges.Values.ToArray())
         {
@@ -678,6 +699,7 @@ internal sealed class ShopSocialService
         _raffle = null;
         _challenges.Clear();
         _pendingCustomStakes.Clear();
+        _pendingCustomRaffles.Clear();
 
         foreach (var match in _rpsMatches.Values)
         {
