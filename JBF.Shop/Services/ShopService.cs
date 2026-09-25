@@ -251,14 +251,17 @@ internal sealed class ShopService : IShopApi
             return false;
         }
 
-        if (senderState.Credits < amount)
+        var fee = CalculateFivePercentFee(amount);
+        var totalCharge = (long)amount + fee;
+
+        if (senderState.Credits < totalCharge)
         {
             senderBalance = senderState.Credits;
-            error = "Недостаточно кредитов.";
+            error = $"Недостаточно кредитов. С учётом комиссии 5% нужно {totalCharge}.";
             return false;
         }
 
-        senderState.Credits -= amount;
+        senderState.Credits -= (int)totalCharge;
         targetState.Credits = ClampCredits((long)targetState.Credits + amount);
         senderBalance = senderState.Credits;
 
@@ -266,6 +269,14 @@ internal sealed class ShopService : IShopApi
         _storage.QueueSave(targetState);
         return true;
     }
+
+    internal int GetTransferFee(int amount) => CalculateFivePercentFee(amount);
+
+    internal void HandleCustomStakeInput(CCSPlayerController player, int amount)
+        => _social.HandleCustomStakeInput(player, amount);
+
+    internal void HandleCustomRaffleInput(CCSPlayerController player, int amount)
+        => _social.HandleCustomRaffleInput(player, amount);
 
     internal bool TryTakeCredits(CCSPlayerController player, int amount, out int newBalance)
     {
@@ -1025,6 +1036,14 @@ internal sealed class ShopService : IShopApi
         var safeStep = Math.Max(0, step);
         var reward = (long)baseReward + (long)(streak - 1) * safeStep;
         return (int)Math.Clamp(reward, 0L, Math.Max(0, maxReward));
+    }
+
+    private static int CalculateFivePercentFee(int amount)
+    {
+        if (amount <= 0)
+            return 0;
+
+        return Math.Max(1, (int)Math.Ceiling(amount * 0.05m));
     }
 
     private static int ClampCredits(long value)
