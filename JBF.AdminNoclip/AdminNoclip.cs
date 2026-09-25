@@ -5,6 +5,7 @@ using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Utils;
 using IksAdminApi;
+using Microsoft.Extensions.Logging;
 
 namespace JBF.AdminNoclip;
 
