@@ -2,6 +2,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Menu;
 using MenuManager;
 using IksAdminApi;
+using JBF.Api;
 using CounterStrikeSharp.API.Modules.Utils;
 using MenuType = IksAdminApi.MenuType;
 using CounterStrikeSharp.API.Core.Translations;
@@ -46,164 +47,111 @@ public class DynamicMenu : IDynamicMenu
 
     public void Open(CCSPlayerController player, bool useSortMenu = true)
     {
-        var pAdmin = player.Admin();
-        var adminFlags = pAdmin?.CurrentFlags.ToCharArray() ?? [];
-
-        AdminUtils.LogDebug($@"
-            Open menu... :
-            Player: {player.PlayerName} | [{player.AuthorizedSteamID!.SteamId64}]
-            Id: {Id}
-            Title: {Title}
-            Type: {Type}
-            useSortMenu: {useSortMenu}
-        ");
-
-        IMenu menu = default!;
-        switch ((int)Type)
+        var menuApi = JBF.Api.MenuCapability.Api.GetOptional();
+        if (menuApi is null)
         {
-            case -1: // [MM]
-                menu = Main.MenuApi!.NewMenu(MenuTitle(player));
-                break;
-            case 0:
-                menu = new ChatMenu(MenuTitle(player));
-                break;
-            case 1:
-                menu = new ConsoleMenu(MenuTitle(player));
-                break;
-            case 2:
-                menu = new CenterHtmlMenu(MenuTitle(player), Main.AdminApi.Plugin);
-                break;
-            case 3: // [MM]
-                menu = Main.MenuApi!.NewMenuForcetype(MenuTitle(player), (MenuManager.MenuType)Type);
-                break;
-            default:
-                menu = new CenterHtmlMenu(MenuTitle(player), Main.AdminApi.Plugin);
-                break;
-        }
-
-        menu.PostSelectAction = PostSelectAction;
-        
-        var oldOptions = Options.ToList();
-        var onMenuOpenPreResult = Main.AdminApi.OnMenuOpenPre(player, this, menu);
-        if (!onMenuOpenPreResult)
-        {
+            player.PrintToChat(JailbreakChat.Format("JBF Menu API недоступно."));
             return;
         }
 
-        if (BackAction != null) { // Отрисовка пункта 'Назад'
-            Options.Insert(0, new DynamicMenuOption("back_btn", Main.AdminApi.Localizer["MenuOption.Other.Back"], (p, _) => {
-                BackAction.Invoke(p);
-            }, null, false));
-        }
-        
-        if (useSortMenu)
+        var pAdmin = player.Admin();
+        var adminFlags = pAdmin?.CurrentFlags.ToCharArray() ?? [];
+        var oldOptions = Options.ToList();
+
+        // Keep the IksAdmin menu lifecycle/events intact for third-party admin modules.
+        IMenu gameMenu = this;
+        if (!Main.AdminApi.OnMenuOpenPre(player, this, gameMenu))
+            return;
+
+        var options = oldOptions.ToList();
+        if (BackAction is not null)
         {
-            var options = Options.ToList();
-            if (Main.AdminApi.SortMenus.TryGetValue(Id, out var sortMenu))
+            options.Insert(
+                0,
+                new DynamicMenuOption(
+                    "back_btn",
+                    Main.AdminApi.Localizer["MenuOption.Other.Back"],
+                    (p, _) => BackAction.Invoke(p),
+                    null,
+                    false));
+        }
+
+        var ordered = new List<IDynamicMenuOption>();
+
+        if (useSortMenu && Main.AdminApi.SortMenus.TryGetValue(Id, out var sortMenu))
+        {
+            var remaining = options.ToList();
+
+            foreach (var sort in sortMenu)
             {
-                AdminUtils.LogDebug("With sort menu");
-                foreach (var sort in sortMenu)
-                {
-                    var option = options.FirstOrDefault(x => x.Id == sort.Id);
-                    if (option == null) continue;
-                    if (!sort.View)
-                    {
-                        options.Remove(option);
-                        continue;
-                    }
-                    var viewFlags = sort.ViewFlags.ToLower() == "not override" ? option.ViewFlags : sort.ViewFlags;
-                    if (!viewFlags.Contains("*"))
-                    {
-                        if (pAdmin == null)
-                        {
-                            options.Remove(option);
-                            continue;
-                        }
-                        if (!adminFlags.Any(viewFlags.Contains) && !adminFlags.Contains('z'))
-                        {
-                            options.Remove(option);
-                            continue;
-                        }
-                    }
-                    if (!Main.AdminApi.OnOptionRenderPre(player, this, menu, option)) continue;
+                var option = remaining.FirstOrDefault(x => x.Id == sort.Id);
+                if (option is null)
+                    continue;
 
-                    menu.AddMenuOption(OptionTitle(player, option), (_, _) =>
-                    {
-                        if (!Main.AdminApi.OnOptionExecutedPre(player, this, menu, option)) return;
-                        option.OnExecute(player, option);
-                        if (!Main.AdminApi.OnOptionExecutedPost(player, this, menu, option)) return;
-                    }, option.Disabled);
+                remaining.Remove(option);
 
+                if (!sort.View)
+                    continue;
 
-                    options.Remove(option);
-                    if (!Main.AdminApi.OnOptionRenderPost(player, this, menu, option)) continue;
-                }
-                foreach (var option in options)
-                {
-                    // Проверка на ViewFlags
-                    var viewFlags = option.ViewFlags; // Текущие ViewFlags опции
-                    if (!viewFlags.Contains("*")) // Если не содержит *, то проверяем на ViewFlags админа
-                    {
-                        if (pAdmin == null)
-                        {
-                            continue;
-                        }
-                        if (!adminFlags.Any(viewFlags.Contains) && !adminFlags.Contains('z'))
-                        {
-                            continue;
-                        }
-                    }
-                    if (!Main.AdminApi.OnOptionRenderPre(player, this, menu, option)) continue;
+                var viewFlags = sort.ViewFlags.ToLowerInvariant() == "not override"
+                    ? option.ViewFlags
+                    : sort.ViewFlags;
 
-                    menu.AddMenuOption(OptionTitle(player, option), (_, _) =>
-                    {
-                        if (!Main.AdminApi.OnOptionExecutedPre(player, this, menu, option)) return;
-                        option.OnExecute(player, option);
-                        if (!Main.AdminApi.OnOptionExecutedPost(player, this, menu, option)) return;
-                    }, option.Disabled);
+                if (!CanView(viewFlags, pAdmin, adminFlags))
+                    continue;
 
-                    Main.AdminApi.OnOptionRenderPost(player, this, menu, option);
-                }
-            } else {
-                useSortMenu = false;
+                ordered.Add(option);
+            }
+
+            foreach (var option in remaining)
+            {
+                if (CanView(option.ViewFlags, pAdmin, adminFlags))
+                    ordered.Add(option);
             }
         }
-        if (!useSortMenu)
+        else
         {
-            AdminUtils.LogDebug("Without sort menu");
-            foreach (var option in Options)
-            {
-                var viewFlags = option.ViewFlags; // Текущие ViewFlags опции
-                if (!viewFlags.Contains("*")) // Если не содержит *, то проверяем на ViewFlags админа
-                {
-                    if (pAdmin == null)
-                    {
-                        continue;
-                    }
-                    if (!adminFlags.Any(viewFlags.Contains) && !adminFlags.Contains('z'))
-                    {
-                        continue;
-                    }
-                }
-                if (!Main.AdminApi.OnOptionRenderPre(player, this, menu, option)) continue;
-
-                menu.AddMenuOption(OptionTitle(player, option), (_, _) =>
-                {
-                    if (!Main.AdminApi.OnOptionExecutedPre(player, this, menu, option)) return;
-                    option.OnExecute(player, option);
-                    if (!Main.AdminApi.OnOptionExecutedPost(player, this, menu, option)) return;
-                }, option.Disabled);
-
-                Main.AdminApi.OnOptionRenderPost(player, this, menu, option);
-            }
+            ordered.AddRange(options.Where(option => CanView(option.ViewFlags, pAdmin, adminFlags)));
         }
 
-        if ((int)Type != 4)
-            menu.Open(player); 
-            
-        Main.AdminApi.OnMenuOpenPost(player, this, menu);
+        var rendered = new List<JailbreakMenuOption>();
+
+        foreach (var option in ordered)
+        {
+            if (!Main.AdminApi.OnOptionRenderPre(player, this, gameMenu, option))
+                continue;
+
+            var captured = option;
+            rendered.Add(
+                new JailbreakMenuOption(
+                    OptionTitle(player, captured),
+                    selected =>
+                    {
+                        if (!Main.AdminApi.OnOptionExecutedPre(selected, this, gameMenu, captured))
+                            return;
+
+                        captured.OnExecute(selected, captured);
+                        Main.AdminApi.OnOptionExecutedPost(selected, this, gameMenu, captured);
+                    },
+                    captured.Disabled));
+
+            Main.AdminApi.OnOptionRenderPost(player, this, gameMenu, option);
+        }
+
+        menuApi.Open(player, MenuTitle(player), rendered);
+        Main.AdminApi.OnMenuOpenPost(player, this, gameMenu);
         Options = oldOptions;
+    }
 
+    private static bool CanView(string viewFlags, Admin? admin, char[] adminFlags)
+    {
+        if (viewFlags.Contains("*"))
+            return true;
+
+        if (admin is null)
+            return false;
+
+        return adminFlags.Contains('z') || adminFlags.Any(viewFlags.Contains);
     }
 
     private string MenuTitle(CCSPlayerController player)
@@ -224,19 +172,13 @@ public class DynamicMenu : IDynamicMenu
 
     private string RemoveDangerSymbols(CCSPlayerController player, string str)
     {
-        var menuType = GetThisMenuType(player);
-        if (menuType != MenuType.ButtonMenu && menuType != MenuType.CenterMenu)
-        {
-            return str;
-        }
-        var replaced = str.Replace("<", "");
-        replaced = replaced.Replace(">", "");
-        return replaced;
+        return str.Replace("<", "").Replace(">", "");
     }
+
     public MenuType GetThisMenuType(CCSPlayerController player)
     {
-        var menuType = Type != MenuType.Default ? Type : (MenuType)Main.MenuApi!.GetMenuType(player);
-        return menuType;
+        // IksAdmin now renders through the shared JBF Panorama menu.
+        return Type == MenuType.Default ? MenuType.CenterMenu : Type;
     }
 
     private string GetMenuColorString(CCSPlayerController player, MenuColors color)
