@@ -23,7 +23,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private bool _roundActive;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.3.2";
+    public override string ModuleVersion => "1.3.3";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -357,7 +357,19 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
                         return;
 
                     unauthorized.SwitchTeam(CsTeam.Terrorist);
-                    unauthorized.PrintToChat(JailbreakChat.Format("Автоматический/случайный перевод за CT отменён. Для входа используй !ct и пройди тест."));
+
+                    // SwitchTeam changes the team immediately, but an already spawned
+                    // player can remain physically at the CT spawn. Respawn on the
+                    // following frame so CS2 selects a valid T spawn point.
+                    Server.NextFrame(() =>
+                    {
+                        if (!IsUsable(unauthorized) || unauthorized.Team != CsTeam.Terrorist)
+                            return;
+
+                        unauthorized.Respawn();
+                        unauthorized.PrintToChat(JailbreakChat.Format(
+                            "Автоматический/случайный перевод за CT отменён. Ты перемещён на респаун T. Для входа за CT используй !ct."));
+                    });
                 });
 
                 return HookResult.Continue;
