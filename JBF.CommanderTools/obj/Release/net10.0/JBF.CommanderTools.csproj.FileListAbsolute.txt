@@ -1,0 +1,16 @@
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\bin\Release\net10.0\JBF.CommanderTools.deps.json
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\bin\Release\net10.0\JBF.CommanderTools.dll
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\bin\Release\net10.0\JBF.CommanderTools.pdb
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\bin\Release\net10.0\JBF.Api.dll
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\bin\Release\net10.0\JBF.Api.pdb
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.csproj.AssemblyReference.cache
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.GeneratedMSBuildEditorConfig.editorconfig
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.AssemblyInfoInputs.cache
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.AssemblyInfo.cs
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.csproj.CoreCompileInputs.cache
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.sourcelink.json
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.Comm.15FF87B8.Up2Date
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.dll
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\refint\JBF.CommanderTools.dll
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\JBF.CommanderTools.pdb
+E:\RiderProjects\JBForsaken\JBF.CommanderTools\obj\Release\net10.0\ref\JBF.CommanderTools.dll

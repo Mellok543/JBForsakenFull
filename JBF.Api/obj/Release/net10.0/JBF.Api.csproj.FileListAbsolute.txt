@@ -1,0 +1,13 @@
+E:\RiderProjects\JBForsaken\JBF.Api\bin\Release\net10.0\JBF.Api.deps.json
+E:\RiderProjects\JBForsaken\JBF.Api\bin\Release\net10.0\JBF.Api.dll
+E:\RiderProjects\JBForsaken\JBF.Api\bin\Release\net10.0\JBF.Api.pdb
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.csproj.AssemblyReference.cache
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.GeneratedMSBuildEditorConfig.editorconfig
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.AssemblyInfoInputs.cache
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.AssemblyInfo.cs
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.csproj.CoreCompileInputs.cache
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.sourcelink.json
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.dll
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\refint\JBF.Api.dll
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\JBF.Api.pdb
+E:\RiderProjects\JBForsaken\JBF.Api\obj\Release\net10.0\ref\JBF.Api.dll

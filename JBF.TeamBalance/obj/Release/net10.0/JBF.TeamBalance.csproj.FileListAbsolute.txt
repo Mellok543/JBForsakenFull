@@ -1,0 +1,16 @@
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\bin\Release\net10.0\JBF.TeamBalance.deps.json
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\bin\Release\net10.0\JBF.TeamBalance.dll
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\bin\Release\net10.0\JBF.TeamBalance.pdb
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\bin\Release\net10.0\JBF.Api.dll
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\bin\Release\net10.0\JBF.Api.pdb
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.csproj.AssemblyReference.cache
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.GeneratedMSBuildEditorConfig.editorconfig
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.AssemblyInfoInputs.cache
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.AssemblyInfo.cs
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.csproj.CoreCompileInputs.cache
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.sourcelink.json
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.Team.E7B2B706.Up2Date
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.dll
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\refint\JBF.TeamBalance.dll
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\JBF.TeamBalance.pdb
+E:\RiderProjects\JBForsaken\JBF.TeamBalance\obj\Release\net10.0\ref\JBF.TeamBalance.dll

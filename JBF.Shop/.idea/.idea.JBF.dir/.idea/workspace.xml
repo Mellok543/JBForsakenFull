@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="178aeffd-61b4-423e-836a-442fa3254611" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../JBF.Achievements/Services/AchievementService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Achievements/Services/AchievementService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Api/ISpecialDayContext.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Api/ISpecialDayContext.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Api/IUiApi.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Api/IUiApi.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.BattlePass/JBFBattlePass.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.BattlePass/JBFBattlePass.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.BattlePass/Models/BattlePassConfig.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.BattlePass/Models/BattlePassConfig.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.BattlePass/Services/BattlePassRenderer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.BattlePass/Services/BattlePassRenderer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.BattlePass/Services/BattlePassService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.BattlePass/Services/BattlePassService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.CommanderTools/JBFCommanderTools.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.CommanderTools/JBFCommanderTools.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.CommanderTools/Services/TTeamMuteService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.CommanderTools/Services/TTeamMuteService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR.Golf/JBFGolf.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR.Golf/JBFGolf.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR.KnifeDuel/JBFKnifeDuel.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR.KnifeDuel/JBFKnifeDuel.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR.MachineGuns/JBFMachineGuns.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR.MachineGuns/JBFMachineGuns.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR.NoScope/JBFNoScope.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR.NoScope/JBFNoScope.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR.Race/JBFRace.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR.Race/JBFRace.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR.Roulette/JBFRoulette.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR.Roulette/JBFRoulette.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR.RussianRoulette/JBFRussianRoulette.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR.RussianRoulette/JBFRussianRoulette.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR/JBFLR.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR/JBFLR.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.LR/Services/LrService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.LR/Services/LrService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Loadout/JBFLoadout.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Loadout/JBFLoadout.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.MainMenu/JBFMainMenu.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.MainMenu/JBFMainMenu.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.MapMarkers/Services/MapMarkerService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.MapMarkers/Services/MapMarkerService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.MapMarkers/Services/MarkerDrawingService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.MapMarkers/Services/MarkerDrawingService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Menu/Services/MenuService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Menu/Services/MenuService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Menu/Services/PanoramaMenuRenderer.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Menu/Services/PanoramaMenuRenderer.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Menu/hud/layout/jbf_battlepass.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Menu/hud/layout/jbf_battlepass.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Menu/hud/layout/jbf_menu.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Menu/hud/layout/jbf_menu.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Menu/hud/styles/jbf_battlepass.css" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Menu/hud/styles/jbf_battlepass.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Menu/hud/styles/jbf_cosmetics.css" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Menu/hud/styles/jbf_cosmetics.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Menu/hud/styles/jbf_menu.css" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Menu/hud/styles/jbf_menu.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/JBFShop.cs" beforeDir="false" afterPath="$PROJECT_DIR$/JBFShop.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/ShopConfig.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Models/ShopConfig.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/ShopItemsConfig.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Models/ShopItemsConfig.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/ShopPlayerState.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Models/ShopPlayerState.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/ShopRewardsConfig.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Models/ShopRewardsConfig.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Services/ShopService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Services/ShopService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Services/ShopStorage.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Services/ShopStorage.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.SpecialDays.ArmRace/JBFArmRaceDay.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.SpecialDays.ArmRace/JBFArmRaceDay.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.SpecialDays.BossFight/JBFBossFightDay.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.SpecialDays.BossFight/JBFBossFightDay.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.SpecialDays.HideAndSeek/JBFHideAndSeekDay.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.SpecialDays.HideAndSeek/JBFHideAndSeekDay.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.SpecialDays.HungerGames/JBFHungerGamesDay.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.SpecialDays.HungerGames/JBFHungerGamesDay.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.SpecialDays/JBFSpecialDays.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.SpecialDays/JBFSpecialDays.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.SpecialDays/Services/SpecialDaysService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.SpecialDays/Services/SpecialDaysService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Warden/JBFWarden.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Warden/JBFWarden.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../JBF.Warden/Services/WardenService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/../JBF.Warden/Services/WardenService.cs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="17" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3JXfhThDRnDkEry6FFTmLf6VIVB" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;docs/economy-plan-and-repo-sync&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="178aeffd-61b4-423e-836a-442fa3254611" name="Changes" comment="" />
+      <created>1789812454177</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1789812454177</updated>
+      <workItem from="1789812456229" duration="459000" />
+      <workItem from="1790103186323" duration="1241000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="VcsManagerConfiguration">
+    <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.OperationCanceledException" breakIfHandledByOtherCode="false" displayValue="System.OperationCanceledException" />
+          <option name="timeStamp" value="1" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.Tasks.TaskCanceledException" breakIfHandledByOtherCode="false" displayValue="System.Threading.Tasks.TaskCanceledException" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
+        <breakpoint enabled="true" type="DotNet_Exception_Breakpoints">
+          <properties exception="System.Threading.ThreadAbortException" breakIfHandledByOtherCode="false" displayValue="System.Threading.ThreadAbortException" />
+          <option name="timeStamp" value="3" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>
