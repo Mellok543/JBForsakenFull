@@ -34,6 +34,12 @@ internal sealed class TTeamMuteService
 
     public void ApplyRoundStartMute()
     {
+        if (!CanMuteNow())
+        {
+            ClearMute();
+            return;
+        }
+
         _showRoundStartHud = true;
         Mute(
             TimeSpan.FromSeconds(30),
@@ -44,6 +50,15 @@ internal sealed class TTeamMuteService
 
     public bool TryApplyManualMute(CCSPlayerController commander)
     {
+        if (!CanMuteNow())
+        {
+            commander.PrintToChat(JailbreakChat.Format(
+                SpecialDaysCapability.Api.GetOptional()?.IsActive == true
+                    ? "Во время игрового дня мут T-команды недоступен."
+                    : "Мут T-команды недоступен: на сервере нет живых КТ."));
+            return false;
+        }
+
         if (_manualMuteUses >= ManualMuteLimit)
         {
             commander.PrintToChat(JailbreakChat.Format("Лимит мута T-команды на этот раунд исчерпан."));
@@ -53,6 +68,12 @@ internal sealed class TTeamMuteService
         _manualMuteUses++;
         Mute(TimeSpan.FromMinutes(1), "Команда T замучена командиром на 1 минуту.", countManualUse: false);
         return true;
+    }
+
+    public void Tick()
+    {
+        if (_isMuted && !CanMuteNow())
+            ClearMute();
     }
 
     public void ClearMute()
@@ -145,6 +166,16 @@ internal sealed class TTeamMuteService
         {
             ui.ClearMuteStatus(player);
         }
+    }
+
+    private static bool CanMuteNow()
+    {
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true)
+            return false;
+
+        return Utilities.GetPlayers().Any(player =>
+            player is { IsValid: true, IsBot: false, PawnIsAlive: true } &&
+            player.Team == CsTeam.CounterTerrorist);
     }
 
     private static void SetTTeamMuted(bool muted)
