@@ -6,6 +6,10 @@ namespace IksAdminApi;
 
 public static class PlayersUtils
 {
+    public static Func<float, Action, Timer> TimerFactory { get; set; } = null!;
+    public static Action<CCSPlayerController> MenuCloser { get; set; } = null!;
+    public static Func<string[]> MirrorsIpProvider { get; set; } = () => [];
+
     // HTML MESSAGES
     public static Dictionary<CCSPlayerController, string> HtmlMessages = new();
     public static Dictionary<CCSPlayerController, Timer> HtmlMessagesTimer = new();
@@ -14,7 +18,10 @@ public static class PlayersUtils
         ClearHtmlMessage(player);
         if (message == "") return;
         HtmlMessages.Add(player, message);
-        HtmlMessagesTimer.Add(player, AdminModule.Api.Plugin.AddTimer(time, () =>
+        if (TimerFactory is null)
+            return;
+
+        HtmlMessagesTimer.Add(player, TimerFactory(time, () =>
         {
             ClearHtmlMessage(player);
         }));
@@ -30,7 +37,7 @@ public static class PlayersUtils
     }
     public static void CloseMenu(this CCSPlayerController player)
     {
-        AdminModule.Api.CloseMenu(player);
+        MenuCloser?.Invoke(player);
     }
     /// <summary>
     /// may cause errors
@@ -74,7 +81,7 @@ public static class PlayersUtils
                 return false;
 
             var playerIp = rawIp.Split(':')[0];
-            if (AdminModule.Api.Config.MirrorsIp.Contains(playerIp))
+            if (MirrorsIpProvider().Contains(playerIp))
                 return false;
 
             return string.Equals(playerIp, ip, StringComparison.OrdinalIgnoreCase);
