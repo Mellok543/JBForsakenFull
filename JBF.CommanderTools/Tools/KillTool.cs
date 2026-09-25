@@ -30,7 +30,8 @@ internal sealed class KillTool : ICommanderTool
             player =>
             {
                 player.CommitSuicide(true, true);
-                commander.PrintToChat(JailbreakChat.Format($"{player.PlayerName} убит."));
+                Server.PrintToChatAll(JailbreakChat.Format(
+                    $"КМД {commander.PlayerName} убил заключённого {player.PlayerName}."));
             });
     }
 }
