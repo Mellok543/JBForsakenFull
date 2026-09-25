@@ -779,19 +779,8 @@ public class Main : BasePlugin
     
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        try
-        {
-            MenuApi = MenuCapability.Get()!;
-            if (MenuApi == null)
-            {
-                AdminUtils.LogDebug("Start without Menu Manager");
-            }
-        }
-        catch (Exception)
-        {
-            AdminUtils.LogDebug("Start without Menu Manager");
-        }
-        
+        // Legacy MenuManager is no longer used.
+        // Admin menus are rendered through JBF.Menu from DynamicMenu.
     }
 
     [GameEventHandler]
