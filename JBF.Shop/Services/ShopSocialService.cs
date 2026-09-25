@@ -23,6 +23,7 @@ internal sealed class ShopSocialService
     private readonly BasePlugin _plugin;
     private readonly ShopService _shop;
     private readonly Dictionary<Guid, PendingChallenge> _challenges = [];
+    private readonly Dictionary<Guid, PokerMatch> _pokerMatches = [];
     private readonly Dictionary<ulong, PendingCustomStake> _pendingCustomStakes = [];
     private readonly Dictionary<ulong, DateTime> _pendingCustomRaffles = [];
     private ActiveRaffle? _raffle;
@@ -334,7 +335,7 @@ internal sealed class ShopSocialService
                 OpenRpsChoice(challenger, target, challenge.Stake);
                 break;
             case CreditGameType.Poker:
-                ResolvePoker(challenger, target, challenge.Stake);
+                StartPoker(challenger, target, challenge.Stake);
                 break;
         }
     }
@@ -450,25 +451,305 @@ internal sealed class ShopSocialService
             $"победил {loser.PlayerName}. Выплата: {payout}, комиссия: {commission}."));
     }
 
-    private void ResolvePoker(CCSPlayerController first, CCSPlayerController second, int stake)
+    private void StartPoker(CCSPlayerController first, CCSPlayerController second, int ante)
     {
-        var deck = Enumerable.Range(0, 52).OrderBy(_ => Random.Shared.Next()).ToArray();
-        var firstHand = deck.Take(5).Select(Card.FromIndex).ToArray();
-        var secondHand = deck.Skip(5).Take(5).Select(Card.FromIndex).ToArray();
+        var deck = Enumerable.Range(0, 52)
+            .OrderBy(_ => Random.Shared.Next())
+            .Select(Card.FromIndex)
+            .ToArray();
 
-        var firstScore = PokerScore.Evaluate(firstHand);
-        var secondScore = PokerScore.Evaluate(secondHand);
+        var match = new PokerMatch(
+            Guid.NewGuid(),
+            first.SteamID,
+            first.PlayerName,
+            second.SteamID,
+            second.PlayerName,
+            ante,
+            deck.Take(2).ToArray(),
+            deck.Skip(2).Take(2).ToArray(),
+            deck.Skip(4).Take(5).ToArray())
+        {
+            Pot = checked(ante * 2),
+            FirstInvested = ante,
+            SecondInvested = ante,
+            Street = PokerStreet.PreFlop,
+            CurrentActorSteamId = first.SteamID
+        };
 
-        first.PrintToChat(JailbreakChat.Format($"Покер: {FormatHand(firstHand)} | {firstScore.Name}."));
-        second.PrintToChat(JailbreakChat.Format($"Покер: {FormatHand(secondHand)} | {secondScore.Name}."));
+        _pokerMatches[match.Id] = match;
+
+        first.PrintToChat(JailbreakChat.Format(
+            $"Покер начался против {second.PlayerName}. Анте: {ante}. Ваши карты: {FormatHand(match.FirstHole)}."));
+        second.PrintToChat(JailbreakChat.Format(
+            $"Покер начался против {first.PlayerName}. Анте: {ante}. Ваши карты: {FormatHand(match.SecondHole)}."));
+
+        OpenPokerTurn(match);
+    }
+
+    private void OpenPokerTurn(PokerMatch match)
+    {
+        if (!_pokerMatches.ContainsKey(match.Id))
+            return;
+
+        var actor = FindPlayer(match.CurrentActorSteamId);
+        var opponent = FindPlayer(match.Other(match.CurrentActorSteamId));
+
+        if (!actor.IsUsable())
+        {
+            if (opponent.IsUsable())
+                AwardPokerByFold(match, opponent, actor?.PlayerName ?? "соперник");
+            else
+                CancelPoker(match);
+            return;
+        }
+
+        if (!opponent.IsUsable())
+        {
+            AwardPokerByFold(match, actor, opponent?.PlayerName ?? "соперник");
+            return;
+        }
+
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null)
+        {
+            CancelPoker(match);
+            return;
+        }
+
+        var hole = match.HoleFor(actor.SteamID);
+        var toCall = match.CurrentBet - match.RoundContribution(actor.SteamID);
+        var community = VisibleCommunity(match);
+        var options = new List<JailbreakMenuOption>
+        {
+            new($"Ваши карты: {FormatHand(hole)}", _ => { }, true),
+            new($"Стол: {(community.Length == 0 ? "—" : FormatHand(community))}", _ => { }, true),
+            new($"Банк: {match.Pot} | текущая ставка: {match.CurrentBet}", _ => { }, true)
+        };
+
+        if (toCall == 0)
+        {
+            options.Add(new JailbreakMenuOption("Чек", p => PokerCheck(p, match.Id)));
+        }
+        else
+        {
+            var canCall = _shop.GetCredits(actor) >= toCall;
+            options.Add(new JailbreakMenuOption(
+                $"Колл {toCall}",
+                p => PokerCall(p, match.Id),
+                !canCall,
+                !canCall ? "Недостаточно кредитов" : null));
+        }
+
+        options.Add(new JailbreakMenuOption("Повысить ставку", p => OpenPokerRaiseMenu(p, match.Id)));
+        options.Add(new JailbreakMenuOption("Пас", p => PokerFold(p, match.Id)));
+
+        menu.Open(actor, $"Покер | {StreetName(match.Street)}", options);
+
+        match.TurnToken++;
+        var token = match.TurnToken;
+        _plugin.AddTimer(
+            30.0f,
+            () =>
+            {
+                if (!_pokerMatches.TryGetValue(match.Id, out var current) ||
+                    current.TurnToken != token ||
+                    current.CurrentActorSteamId != actor.SteamID)
+                {
+                    return;
+                }
+
+                actor.PrintToChat(JailbreakChat.Format("Покер: время хода истекло — пас."));
+                PokerFold(actor, match.Id);
+            },
+            TimerFlags.STOP_ON_MAPCHANGE);
+    }
+
+    private void OpenPokerRaiseMenu(CCSPlayerController player, Guid matchId)
+    {
+        if (!_pokerMatches.TryGetValue(matchId, out var match) ||
+            match.CurrentActorSteamId != player.SteamID)
+            return;
+
+        var menu = MenuCapability.Api.GetOptional();
+        if (menu is null) return;
+
+        var toCall = match.CurrentBet - match.RoundContribution(player.SteamID);
+        var raises = StakeOptions
+            .Select(amount =>
+            {
+                var totalCost = checked(toCall + amount);
+                var disabled = _shop.GetCredits(player) < totalCost;
+                return new JailbreakMenuOption(
+                    $"+{amount} (внести {totalCost})",
+                    p => PokerRaise(p, matchId, amount),
+                    disabled,
+                    disabled ? "Недостаточно кредитов" : null);
+            })
+            .Append(new JailbreakMenuOption("Назад", _ => OpenPokerTurn(match)))
+            .ToArray();
+
+        menu.Open(player, "Покер | повышение", raises);
+    }
+
+    private void PokerCheck(CCSPlayerController player, Guid matchId)
+    {
+        if (!_pokerMatches.TryGetValue(matchId, out var match) ||
+            match.CurrentActorSteamId != player.SteamID)
+            return;
+
+        if (match.CurrentBet != match.RoundContribution(player.SteamID))
+            return;
+
+        if (match.LastActionWasCheck)
+        {
+            AdvancePokerStreet(match);
+            return;
+        }
+
+        match.LastActionWasCheck = true;
+        match.CurrentActorSteamId = match.Other(player.SteamID);
+        OpenPokerTurn(match);
+    }
+
+    private void PokerCall(CCSPlayerController player, Guid matchId)
+    {
+        if (!_pokerMatches.TryGetValue(matchId, out var match) ||
+            match.CurrentActorSteamId != player.SteamID)
+            return;
+
+        var toCall = match.CurrentBet - match.RoundContribution(player.SteamID);
+        if (toCall <= 0)
+        {
+            PokerCheck(player, matchId);
+            return;
+        }
+
+        if (!_shop.TryTakeCredits(player, toCall, out _))
+        {
+            player.PrintToChat(JailbreakChat.Format("Недостаточно кредитов для колла."));
+            OpenPokerTurn(match);
+            return;
+        }
+
+        match.AddContribution(player.SteamID, toCall);
+        match.Pot = checked(match.Pot + toCall);
+        match.AddInvested(player.SteamID, toCall);
+
+        AdvancePokerStreet(match);
+    }
+
+    private void PokerRaise(CCSPlayerController player, Guid matchId, int raiseBy)
+    {
+        if (!_pokerMatches.TryGetValue(matchId, out var match) ||
+            match.CurrentActorSteamId != player.SteamID ||
+            raiseBy <= 0)
+            return;
+
+        var toCall = match.CurrentBet - match.RoundContribution(player.SteamID);
+        var total = checked(toCall + raiseBy);
+
+        if (!_shop.TryTakeCredits(player, total, out _))
+        {
+            player.PrintToChat(JailbreakChat.Format("Недостаточно кредитов для повышения."));
+            OpenPokerTurn(match);
+            return;
+        }
+
+        match.AddContribution(player.SteamID, total);
+        match.AddInvested(player.SteamID, total);
+        match.Pot = checked(match.Pot + total);
+        match.CurrentBet = match.RoundContribution(player.SteamID);
+        match.LastActionWasCheck = false;
+        match.CurrentActorSteamId = match.Other(player.SteamID);
+
+        var opponent = FindPlayer(match.CurrentActorSteamId);
+        opponent?.PrintToChat(JailbreakChat.Format(
+            $"{player.PlayerName} повысил ставку на {raiseBy}. Нужно уравнять {match.CurrentBet - match.RoundContribution(match.CurrentActorSteamId)}."));
+
+        OpenPokerTurn(match);
+    }
+
+    private void PokerFold(CCSPlayerController player, Guid matchId)
+    {
+        if (!_pokerMatches.TryGetValue(matchId, out var match) ||
+            match.CurrentActorSteamId != player.SteamID)
+            return;
+
+        var winner = FindPlayer(match.Other(player.SteamID));
+        if (!winner.IsUsable())
+        {
+            CancelPoker(match);
+            return;
+        }
+
+        AwardPokerByFold(match, winner, player.PlayerName);
+    }
+
+    private void AdvancePokerStreet(PokerMatch match)
+    {
+        match.FirstRoundContribution = 0;
+        match.SecondRoundContribution = 0;
+        match.CurrentBet = 0;
+        match.LastActionWasCheck = false;
+
+        if (match.Street == PokerStreet.River)
+        {
+            ResolvePokerShowdown(match);
+            return;
+        }
+
+        match.Street++;
+        match.CurrentActorSteamId =
+            match.Street == PokerStreet.PreFlop ? match.FirstSteamId : match.SecondSteamId;
+
+        var first = FindPlayer(match.FirstSteamId);
+        var second = FindPlayer(match.SecondSteamId);
+        var board = VisibleCommunity(match);
+
+        first?.PrintToChat(JailbreakChat.Format(
+            $"Покер: {StreetName(match.Street)}. Стол: {FormatHand(board)}. Банк: {match.Pot}."));
+        second?.PrintToChat(JailbreakChat.Format(
+            $"Покер: {StreetName(match.Street)}. Стол: {FormatHand(board)}. Банк: {match.Pot}."));
+
+        OpenPokerTurn(match);
+    }
+
+    private void ResolvePokerShowdown(PokerMatch match)
+    {
+        if (!_pokerMatches.Remove(match.Id))
+            return;
+
+        var first = FindPlayer(match.FirstSteamId);
+        var second = FindPlayer(match.SecondSteamId);
+
+        if (!first.IsUsable() || !second.IsUsable())
+        {
+            if (first.IsUsable()) AwardDetachedPokerWinner(match, first, second?.PlayerName ?? match.SecondName);
+            else if (second.IsUsable()) AwardDetachedPokerWinner(match, second, first?.PlayerName ?? match.FirstName);
+            return;
+        }
+
+        var firstScore = BestPokerScore(match.FirstHole.Concat(match.Community).ToArray());
+        var secondScore = BestPokerScore(match.SecondHole.Concat(match.Community).ToArray());
+
+        first.PrintToChat(JailbreakChat.Format(
+            $"Шоудаун: ваши {FormatHand(match.FirstHole)} | {firstScore.Name}. Соперник: {FormatHand(match.SecondHole)}."));
+        second.PrintToChat(JailbreakChat.Format(
+            $"Шоудаун: ваши {FormatHand(match.SecondHole)} | {secondScore.Name}. Соперник: {FormatHand(match.FirstHole)}."));
 
         var comparison = firstScore.CompareTo(secondScore);
+        var payout = CalculatePotPayout(match.Pot);
+        var commission = match.Pot - payout;
+
         if (comparison == 0)
         {
-            _shop.TryGiveCredits(first, stake, out _);
-            _shop.TryGiveCredits(second, stake, out _);
+            var firstShare = payout / 2;
+            var secondShare = payout - firstShare;
+            _shop.TryGiveCredits(first, firstShare, out _);
+            _shop.TryGiveCredits(second, secondShare, out _);
+
             Server.PrintToChatAll(JailbreakChat.Format(
-                $"Покер: {first.PlayerName} и {second.PlayerName} сыграли вничью. Ставки возвращены."));
+                $"Покер: ничья между {first.PlayerName} и {second.PlayerName}. Банк {match.Pot}, комиссия {commission}."));
             return;
         }
 
@@ -476,13 +757,93 @@ internal sealed class ShopSocialService
         var loser = comparison > 0 ? second : first;
         var winningScore = comparison > 0 ? firstScore : secondScore;
 
-        var payout = CalculateGamePayout(stake);
-        var commission = checked(stake * 2) - payout;
         _shop.TryGiveCredits(winner, payout, out _);
+
         Server.PrintToChatAll(JailbreakChat.Format(
             $"Покер: {winner.PlayerName} победил {loser.PlayerName} ({winningScore.Name}). " +
-            $"Выплата: {payout}, комиссия: {commission}."));
+            $"Банк: {match.Pot}, выплата: {payout}, комиссия: {commission}."));
     }
+
+    private void AwardPokerByFold(PokerMatch match, CCSPlayerController winner, string foldedName)
+    {
+        if (!_pokerMatches.Remove(match.Id))
+            return;
+
+        var payout = CalculatePotPayout(match.Pot);
+        var commission = match.Pot - payout;
+        _shop.TryGiveCredits(winner, payout, out _);
+
+        Server.PrintToChatAll(JailbreakChat.Format(
+            $"Покер: {foldedName} сделал пас. {winner.PlayerName} получает {payout} из банка {match.Pot}. Комиссия: {commission}."));
+    }
+
+    private void AwardDetachedPokerWinner(PokerMatch match, CCSPlayerController winner, string loserName)
+    {
+        var payout = CalculatePotPayout(match.Pot);
+        var commission = match.Pot - payout;
+        _shop.TryGiveCredits(winner, payout, out _);
+
+        Server.PrintToChatAll(JailbreakChat.Format(
+            $"Покер: {loserName} покинул игру. {winner.PlayerName} получает {payout}. Комиссия: {commission}."));
+    }
+
+    private void CancelPoker(PokerMatch match)
+    {
+        if (!_pokerMatches.Remove(match.Id))
+            return;
+
+        var first = FindPlayer(match.FirstSteamId);
+        var second = FindPlayer(match.SecondSteamId);
+
+        if (first.IsUsable())
+            _shop.TryGiveCredits(first, match.FirstInvested, out _);
+        if (second.IsUsable())
+            _shop.TryGiveCredits(second, match.SecondInvested, out _);
+    }
+
+    private static Card[] VisibleCommunity(PokerMatch match)
+    {
+        var count = match.Street switch
+        {
+            PokerStreet.PreFlop => 0,
+            PokerStreet.Flop => 3,
+            PokerStreet.Turn => 4,
+            PokerStreet.River => 5,
+            _ => 5
+        };
+
+        return match.Community.Take(count).ToArray();
+    }
+
+    private static PokerScore BestPokerScore(Card[] cards)
+    {
+        PokerScore? best = null;
+
+        for (var a = 0; a < cards.Length - 4; a++)
+        for (var b = a + 1; b < cards.Length - 3; b++)
+        for (var d = b + 1; d < cards.Length - 2; d++)
+        for (var e = d + 1; e < cards.Length - 1; e++)
+        for (var f = e + 1; f < cards.Length; f++)
+        {
+            var score = PokerScore.Evaluate([cards[a], cards[b], cards[d], cards[e], cards[f]]);
+            if (best is null || score.CompareTo(best.Value) > 0)
+                best = score;
+        }
+
+        return best ?? throw new InvalidOperationException("Недостаточно карт для оценки покера.");
+    }
+
+    private static int CalculatePotPayout(int pot)
+        => Math.Max(0, (int)Math.Floor(pot * 0.95m));
+
+    private static string StreetName(PokerStreet street) => street switch
+    {
+        PokerStreet.PreFlop => "Префлоп",
+        PokerStreet.Flop => "Флоп",
+        PokerStreet.Turn => "Тёрн",
+        PokerStreet.River => "Ривер",
+        _ => "Покер"
+    };
 
     public void OpenRaffle(CCSPlayerController player)
     {
@@ -710,6 +1071,11 @@ internal sealed class ShopSocialService
         }
 
         _rpsMatches.Clear();
+
+        foreach (var match in _pokerMatches.Values.ToArray())
+            CancelPoker(match);
+
+        _pokerMatches.Clear();
     }
 
     private static int CalculateGamePayout(int stake)
@@ -774,6 +1140,79 @@ internal sealed class ShopSocialService
             FirstSteamId = firstSteamId;
             SecondSteamId = secondSteamId;
             Stake = stake;
+        }
+    }
+
+    private enum PokerStreet
+    {
+        PreFlop,
+        Flop,
+        Turn,
+        River
+    }
+
+    private sealed class PokerMatch
+    {
+        public Guid Id { get; }
+        public ulong FirstSteamId { get; }
+        public string FirstName { get; }
+        public ulong SecondSteamId { get; }
+        public string SecondName { get; }
+        public int Ante { get; }
+        public Card[] FirstHole { get; }
+        public Card[] SecondHole { get; }
+        public Card[] Community { get; }
+
+        public int Pot { get; set; }
+        public int FirstInvested { get; set; }
+        public int SecondInvested { get; set; }
+        public int FirstRoundContribution { get; set; }
+        public int SecondRoundContribution { get; set; }
+        public int CurrentBet { get; set; }
+        public bool LastActionWasCheck { get; set; }
+        public PokerStreet Street { get; set; }
+        public ulong CurrentActorSteamId { get; set; }
+        public int TurnToken { get; set; }
+
+        public PokerMatch(
+            Guid id,
+            ulong firstSteamId,
+            string firstName,
+            ulong secondSteamId,
+            string secondName,
+            int ante,
+            Card[] firstHole,
+            Card[] secondHole,
+            Card[] community)
+        {
+            Id = id;
+            FirstSteamId = firstSteamId;
+            FirstName = firstName;
+            SecondSteamId = secondSteamId;
+            SecondName = secondName;
+            Ante = ante;
+            FirstHole = firstHole;
+            SecondHole = secondHole;
+            Community = community;
+        }
+
+        public ulong Other(ulong steamId) => steamId == FirstSteamId ? SecondSteamId : FirstSteamId;
+
+        public Card[] HoleFor(ulong steamId) => steamId == FirstSteamId ? FirstHole : SecondHole;
+
+        public int RoundContribution(ulong steamId)
+            => steamId == FirstSteamId ? FirstRoundContribution : SecondRoundContribution;
+
+        public void AddContribution(ulong steamId, int amount)
+        {
+            if (steamId == FirstSteamId) FirstRoundContribution += amount;
+            else SecondRoundContribution += amount;
+        }
+
+        public void AddInvested(ulong steamId, int amount)
+        {
+            if (steamId == FirstSteamId) FirstInvested += amount;
+            else SecondInvested += amount;
         }
     }
 
