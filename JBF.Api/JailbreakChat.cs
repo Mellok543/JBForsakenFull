@@ -6,6 +6,6 @@ public static class JailbreakChat
 {
     public static string Format(string message)
     {
-        return $"{ChatColors.Gold}[JBF]{ChatColors.Default} {message}";
+        return $"{ChatColors.Gold}[JBF]{ChatColors.Lime} {message}{ChatColors.Default}";
     }
 }
