@@ -1,6 +1,5 @@
 ﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
-using MenuManager;
 using IksAdminApi;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -20,8 +19,6 @@ public class Main : BasePlugin
     public override string ModuleVersion => "3.0 v22";
     public override string ModuleAuthor => "iks [Discord: iks__]";
 
-    public static IMenuApi MenuApi = null!;
-    private static readonly PluginCapability<IMenuApi?> MenuCapability = new("menu:nfcore");   
     public static AdminApi AdminApi = null!;
     private readonly PluginCapability<IIksAdminApi> _pluginCapability  = new("iksadmin:core");
     
