@@ -47,6 +47,9 @@ public class Main : BasePlugin
         AdminUtils.MainThreadId = Thread.CurrentThread.ManagedThreadId;
         AdminUtils.CoreInstance = this;
         AdminApi = new AdminApi(this, Localizer, ModuleDirectory);
+        PlayersUtils.TimerFactory = (seconds, action) => AddTimer(seconds, action);
+        PlayersUtils.MenuCloser = player => AdminApi.CloseMenu(player);
+        PlayersUtils.MirrorsIpProvider = () => AdminApi.Config.MirrorsIp;
         AdminModule.Api = AdminApi;
         AdminUtils.CoreApi = AdminApi;
         AdminApi.OnModuleLoaded += OnModuleLoaded;
