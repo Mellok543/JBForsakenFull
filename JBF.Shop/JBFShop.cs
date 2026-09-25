@@ -17,7 +17,7 @@ public sealed class JBFShop : BasePlugin
     private IPlayerStateApi? _playerStateApi;
 
     public override string ModuleName => "JBF Shop";
-    public override string ModuleVersion => "1.5.0";
+    public override string ModuleVersion => "1.6.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -70,6 +70,51 @@ public sealed class JBFShop : BasePlugin
 
         _shop?.PrintCreditStatus(player);
     }
+
+
+    [ConsoleCommand("css_stake", "Set custom credit-game stake")]
+    public void OnCustomStakeCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player is null)
+        {
+            command.ReplyToCommand(JailbreakChat.Format("Команда доступна только игрокам."));
+            return;
+        }
+
+        if (command.ArgCount != 2 || !int.TryParse(command.GetArg(1), out var amount))
+        {
+            command.ReplyToCommand(JailbreakChat.Format("Использование: !stake <сумма> или !ставка <сумма>."));
+            return;
+        }
+
+        _shop?.HandleCustomStakeInput(player, amount);
+    }
+
+    [ConsoleCommand("css_ставка", "Set custom credit-game stake")]
+    public void OnCustomStakeRuCommand(CCSPlayerController? player, CommandInfo command)
+        => OnCustomStakeCommand(player, command);
+
+    [ConsoleCommand("css_raffle", "Create raffle with custom amount")]
+    public void OnCustomRaffleCommand(CCSPlayerController? player, CommandInfo command)
+    {
+        if (player is null)
+        {
+            command.ReplyToCommand(JailbreakChat.Format("Команда доступна только игрокам."));
+            return;
+        }
+
+        if (command.ArgCount != 2 || !int.TryParse(command.GetArg(1), out var amount))
+        {
+            command.ReplyToCommand(JailbreakChat.Format("Использование: !raffle <сумма> или !розыгрыш <сумма>."));
+            return;
+        }
+
+        _shop?.HandleCustomRaffleInput(player, amount);
+    }
+
+    [ConsoleCommand("css_розыгрыш", "Create raffle with custom amount")]
+    public void OnCustomRaffleRuCommand(CCSPlayerController? player, CommandInfo command)
+        => OnCustomRaffleCommand(player, command);
 
 
     [ConsoleCommand("css_shop_reload", "Reload JBF shop config")]
