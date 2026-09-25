@@ -57,8 +57,8 @@ internal sealed class RespawnTool : ICommanderTool
                         pawn.AbsRotation ?? new QAngle(),
                         new Vector());
 
-                    commander.PrintToChat(JailbreakChat.Format(
-                        $"{player.PlayerName} возрождён в точке прицела."));
+                    Server.PrintToChatAll(JailbreakChat.Format(
+                        $"КМД {commander.PlayerName} возродил игрока {player.PlayerName} в точке прицела."));
                 });
             });
     }
