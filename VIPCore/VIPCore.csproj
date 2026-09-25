@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VipCoreApi\VipCoreApi.csproj" />
-    <ProjectReference Include="..\JBF.Api\JBF.Api.csproj" />
   </ItemGroup>
 
 </Project>
