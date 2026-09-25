@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JBF.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cdefb419bf201c6b39b65c53ba660bf4d9c0f40b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ecef91cf54baac451df8538ae8bc53294e02cdf4")]
 [assembly: System.Reflection.AssemblyProductAttribute("JBF.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JBF.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,0 +1,16 @@
+E:\RiderProjects\JBForsaken\JBF.Shop\bin\Release\net10.0\JBF.Shop.deps.json
+E:\RiderProjects\JBForsaken\JBF.Shop\bin\Release\net10.0\JBF.Shop.dll
+E:\RiderProjects\JBForsaken\JBF.Shop\bin\Release\net10.0\JBF.Shop.pdb
+E:\RiderProjects\JBForsaken\JBF.Shop\bin\Release\net10.0\JBF.Api.dll
+E:\RiderProjects\JBForsaken\JBF.Shop\bin\Release\net10.0\JBF.Api.pdb
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.csproj.AssemblyReference.cache
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.GeneratedMSBuildEditorConfig.editorconfig
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.AssemblyInfoInputs.cache
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.AssemblyInfo.cs
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.csproj.CoreCompileInputs.cache
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.sourcelink.json
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.csproj.Up2Date
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.dll
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\refint\JBF.Shop.dll
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\JBF.Shop.pdb
+E:\RiderProjects\JBForsaken\JBF.Shop\obj\Release\net10.0\ref\JBF.Shop.dll

@@ -1,0 +1,6 @@
+E:\RiderProjects\JBForsaken\IksAdmin\obj\Debug\net10.0\IksAdmin.csproj.AssemblyReference.cache
+E:\RiderProjects\JBForsaken\IksAdmin\obj\Debug\net10.0\IksAdmin.GeneratedMSBuildEditorConfig.editorconfig
+E:\RiderProjects\JBForsaken\IksAdmin\obj\Debug\net10.0\IksAdmin.AssemblyInfoInputs.cache
+E:\RiderProjects\JBForsaken\IksAdmin\obj\Debug\net10.0\IksAdmin.AssemblyInfo.cs
+E:\RiderProjects\JBForsaken\IksAdmin\obj\Debug\net10.0\IksAdmin.csproj.CoreCompileInputs.cache
+E:\RiderProjects\JBForsaken\IksAdmin\obj\Debug\net10.0\IksAdmin.sourcelink.json

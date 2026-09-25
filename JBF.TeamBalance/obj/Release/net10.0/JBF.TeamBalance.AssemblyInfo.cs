@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JBF.TeamBalance")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cdefb419bf201c6b39b65c53ba660bf4d9c0f40b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+271ca29fdb1de7d1d51077f00501dd2aa6930dbe")]
 [assembly: System.Reflection.AssemblyProductAttribute("JBF.TeamBalance")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JBF.TeamBalance")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

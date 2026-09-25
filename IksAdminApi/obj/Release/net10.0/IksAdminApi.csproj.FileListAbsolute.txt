@@ -1,0 +1,11 @@
+E:\RiderProjects\JBForsaken\IksAdminApi\bin\Release\net10.0\IksAdminApi.deps.json
+E:\RiderProjects\JBForsaken\IksAdminApi\bin\Release\net10.0\IksAdminApi.dll
+E:\RiderProjects\JBForsaken\IksAdminApi\bin\Release\net10.0\IksAdminApi.pdb
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.csproj.AssemblyReference.cache
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.GeneratedMSBuildEditorConfig.editorconfig
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.AssemblyInfoInputs.cache
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.AssemblyInfo.cs
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.csproj.CoreCompileInputs.cache
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.sourcelink.json
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.dll
+E:\RiderProjects\JBForsaken\IksAdminApi\obj\Release\net10.0\IksAdminApi.pdb

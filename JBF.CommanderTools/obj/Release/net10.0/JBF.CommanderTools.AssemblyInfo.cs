@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JBF.CommanderTools")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cdefb419bf201c6b39b65c53ba660bf4d9c0f40b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9c949e06d530abe1d3741d53572034bc9187accc")]
 [assembly: System.Reflection.AssemblyProductAttribute("JBF.CommanderTools")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JBF.CommanderTools")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

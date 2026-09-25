@@ -5,41 +5,30 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="*.cs" />
-    <Compile Include="Commands/**/*.cs" />
-    <Compile Include="Database/**/*.cs" />
-    <Compile Include="Functions/**/*.cs" />
-    <Compile Include="Menu/**/*.cs" />
-    <Compile Include="Menus/**/*.cs" />
-    <Compile Include="Messages/**/*.cs" />
-
     <PackageReference Include="CoreRcon" Version="5.4.1"/>
     <PackageReference Include="dapper" Version="2.1.35"/>
     <PackageReference Include="mysqlconnector" Version="2.3.7"/>
     <PackageReference Include="SteamWebAPI2" Version="4.4.1"/>
+    <Reference Include="../RequirmentsApi/IksAdminApi.dll"/>
     <PackageReference Include="CounterStrikeSharp.Api" Version="1.0.374"/>
-
-    <ProjectReference Include="..\JBF.Api\JBF.Api.csproj"/>
-
-    <Reference Include="IksAdminApi">
-      <HintPath>..\RequirmentsApi\IksAdminApi.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
+    <Reference Include="../RequirmentsApi/MenuManagerApi.dll"/>
+    <Reference Include="../RequirmentsApi/JBF.Api.dll"/>
   </ItemGroup>
-
   <Target Name="ExportDllsAfterBuild" AfterTargets="Build">
     <ItemGroup>
       <SelectedDlls Include="$(TargetPath)"/>
       <SelectedDlls Include="$(OutputPath)\IksAdmin.pdb"/>
       <SelectedDlls Include="$(OutputPath)\IksAdminApi.dll"/>
+      <SelectedDlls Include="$(OutputPath)\IksAdminApi.pdb"/>
       <SelectedDlls Include="$(OutputPath)\AutoMapper.dll"/>
       <SelectedDlls Include="$(OutputPath)\CoreRcon.dll"/>
       <SelectedDlls Include="$(OutputPath)\Dapper.dll"/>
+      <SelectedDlls Include="$(OutputPath)\MenuManagerApi.dll"/>
       <SelectedDlls Include="$(OutputPath)\MySqlConnector.dll"/>
       <SelectedDlls Include="$(OutputPath)\Newtonsoft.Json.dll"/>
       <SelectedDlls Include="$(OutputPath)\Steam.Models.dll"/>
@@ -49,6 +38,7 @@
 
     <ItemGroup>
       <SharedDlls Include="$(OutputPath)\IksAdminApi.dll"/>
+      <SharedDlls Include="$(OutputPath)\IksAdminApi.pdb"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -74,6 +64,8 @@
     <Copy SourceFiles="@(SortMenuConfigFile)"
           DestinationFolder="$(OutputPath)\bundle\plugins\$(MSBuildProjectName)"
           SkipUnchangedFiles="true"/>
+
   </Target>
+
 
 </Project>
