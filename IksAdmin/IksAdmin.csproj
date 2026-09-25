@@ -10,11 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\IksAdminApi\**\*.cs" Exclude="..\IksAdminApi\bin\**;..\IksAdminApi\obj\**" Link="IksAdminApi\%(RecursiveDir)%(Filename)%(Extension)" />
     <PackageReference Include="CoreRcon" Version="5.4.1"/>
     <PackageReference Include="dapper" Version="2.1.35"/>
     <PackageReference Include="mysqlconnector" Version="2.3.7"/>
     <PackageReference Include="SteamWebAPI2" Version="4.4.1"/>
-    <ProjectReference Include="..\IksAdminApi\IksAdminApi.csproj"/>
     <ProjectReference Include="..\JBF.Api\JBF.Api.csproj"/>
     <PackageReference Include="CounterStrikeSharp.Api" Version="1.0.374"/>
   </ItemGroup>
