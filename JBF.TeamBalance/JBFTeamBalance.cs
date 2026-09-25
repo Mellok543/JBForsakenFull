@@ -23,7 +23,7 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
     private bool _roundActive;
 
     public override string ModuleName => "JBF Team Balance";
-    public override string ModuleVersion => "1.3.1";
+    public override string ModuleVersion => "1.3.2";
     public override string ModuleAuthor => "Mell";
 
     public TeamBalanceConfig Config { get; set; } = new();
@@ -514,6 +514,21 @@ public sealed class JBFTeamBalance : BasePlugin, IPluginConfig<TeamBalanceConfig
             // Casual auto-assignment to leave a newly connected player in CT.
             _approvedCtSwitches.Remove(player.SteamID);
             player.SwitchTeam(CsTeam.Terrorist);
+
+            // Switching an already spawned player changes the team but keeps
+            // the old CT position. Respawn on the next frame so the player is
+            // placed on a T spawn (the jail cells on Jailbreak maps).
+            Server.NextFrame(() =>
+            {
+                if (!IsUsable(player) || player.Team != CsTeam.Terrorist)
+                    return;
+
+                player.Respawn();
+                player.PrintToChat(JailbreakChat.Format(
+                    "Ты автоматически переведён за T и перемещён на респаун заключённых."));
+            });
+
+            return;
         }
 
         if (tryRespawn)
