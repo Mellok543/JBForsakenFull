@@ -9,9 +9,9 @@ using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Timers;
 using Microsoft.Extensions.Logging;
+using JBF.Api;
 using MySqlConnector;
 using VipCoreApi;
-using VIPCore.Ui;
 using static VipCoreApi.IVipCoreApi;
 
 namespace VIPCore;
@@ -20,7 +20,7 @@ public class VipCore : BasePlugin
 {
     public override string ModuleAuthor => "thesamefabius";
     public override string ModuleName => "[VIP] Core";
-    public override string ModuleVersion => "v1.4.0-custom";
+    public override string ModuleVersion => "v1.4.1-jbf-ui";
 
     public Config Config { get; set; } = null!;
     public CoreConfig CoreConfig { get; set; } = null!;
@@ -43,7 +43,6 @@ public class VipCore : BasePlugin
 
 
     private string[] _sortedItems = [];
-    private VipMenuService? _menuService;
 
     public override void Load(bool hotReload)
     {
@@ -61,20 +60,7 @@ public class VipCore : BasePlugin
         RegisterEventHandlers();
         SetupTimers();
 
-        _menuService = new VipMenuService(
-            "panorama/layout/custom_game/vipcore_menu.xml",
-            message => Logger.LogInformation("{Message}", message));
-        _menuService.Start(this, hotReload);
-        RegisterListener<Listeners.OnPlayerButtonsChanged>(_menuService.HandleButtonsChanged);
-        RegisterListener<Listeners.OnClientDisconnect>(_menuService.HandleDisconnect);
-
         AddCommand("css_vip", "command that opens the VIP MENU", (player, _) => CreateMenu(player));
-    }
-
-    public override void Unload(bool hotReload)
-    {
-        _menuService?.Stop();
-        _menuService = null;
     }
 
     private void LoadConfig()
@@ -400,13 +386,19 @@ public class VipCore : BasePlugin
         }
 
         if (!Users.TryGetValue(player.SteamID, out var user) ||
-            !Config.Groups.TryGetValue(user.group, out var vipGroup) ||
-            _menuService is null)
+            !Config.Groups.TryGetValue(user.group, out var vipGroup))
         {
             return;
         }
 
-        var options = new List<VipMenuOption>();
+        var menuApi = MenuCapability.Api.GetOptional();
+        if (menuApi is null)
+        {
+            PrintToChat(player, "Меню сервера временно недоступно.");
+            return;
+        }
+
+        var options = new List<JailbreakMenuOption>();
 
         var sortedFeatures = Features
             .Where(setting => setting.Value.FeatureType is not FeatureType.Hide)
@@ -439,7 +431,7 @@ public class VipCore : BasePlugin
             var capturedState = featureState;
             var capturedType = featureType;
 
-            options.Add(new VipMenuOption(
+            options.Add(new JailbreakMenuOption(
                 text,
                 controller =>
                 {
@@ -486,10 +478,9 @@ public class VipCore : BasePlugin
                 disabled ? "Функция сейчас недоступна" : null));
         }
 
-        _menuService.Open(
+        menuApi.Open(
             player,
             $"VIP {user.group}",
-            "ПРИВИЛЕГИИ И НАСТРОЙКИ",
             options);
     }
 
