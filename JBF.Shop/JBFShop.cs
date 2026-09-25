@@ -17,7 +17,7 @@ public sealed class JBFShop : BasePlugin
     private IPlayerStateApi? _playerStateApi;
 
     public override string ModuleName => "JBF Shop";
-    public override string ModuleVersion => "1.4.0";
+    public override string ModuleVersion => "1.5.0";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
