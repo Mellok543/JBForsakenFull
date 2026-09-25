@@ -29,7 +29,8 @@ internal sealed class HealTool : ICommanderTool
             player =>
             {
                 player.SetHealthValue(player.Team == CsTeam.Terrorist ? 100 : 150);
-                commander.PrintToChat(JailbreakChat.Format($"{player.PlayerName} вылечен."));
+                Server.PrintToChatAll(JailbreakChat.Format(
+                    $"КМД {commander.PlayerName} вылечил игрока {player.PlayerName}."));
             });
     }
 }
