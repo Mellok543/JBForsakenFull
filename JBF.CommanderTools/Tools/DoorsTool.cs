@@ -38,29 +38,65 @@ internal sealed class DoorsTool : ICommanderTool
 
     private static void Apply(CCSPlayerController commander, string input, bool breakBreakables)
     {
+        ApplyToAllDoors(input, breakBreakables);
+
+        commander.PrintToChat(JailbreakChat.Format(input == "Open" ? "Двери открыты." : "Двери закрыты."));
+        CommanderMenuCapability.Api.Get()?.Open(commander);
+    }
+
+    internal static int OpenJailDoors()
+    {
+        var opened = 0;
+
+        foreach (var entityName in DoorEntityNames)
+        {
+            foreach (var entity in Utilities.FindAllEntitiesByDesignerName<CBaseEntity>(entityName))
+            {
+                if (!entity.IsValid || !IsJailDoor(entity))
+                    continue;
+
+                entity.AcceptInput("Open");
+                opened++;
+            }
+        }
+
+        return opened;
+    }
+
+    private static void ApplyToAllDoors(string input, bool breakBreakables)
+    {
         foreach (var entityName in DoorEntityNames)
         {
             foreach (var entity in Utilities.FindAllEntitiesByDesignerName<CBaseEntity>(entityName))
             {
                 if (entity.IsValid)
-                {
                     entity.AcceptInput(input);
-                }
             }
         }
 
-        if (breakBreakables)
+        if (!breakBreakables)
+            return;
+
+        foreach (var entity in Utilities.FindAllEntitiesByDesignerName<CBaseEntity>("func_breakable"))
         {
-            foreach (var entity in Utilities.FindAllEntitiesByDesignerName<CBaseEntity>("func_breakable"))
-            {
-                if (entity.IsValid)
-                {
-                    entity.AcceptInput("Break");
-                }
-            }
+            if (entity.IsValid)
+                entity.AcceptInput("Break");
         }
+    }
 
-        commander.PrintToChat(JailbreakChat.Format(input == "Open" ? "Двери открыты." : "Двери закрыты."));
-        CommanderMenuCapability.Api.Get()?.Open(commander);
+    private static bool IsJailDoor(CBaseEntity entity)
+    {
+        // Targetname is map-dependent. Reflection keeps this compatible across
+        // CounterStrikeSharp schema changes while supporting common JB names
+        // such as cell_door, cells, jail_door and prison_door.
+        var identity = entity.GetType().GetProperty("Entity")?.GetValue(entity);
+        var name = identity?.GetType().GetProperty("Name")?.GetValue(identity)?.ToString();
+
+        if (string.IsNullOrWhiteSpace(name))
+            return false;
+
+        return name.Contains("cell", StringComparison.OrdinalIgnoreCase) ||
+               name.Contains("jail", StringComparison.OrdinalIgnoreCase) ||
+               name.Contains("prison", StringComparison.OrdinalIgnoreCase);
     }
 }
