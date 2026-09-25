@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
+using MenuManager;
 using IksAdminApi;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
@@ -16,9 +17,11 @@ namespace IksAdmin;
 public class Main : BasePlugin
 {
     public override string ModuleName => "IksAdmin";
-    public override string ModuleVersion => "3.0 v22-jbf-ui";
+    public override string ModuleVersion => "3.0 v22";
     public override string ModuleAuthor => "iks [Discord: iks__]";
 
+    public static IMenuApi MenuApi = null!;
+    private static readonly PluginCapability<IMenuApi?> MenuCapability = new("menu:nfcore");   
     public static AdminApi AdminApi = null!;
     private readonly PluginCapability<IIksAdminApi> _pluginCapability  = new("iksadmin:core");
     
@@ -44,9 +47,6 @@ public class Main : BasePlugin
         AdminUtils.MainThreadId = Thread.CurrentThread.ManagedThreadId;
         AdminUtils.CoreInstance = this;
         AdminApi = new AdminApi(this, Localizer, ModuleDirectory);
-        PlayersUtils.TimerFactory = (seconds, action) => AddTimer(seconds, action);
-        PlayersUtils.MenuCloser = player => AdminApi.CloseMenu(player);
-        PlayersUtils.MirrorsIpProvider = () => AdminApi.Config.MirrorsIp;
         AdminModule.Api = AdminApi;
         AdminUtils.CoreApi = AdminApi;
         AdminApi.OnModuleLoaded += OnModuleLoaded;
@@ -782,9 +782,20 @@ public class Main : BasePlugin
     
     public override void OnAllPluginsLoaded(bool hotReload)
     {
-        // Menus are rendered through the shared JBF.Menu capability.
+        try
+        {
+            MenuApi = MenuCapability.Get()!;
+            if (MenuApi == null)
+            {
+                AdminUtils.LogDebug("Start without Menu Manager");
+            }
+        }
+        catch (Exception)
+        {
+            AdminUtils.LogDebug("Start without Menu Manager");
+        }
+        
     }
-
 
     [GameEventHandler]
     public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
