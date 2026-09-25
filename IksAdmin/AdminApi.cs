@@ -289,12 +289,6 @@ public class AdminApi : IIksAdminApi
     public void CloseMenu(CCSPlayerController player)
     {
         JBF.Api.MenuCapability.Api.GetOptional()?.Close(player);
-
-        // Keep legacy close calls as a compatibility fallback for third-party
-        // IksAdmin modules that may still open a stock/MenuManager menu.
-        if (Main.MenuApi != null)
-            Main.MenuApi.CloseMenu(player);
-
         CounterStrikeSharp.API.Modules.Menu.MenuManager.CloseActiveMenu(player);
     }
 
