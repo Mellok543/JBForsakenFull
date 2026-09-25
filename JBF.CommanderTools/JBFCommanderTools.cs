@@ -19,6 +19,7 @@ public sealed class JBFCommanderTools : BasePlugin
     private readonly List<IDisposable> _registrations = [];
     private readonly IReadOnlyList<ICommanderTool> _tools;
     private readonly TTeamMuteService _muteService;
+    private bool _autoJailsOpenedThisRound;
 
     public JBFCommanderTools()
     {
@@ -41,7 +42,7 @@ public sealed class JBFCommanderTools : BasePlugin
     }
 
     public override string ModuleName => "JBF Commander Tools";
-    public override string ModuleVersion => "1.4.0";
+    public override string ModuleVersion => "1.4.1";
     public override string ModuleAuthor => "Mell";
 
     public override void Load(bool hotReload)
@@ -96,6 +97,7 @@ public sealed class JBFCommanderTools : BasePlugin
     {
         _state.ResetRound();
         _muteService.ResetRound();
+        _autoJailsOpenedThisRound = false;
         AddTimer(
             0.75f,
             _muteService.ApplyRoundStartMute,
@@ -156,6 +158,7 @@ public sealed class JBFCommanderTools : BasePlugin
     private void OnTick()
     {
         _muteService.Tick();
+        TryAutoOpenJailsWithoutCt();
 
         if (!_state.BhopEnabled)
         {
@@ -175,6 +178,38 @@ public sealed class JBFCommanderTools : BasePlugin
                 pawn.AbsVelocity.Z = 300;
             }
         }
+    }
+
+
+    private void TryAutoOpenJailsWithoutCt()
+    {
+        if (_autoJailsOpenedThisRound)
+            return;
+
+        var jailbreakApi = JailbreakCapability.Api.GetOptional();
+        if (jailbreakApi?.IsRoundActive != true)
+            return;
+
+        if (SpecialDaysCapability.Api.GetOptional()?.IsActive == true ||
+            LrCapability.Api.GetOptional()?.IsActive == true)
+        {
+            return;
+        }
+
+        var hasCt = Utilities.GetPlayers().Any(player =>
+            player.IsValid &&
+            !player.IsBot &&
+            player.Team == CsTeam.CounterTerrorist);
+
+        if (hasCt)
+            return;
+
+        var opened = DoorsTool.OpenJailDoors();
+        if (opened <= 0)
+            return;
+
+        _autoJailsOpenedThisRound = true;
+        Server.PrintToChatAll(JailbreakChat.Format("На сервере нет КТ — двери камер открыты автоматически."));
     }
 
     private HookResult OnTakeDamage(CBaseEntity entity, CTakeDamageInfo damageInfo)
