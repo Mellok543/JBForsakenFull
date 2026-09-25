@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -15,6 +15,7 @@
     <PackageReference Include="mysqlconnector" Version="2.3.7"/>
     <PackageReference Include="SteamWebAPI2" Version="4.4.1"/>
     <ProjectReference Include="..\IksAdminApi\IksAdminApi.csproj"/>
+    <ProjectReference Include="..\JBF.Api\JBF.Api.csproj"/>
     <PackageReference Include="CounterStrikeSharp.Api" Version="*"/>
     <Reference Include="../RequirmentsApi/MenuManagerApi.dll"/>
   </ItemGroup>
